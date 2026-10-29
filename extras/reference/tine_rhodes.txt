@@ -1,0 +1,53 @@
+# tine_rhodes: rhodes electric piano tine data: one measured inharmonic overtone, fundamental decay (q) per note, geometry, pickup and hammer model numbers
+# source: g. shear, "the electromagnetically sustained rhodes piano", m.s. thesis, uc santa barbara (media arts & technology), 2011, https://www.mat.ucsb.edu/Masters/GregShearMasters2011_12_5.pdf
+# measured partial ratios across the keyboard (gabrielli et al., jasa 148(5) 3052, 2020; muenster & pfeifle, isma 2014) were not openly available; see notes.
+# block 1: acoustic (not pickup) signal of one vibrating tine, thesis fig. 2.2 (spectrogram, note not named).
+#   partial 2 frequency is printed on the figure ("inharmonic partial (1.95 khz)"); the fundamental is read off the figure by eye
+#   (strongest line sits on the 264 hz tick; tick labels are multiples of 264). so the ratio 1950/264 = 7.4 is by eye, not printed.
+#   decay read off fig. 2.2 by eye: the 1.95 khz line fades within roughly 0.3 s of the onset, the fundamental is still strong at 3.5 s. no t60 printed.
+# units: hz in hz, ratio = f / f(partial 1), t60 in s
+# kind: tine
+# midi: 60 (block 1's note: its fundamental on the 264 hz tick, c4 +16 cents, the nearest key; an assignment, the source names none)
+# columns: partial hz ratio t60
+1 264 1 -       # read off fig. 2.2 by eye
+2 1950 7.4 -    # frequency printed on fig. 2.2; ratio by eye
+#
+# block 2: fundamental quality factor of the tine/tonebar fork, 1974 mark 1 88-key rhodes (thesis table 2.1; b3 from table 5.1, unmodified row).
+#   the thesis defines q = 2 pi f0 tau / 2 (eq. 2.4), tau = time to 37% amplitude. tau_s and t60_s (= tau ln 1000) are computed here, not printed.
+# units: f0_hz in hz, Q dimensionless, tau_s and t60_s in s
+# columns: midi f0_hz Q tau_s t60_s
+39 77.8 949 3.88 26.8     # Eb2
+51 155.6 731 1.50 10.3    # Eb3
+59 246.9 1101 1.42 9.82   # B3 (table 5.1, stock tonebar)
+63 311.1 1520 1.56 10.7   # Eb4
+75 622.3 2175 1.11 7.69   # Eb5
+87 1244.5 1761 0.450 3.11 # Eb6
+#
+# block 3: geometry, pickup and model constants as printed (si units). sources per row; all quotes in notes.
+# columns: name value
+tine_diameter_m 1.5e-3            # shear thesis sec. 2.1 / shear & wright nime 2011: "diameter of 1.5 mm"
+tine_length_min_m 18e-3           # same: "lengths ranging from 18 mm to 157 mm" (88-key piano)
+tine_length_max_m 157e-3
+tine_tip_displacement_max_m 50e-3 # shear & wright nime 2011: "up to 50 mm for the longest tine" (as printed)
+f0_min_88key_hz 27                # shear & wright nime 2011: "27 hz to 4.2 khz on the 88-key model"
+f0_max_88key_hz 4200
+f0_min_73key_hz 41                # "41 hz to 2.6 khz on the 73-key model"
+f0_max_73key_hz 2600
+pickup_gap_ideal_m 1.5e-3         # falaize web page: l_p = 0.5 mm "too close", 1.5 mm "ideal", 3 mm "low volume" (audio demo settings of the model)
+pickup_offset_ideal_m 0.5e-3      # falaize web page: l_delta = 0 mm "pure overtone", 0.5 mm "ideal", 1.5 mm "pure tone"
+pickup_offset_example_m 5e-3      # shear & wright nime 2011 fig. 2: spectra on the sensor axis vs "5 mm above the axis" (f0 196 hz)
+hammer_mass_kg 3e-2               # falaize & helie jsv 2016 table 2 ("typical value", model)
+hammer_exponent 2.5               # same table: b_h = p = 2.5
+hammer_K_n_per_m_p 5e5            # same table caption: k = l_h^-b_h f_h = 5e5 n.m^-2.5
+hammer_R_ns_per_m_p 100           # same caption: r = l_h^(1-b_h) a_h = 100 n.s.m^-2.5 (felt damping, hunt-crossley-like)
+hammer_felt_thickness_m 15e-3     # same table: l_h
+beam_E_pa 180e9                   # falaize & helie table 4 (model tine, steel)
+beam_rho_kgm3 7750                # same
+beam_radius_m 1e-3                # same (model value; shear gives 1.5 mm diameter for real tines)
+beam_length_440hz_m 5.54e-2       # same: length giving 440 hz for the clamped-free beam with these constants
+beam_damping_ns 5e-2              # same: a_b "damping coefficient" 5.10^-2 n.s^-1 (as printed)
+tonebar_length_m 0.0821           # shear thesis table 4.1, example for d4 (293.7 hz) tonebar
+tonebar_width_m 0.0111
+tonebar_height_m 0.0034
+tonebar_E_pa 69e9
+tonebar_rho_kgm3 2700

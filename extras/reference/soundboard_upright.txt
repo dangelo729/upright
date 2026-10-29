@@ -1,0 +1,27 @@
+# soundboard_upright: measured low-frequency modes and modal loss factors of an upright piano soundboard (atlas upright, 1.39 x 0.91 m, 8 mm, in playing condition, strings muted)
+# source: k. ege, "la table d'harmonie du piano - etudes modales en basses et moyennes frequences", phd thesis, ecole polytechnique, 2009, tel-00460783, tab. 1.3 ("ege" column), p. 18, https://theses.hal.science/tel-00460783/document
+# same instrument and first frequencies also in k. ege, x. boutillon, m. rebillat, j. sound vib. 332 (2013) 1288-1305, arxiv 1212.2323, fig. 14 (modes named mmcm 81 hz, (1,1) 114, (2,1) 134/159, (3,1) 177/205, (1,2) 253, (4,1) 274/295, (3,2) 303 hz)
+# eta converted here from the printed percent (eta % / 100).
+# units: hz in hz, eta dimensionless
+# kind: board
+# columns: mode hz eta
+1 114.1 0.045
+2 134.1 0.056
+3 159.0 0.052
+4 177.4 0.012
+5 205.2 0.036
+6 252.9 0.018
+7 274.2 0.025
+8 294.8 0.022
+9 303.3 0.017
+10 321.8 0.023
+11 339.9 0.036
+12 370.1 0.029
+13 382.0 0.031
+14 400.7 0.028
+15 420.0 0.025
+16 454.9 0.018
+17 468.8 0.022
+18 489.1 0.021
+19 515.4 0.015
+20 531.6 0.022

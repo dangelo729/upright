@@ -1,0 +1,4 @@
+extras/host/build/
+.pio/
+.DS_Store
+CLAUDE.md

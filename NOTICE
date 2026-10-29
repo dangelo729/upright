@@ -1,0 +1,120 @@
+Upright — NOTICE
+References and provenance.
+
+Upright is licensed under the MIT License (see LICENSE).
+
+It contains no third-party code. Every line was written for this library
+from the physics and the measurements below; nothing is copied, ported or
+translated from another implementation. The works below are cited as the
+sources of the physics, of the measured numbers the law is fitted to, and
+of the digital forms, nothing more.
+
+The reference tables under extras/reference/ are transcriptions of
+published numbers and figures, each file naming its source in its header;
+extras/reference/README.txt names each file's source, what was transcribed
+and what is unverified. They are data for the host tool and the tests; none
+of them is compiled into the library.
+
+  - B. Bank, S. Zambon and F. Fontana, "A modal-based real-time piano
+    synthesizer", IEEE TASLP 18(4), 2010. The modal string, the hammer's
+    discretisation and its one-sample delay, the secondary resonators, the
+    soundboard as parallel second-order sections, the loss term b1 + b3 w².
+    https://iris.univr.it/retrieve/e14ff6e2-e533-0209-e053-6605fe0ad24c/allegatooa_6366.pdf
+  - B. Bank, "Physics-based sound synthesis of the piano", thesis, 2000, and
+    "Physics-based sound synthesis of string instruments including
+    geometric nonlinearities", PhD thesis, 2006. The decay times 1 / tau_k =
+    b1 + b3 w_k², the multi-rate hammer. https://home.mit.bme.hu/~bank/thesis/
+  - B. Bank, F. Avanzini, G. Borin, G. De Poli, F. Fontana and D.
+    Rocchesso, "Physically informed signal processing methods for piano
+    sound synthesis: a research overview", EURASIP JASP 2003. Chaigne and
+    Askenfelt's hammer masses, stiffnesses and exponents
+    (extras/reference/hammer_params.txt).
+  - B. Bank and J. Chabassier, "Model-based digital pianos", IEEE SPM
+    36(1), 2019. The overview.
+  - A. Chaigne and A. Askenfelt, "Numerical simulations of piano strings"
+    I and II, JASA 95, 1994. The hammer's power law and its parameters, the
+    loss parameters (cited through Bank et al.).
+  - A. Chaigne, "Reconstruction of piano hammer force from string
+    velocity", JASA 140(5), 2016. Measured decay times at 1 kHz and hammer
+    masses (extras/reference/decay_grand.txt).
+  - J. Chabassier and M. Duruflé, "Physical parameters for piano modeling",
+    INRIA RT-0425, 2012, and J. Chabassier, A. Chaigne and P. Joly,
+    "Modeling and simulation of a grand piano", INRIA RR-8181, 2012. A
+    Steinway-D-based model's string scale, hammers and damping per key, and
+    spruce's constants (extras/reference/inharmonicity_grand_model.txt,
+    hammer_scale_grand.txt, decay_grand.txt, soundboard.txt).
+  - J. Jaatinen and J. Pätynen, "Effect of inharmonicity on pitch
+    perception and subjective tuning of piano tones", JASA 152(2), 2022. A
+    Steinway D's measured B per key (extras/reference/inharmonicity_grand.txt).
+  - H. Hinrichsen, "Entropy-based tuning of musical instruments", arXiv
+    1203.5101, 2012. An upright's measured B per key
+    (extras/reference/inharmonicity_upright.txt).
+  - A. Askenfelt and E. Jansson, "From touch to string vibrations", in
+    "Five lectures on the acoustics of the piano", KTH, 1990. Hammer
+    velocities and contact durations (extras/reference/hammer_params.txt);
+    the key reaching its bed after the hammer meets the string (the
+    attack's thud, up_attack.h).
+  - F. Pfeifle, "Real-time physical model of a Wurlitzer and Rhodes
+    electric piano", DAFx 2017. The tine as a beam, the Hunt & Crossley
+    hammer, the magnetic pickup by Faraday's law, the reed's single mode,
+    the electrostatic pickup's current.
+    https://www.dafx17.eca.ed.ac.uk/papers/DAFx17_paper_79.pdf
+  - M. Münster and F. Pfeifle, "Non-linear behaviour in sound production of
+    the Rhodes piano", ISMA 2014. The growl is the pickup's; the tine and
+    tonebar tuned apart.
+  - A. Falaize and T. Hélie, "Passive simulation of the nonlinear
+    port-Hamiltonian modeling of a Rhodes piano", JSV 2017, and its summary.
+    The pickup's distance and offset; the hammer's and the beam's model
+    values (extras/reference/tine_rhodes.txt).
+    https://afalaize.github.io/posts/rhodes/
+  - G. Shear and M. Wright, "The electromagnetically sustained Rhodes
+    piano", NIME 2011, and G. Shear's MS thesis, UCSB 2011. The tine's
+    geometry, one measured overtone, the fundamental's Q per note
+    (extras/reference/tine_rhodes.txt).
+  - T. Irvine, "Bending frequencies of beams, rods, and pipes", 2012. The
+    clamped-free beam's beta_n L (extras/reference/cantilever.txt).
+  - H. Suzuki, "Vibration and sound radiation of a piano soundboard", JASA
+    80(6), 1986, through K. Ege, "La table d'harmonie du piano", thesis,
+    2009, and X. Boutillon and K. Ege, JSV 2013. A grand's and an upright's
+    soundboard modes and loss factors (extras/reference/soundboard.txt,
+    soundboard_upright.txt).
+  - N. H. Fletcher and T. D. Rossing, "The Physics of Musical Instruments",
+    chapter 12. The stiff string's partials and B, the strike point,
+    soundboard modes and radiation.
+  - H. Fletcher, E. D. Blackham and R. Stratton, "Quality of piano tones",
+    JASA 34, 1962, and R. W. Young, "Inharmonicity of plain wire piano
+    strings", JASA 24, 1952. Measured B per note (cited; not open, not
+    transcribed).
+  - H. A. Conklin, "Design and tone in the mechanoacoustic piano", JASA
+    1996. Scale design, the bass break, hammer masses (cited).
+  - G. Weinreich, "Coupled piano strings", JASA 62, 1977. The coupled
+    unison (up_string.h): the strings on one bridge whose admittance has a
+    resistive and a reactive part, the lock, the two-stage decay and the
+    beat past the lock (cited; the physics written out, the paper not
+    transcribed).
+  - N. Giordano, "Mechanical impedance of a piano soundboard", JASA 103,
+    1998. The soundboard's impedance, 1 .. 3 x 10^3 kg/s, behind the
+    estimate of the bridge's mobility, bridgeMobility (cited).
+  - B. Bank and L. Sujbert, "Generation of longitudinal vibrations in
+    piano strings: from physics to sound synthesis", JASA 117(4), 2005.
+    The string's longitudinal modes driven by its stretching, their ring of
+    a few hundred milliseconds (the attack's clank, up_attack.h; the
+    phantom partials not built) (cited).
+  - J.-M. Jot and A. Chaigne, "Digital delay networks for designing
+    artificial reverberators", AES 90th Convention, 1991. The feedback delay
+    network, its loss filter in each line set from the decay time, and the
+    unitary feedback matrix in its Householder form (Jot's): the board's
+    field above its modes (up_board.h) (cited; the form written out, the
+    paper not transcribed).
+  - Mutable Instruments, Rings, resonator.cc, through belfry. The ceiling on
+    the partials (0.45 of the sample rate); read, not copied.
+  - The author's belfry, windstrument and monk_mouth libraries (MIT). The
+    channel table and its sequence, the law as a derived-channel writer, the
+    knobs as a pure mapping with an exact read-back, the level table, the
+    pool with its note table and its fade, the two Teensy wrappers and their
+    handoff (the pending table under an interrupt mask, the command queue
+    with its payload rings), the host rig and its tests follow their shape,
+    written again here for a piano.
+  - PJRC, the Teensy Audio Library (MIT). The wrappers implement its
+    AudioStream (update, allocate, transmit, release) and the examples use
+    its objects; nothing of it is copied or shipped here.

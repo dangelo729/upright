@@ -1,0 +1,59 @@
+# hammer_params: piano hammer mass, felt stiffness and exponent for three notes (chaigne & askenfelt's measured hammers), plus kth grand-piano hammer velocities and contact durations
+# source: a. chaigne and a. askenfelt, "numerical simulations of piano strings. i / ii", j. acoust. soc. am. 95(2) 1112-1118 and 95(3) 1631-1640, 1994 (paywalled, not downloaded)
+# via: b. bank, f. avanzini, g. borin, g. de poli, f. fontana, d. rocchesso, "physically informed signal processing methods for piano sound synthesis: a research overview", eurasip j. appl. signal process. 2003:10, 941-952, table 1, https://home.mit.bme.hu/~bank/publist/jasp03.pdf
+# the via source labels the third column "c6", not c7 (the planner's brief says c&a used c2, c4, c7). transcribed here as printed (midi 84); see notes.
+# c4 row also confirmed by p. miranda valiente et al., internoise 2022 (k_h = 4.5e9, gamma = 2.5, m_h = 2.97 g "obtained from" c&a part ii).
+# force law in the via source: f = k (dy)^p for dy > 0, else 0 (dy = felt compression)
+# units: mass_g in g (source prints kg: 4.9e-3, 2.97e-3, 2.2e-3); K in n/m^p (unit not printed in the via table; miranda prints "n/m" for c4); p dimensionless (the column K_Nmp: K in n/m^p)
+# kind: hammer
+# columns: midi mass_g K_Nmp p
+36 4.9 4.0e8 2.3    # C2
+60 2.97 4.5e9 2.5   # C4
+84 2.2 1.0e12 3     # printed as C6 in the via source (c&a's third hammer is c7 per the brief; unverified here)
+#
+# hammer velocity at the string by dynamic level, grand piano, note c4.
+# source: a. askenfelt and e. jansson, "from touch to string vibrations", in "five lectures on the acoustics of the piano" (kth, 1990), web edition https://www.speech.kth.se/music/5_lectures/askenflt/stricont.html, fig. 6
+# read off figure 6 by pixel position (not by a printed number): vertical centre of each dynamic label on the hammer-velocity axis. approximate (+-0.3 m/s).
+# units: velocity_mps in m/s
+# columns: name velocity_mps
+p 1.0
+mf 2.6
+f 5.2
+ff 8.6
+#
+# hammer velocity vs hammer-string contact duration, grand piano, note c4 (same kth fig. 6), filled squares = blows by a pianist.
+# read off figure 6 by pixel position (gif image, 1 px = 0.019 ms horizontally, 0.044 m/s vertically); not printed numbers.
+# the open square (pendulum blow, mf) is at 2.84 m/s, 2.09 ms and is not a data row.
+# units: velocity_mps in m/s, contact_ms in ms
+# columns: midi velocity_mps contact_ms
+60 9.27 1.60
+60 9.32 1.69
+60 8.08 1.71
+60 7.49 1.79
+60 6.70 1.88
+60 6.10 1.90
+60 5.59 2.00
+60 5.40 2.00
+60 5.02 1.98
+60 3.85 2.15
+60 3.22 2.19
+60 2.09 2.30
+60 1.43 2.49
+60 1.23 2.49
+60 0.84 2.80
+60 0.62 3.01
+60 0.22 4.00   # touches the time axis; velocity very approximate
+#
+# hammer-string contact duration per octave, grand piano: ff (left end of bar), mf pendulum blow (vertical line), pp (right end of bar).
+# source: same kth lecture, fig. 7, https://www.speech.kth.se/music/5_lectures/askenflt/images/45_07.gif
+# read off figure 7 by pixel position (gif, 1 px = 0.026 ms); not printed numbers.
+# units: contact durations in ms
+# columns: midi contact_ff_ms contact_mf_ms contact_pp_ms
+24 2.31 3.73 4.59   # C1
+36 2.81 3.03 4.01   # C2
+48 2.53 2.83 4.01   # C3
+60 2.01 2.14 2.81   # C4
+72 1.23 1.44 2.31   # C5
+84 0.82 1.13 2.53   # C6
+96 0.53 0.63 0.91   # C7
+108 0.42 0.54 1.22  # C8

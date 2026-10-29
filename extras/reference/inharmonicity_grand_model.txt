@@ -1,0 +1,93 @@
+# inharmonicity_grand_model: inharmonicity coefficient b per key of the chabassier-durufle virtual grand, string scale fitted to measurements on a steinway d
+# source: j. chabassier and m. durufle, "physical parameters for piano modeling", inria technical report rt-0425, 2012, hal-00688679v2, https://inria.hal.science/hal-00688679/document (appendix a, "wrapped strings values")
+# computed from the source's string table: b = pi^3 e d^4 / (64 t0 l^2), with e = 2.02e11 pa (source p.9), d, t0, l per note from appendix a.
+#   for wrapped bass strings the source uses an "homogenized" string (real length, virtual density), so b is that of the model string.
+#   the source tuned the scale so the inharmonicity curve is smooth (its fig. 5i); the table covers c1..b7 only (84 keys, no a0-b0, no c8).
+# units: midi = key number, b dimensionless
+# kind: B
+# hold: scale=1 (a steinway d model: the constants' fit holds it at the scale knob's +1 end)
+# columns: midi B
+24 6.77e-5   # C1, l=2.007 m d=1.48 mm t0=1722.0 n
+25 7.04e-5   # Cd1, l=1.997 m d=1.505 mm t0=1788.0 n
+26 7.13e-5   # D1, l=1.981 m d=1.506 mm t0=1798.0 n
+27 7.08e-5   # Dd1, l=1.965 m d=1.492 mm t0=1773.0 n
+28 6.95e-5   # E1, l=1.938 m d=1.46 mm t0=1703.0 n
+29 6.72e-5   # F1, l=1.911 m d=1.419 mm t0=1618.0 n
+30 6.45e-5   # Fd1, l=1.879 m d=1.37 mm t0=1515.0 n
+31 6.16e-5   # G1, l=1.842 m d=1.316 mm t0=1404.0 n
+32 5.87e-5   # Ab1, l=1.805 m d=1.262 mm t0=1297.0 n
+33 5.62e-5   # A1, l=1.762 m d=1.207 mm t0=1190.0 n
+34 5.37e-5   # Ad1, l=1.709 m d=1.148 mm t0=1083.0 n
+35 5.20e-5   # B1, l=1.655 m d=1.096 mm t0=991.0 n
+36 5.08e-5   # C2, l=1.602 m d=1.051 mm t0=915.0 n
+37 5.02e-5   # Cd2, l=1.548 m d=1.012 mm t0=853.0 n
+38 5.05e-5   # D2, l=1.495 m d=0.982 mm t0=807.0 n
+39 5.16e-5   # Dd2, l=1.442 m d=0.96 mm t0=774.0 n
+40 5.36e-5   # E2, l=1.378 m d=0.937 mm t0=741.0 n
+41 5.65e-5   # F2, l=1.837 m d=1.117 mm t0=799.0 n
+42 6.04e-5   # Fd2, l=1.757 m d=1.108 mm t0=791.0 n
+43 6.51e-5   # G2, l=1.66 m d=1.091 mm t0=773.0 n
+44 7.10e-5   # Ab2, l=1.591 m d=1.095 mm t0=783.0 n
+45 7.78e-5   # A2, l=1.482 m d=1.071 mm t0=754.0 n
+46 8.55e-5   # Ad2, l=1.403 m d=1.067 mm t0=754.0 n
+47 9.43e-5   # B2, l=1.329 m d=1.065 mm t0=756.0 n
+48 1.04e-4   # C3, l=1.259 m d=1.063 mm t0=759.0 n
+49 1.15e-4   # Cd3, l=1.192 m d=1.061 mm t0=762.0 n
+50 1.26e-4   # D3, l=1.129 m d=1.059 mm t0=764.0 n
+51 1.39e-4   # Dd3, l=1.07 m d=1.057 mm t0=766.0 n
+52 1.53e-4   # E3, l=1.013 m d=1.053 mm t0=767.0 n
+53 1.68e-4   # F3, l=0.96 m d=1.049 mm t0=766.0 n
+54 1.85e-4   # Fd3, l=0.909 m d=1.045 mm t0=765.0 n
+55 2.02e-4   # G3, l=0.861 m d=1.039 mm t0=763.0 n
+56 2.20e-4   # Ab3, l=0.816 m d=1.033 mm t0=759.0 n
+57 2.41e-4   # A3, l=0.773 m d=1.027 mm t0=755.0 n
+58 2.63e-4   # Ad3, l=0.732 m d=1.02 mm t0=751.0 n
+59 2.87e-4   # B3, l=0.694 m d=1.013 mm t0=746.0 n
+60 3.13e-4   # C4, l=0.657 m d=1.006 mm t0=741.0 n
+61 3.43e-4   # Cd4, l=0.622 m d=0.999 mm t0=735.0 n
+62 3.71e-4   # D4, l=0.59 m d=0.991 mm t0=730.0 n
+63 4.05e-4   # Dd4, l=0.559 m d=0.984 mm t0=725.0 n
+64 4.43e-4   # E4, l=0.529 m d=0.977 mm t0=720.0 n
+65 4.83e-4   # F4, l=0.501 m d=0.97 mm t0=715.0 n
+66 5.27e-4   # Fd4, l=0.475 m d=0.964 mm t0=711.0 n
+67 5.76e-4   # G4, l=0.45 m d=0.958 mm t0=707.0 n
+68 6.29e-4   # Ab4, l=0.426 m d=0.952 mm t0=704.0 n
+69 6.88e-4   # A4, l=0.404 m d=0.947 mm t0=701.0 n
+70 7.48e-4   # Ad4, l=0.383 m d=0.941 mm t0=699.0 n
+71 8.21e-4   # B4, l=0.363 m d=0.937 mm t0=697.0 n
+72 8.97e-4   # C5, l=0.344 m d=0.932 mm t0=696.0 n
+73 9.83e-4   # Cd5, l=0.326 m d=0.928 mm t0=695.0 n
+74 1.08e-3   # D5, l=0.308 m d=0.924 mm t0=694.0 n
+75 1.19e-3   # Dd5, l=0.292 m d=0.921 mm t0=694.0 n
+76 1.30e-3   # E5, l=0.277 m d=0.917 mm t0=694.0 n
+77 1.43e-3   # F5, l=0.262 m d=0.914 mm t0=694.0 n
+78 1.56e-3   # Fd5, l=0.249 m d=0.91 mm t0=695.0 n
+79 1.71e-3   # G5, l=0.236 m d=0.907 mm t0=695.0 n
+80 1.89e-3   # Ab5, l=0.223 m d=0.904 mm t0=696.0 n
+81 2.08e-3   # A5, l=0.211 m d=0.901 mm t0=697.0 n
+82 2.28e-3   # Ad5, l=0.2 m d=0.898 mm t0=697.0 n
+83 2.48e-3   # B5, l=0.19 m d=0.894 mm t0=697.0 n
+84 2.73e-3   # C6, l=0.18 m d=0.891 mm t0=697.0 n
+85 2.97e-3   # Cd6, l=0.171 m d=0.887 mm t0=697.0 n
+86 3.25e-3   # D6, l=0.162 m d=0.883 mm t0=697.0 n
+87 3.59e-3   # Dd6, l=0.153 m d=0.879 mm t0=696.0 n
+88 3.93e-3   # E6, l=0.145 m d=0.875 mm t0=695.0 n
+89 4.25e-3   # F6, l=0.138 m d=0.87 mm t0=693.0 n
+90 4.71e-3   # Fd6, l=0.13 m d=0.866 mm t0=691.0 n
+91 5.05e-3   # G6, l=0.124 m d=0.86 mm t0=689.0 n
+92 5.57e-3   # Ab6, l=0.117 m d=0.855 mm t0=686.0 n
+93 6.07e-3   # A6, l=0.111 m d=0.85 mm t0=683.0 n
+94 6.63e-3   # Ad6, l=0.105 m d=0.844 mm t0=679.0 n
+95 7.13e-3   # B6, l=0.1 m d=0.837 mm t0=674.0 n
+96 7.72e-3   # C7, l=0.095 m d=0.831 mm t0=670.0 n
+97 8.39e-3   # Cd7, l=0.09 m d=0.824 mm t0=664.0 n
+98 9.16e-3   # D7, l=0.085 m d=0.817 mm t0=659.0 n
+99 9.85e-3   # Dd7, l=0.081 m d=0.81 mm t0=652.0 n
+100 1.09e-2   # E7, l=0.076 m d=0.802 mm t0=646.0 n
+101 1.18e-2   # F7, l=0.072 m d=0.795 mm t0=639.0 n
+102 1.25e-2   # Fd7, l=0.069 m d=0.787 mm t0=631.0 n
+103 1.36e-2   # G7, l=0.065 m d=0.778 mm t0=623.0 n
+104 1.46e-2   # Ab7, l=0.062 m d=0.77 mm t0=615.0 n
+105 1.61e-2   # A7, l=0.058 m d=0.761 mm t0=606.0 n
+106 1.73e-2   # Ad7, l=0.055 m d=0.752 mm t0=598.0 n
+107 1.88e-2   # B7, l=0.052 m d=0.743 mm t0=588.0 n

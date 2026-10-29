@@ -1,0 +1,77 @@
+# inharmonicity_grand: inharmonicity coefficient b per key, steinway & sons model d concert grand (helsinki music center), one string per key
+# source: j. jaatinen and j. patynen, "effect of inharmonicity on pitch perception and subjective tuning of piano tones", j. acoust. soc. am. 152(2), 1146-1157, 2022, doi 10.1121/10.0013572, open copy https://acris.aalto.fi/ws/portalfiles/portal/98111997/Effect_of_inharmonicity_on_pitch_perception_and_subjective_tuning_of_piano_tones.pdf
+# read off figure 4 ("original inharmonic" open circles), not a printed table: values recovered from the pdf vector marker coordinates
+#   on the log axis (calibrated to the decade ticks); this is more exact than reading by eye, but still a figure, not a table.
+# b was estimated by the authors with the rauhala et al. (2007) algorithm on analysis-resynthesized mf tones; source says
+#   reliability degrades above a5 and missing keys had estimates above the plot range. keys above g#5 are kept as comments only.
+# units: midi = key number (a0 = 21), b dimensionless (f_n = n f0 sqrt(1 + b n^2))
+# kind: B
+# hold: scale=1 (a concert grand: the constants' fit holds it at the scale knob's +1 end)
+# columns: midi B
+21 1.45e-4   # A0
+22 1.38e-4   # Bb0
+23 1.12e-4   # B0
+24 8.70e-5   # C1
+25 8.61e-5   # C#1
+26 7.15e-5   # D1
+27 7.18e-5   # Eb1
+28 7.45e-5   # E1
+29 5.78e-5   # F1
+30 5.81e-5   # F#1
+31 5.39e-5   # G1
+32 5.26e-5   # G#1
+33 4.56e-5   # A1
+34 4.71e-5   # Bb1
+35 5.07e-5   # B1
+36 4.83e-5   # C2
+37 4.91e-5   # C#2
+38 5.90e-5   # D2
+39 6.40e-5   # Eb2
+40 6.30e-5   # E2
+41 6.81e-5   # F2
+42 7.33e-5   # F#2
+43 8.01e-5   # G2
+44 8.85e-5   # G#2
+45 8.12e-5   # A2
+46 8.87e-5   # Bb2
+47 9.58e-5   # B2
+48 1.07e-4   # C3
+49 1.19e-4   # C#3
+50 1.35e-4   # D3
+51 1.32e-4   # Eb3
+52 1.51e-4   # E3
+53 1.70e-4   # F3
+54 1.89e-4   # F#3
+55 2.16e-4   # G3
+56 2.29e-4   # G#3
+57 2.69e-4   # A3
+58 2.62e-4   # Bb3
+59 2.77e-4   # B3
+60 3.16e-4   # C4
+61 3.56e-4   # C#4
+62 3.97e-4   # D4
+63 4.42e-4   # Eb4
+64 4.91e-4   # E4
+65 5.03e-4   # F4
+66 5.21e-4   # F#4
+67 6.19e-4   # G4
+68 6.45e-4   # G#4
+69 6.52e-4   # A4
+70 9.35e-4   # Bb4
+71 2.74e-3   # B4  # outlier vs neighbours, as plotted
+72 8.71e-4   # C5
+73 1.20e-3   # C#5
+75 1.30e-3   # Eb5
+76 1.37e-3   # E5
+77 1.27e-3   # F5
+78 1.67e-3   # F#5
+79 1.66e-3   # G5
+80 1.88e-3   # G#5
+# 83 2.20e-3   # B5, above a5: flagged unreliable by the source, not a data row
+# 84 2.80e-3   # C6, above a5: flagged unreliable by the source, not a data row
+# 85 3.20e-3   # C#6, above a5: flagged unreliable by the source, not a data row
+# 87 2.04e-1   # Eb6, above a5: flagged unreliable by the source, not a data row
+# 88 2.88e-3   # E6, above a5: flagged unreliable by the source, not a data row
+# 93 2.23e-3   # A6, above a5: flagged unreliable by the source, not a data row
+# 103 2.47e-4   # G7, above a5: flagged unreliable by the source, not a data row
+# 107 8.72e-3   # B7, above a5: flagged unreliable by the source, not a data row
