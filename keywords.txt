@@ -19,8 +19,6 @@ Tuning	KEYWORD1
 Ramp	KEYWORD1
 Arc	KEYWORD1
 Rng	KEYWORD1
-Knob	KEYWORD1
-Knobs	KEYWORD1
 Law	KEYWORD1
 LawConstants	KEYWORD1
 RankState	KEYWORD1
@@ -89,7 +87,6 @@ bridgePoint	KEYWORD2
 init	KEYWORD2
 pedal	KEYWORD2
 allNotesOff	KEYWORD2
-setKnobs	KEYWORD2
 voices	KEYWORD2
 sounding	KEYWORD2
 voice	KEYWORD2
@@ -127,14 +124,9 @@ channelName	KEYWORD2
 channelByName	KEYWORD2
 channelRange	KEYWORD2
 defaultShape	KEYWORD2
+nanShape	KEYWORD2
 toShape	KEYWORD2
 fromShape	KEYWORD2
-pianoOf	KEYWORD2
-knobsOf	KEYWORD2
-knobName	KEYWORD2
-knobByName	KEYWORD2
-knobEnd	KEYWORD2
-levelDb	KEYWORD2
 partialsOf	KEYWORD2
 lawConstants	KEYWORD2
 pending	KEYWORD2
@@ -264,7 +256,6 @@ kPi	LITERAL1
 kCeiling	LITERAL1
 kChannelCount	LITERAL1
 kInstrumentChannels	LITERAL1
-kKnobCount	LITERAL1
 kE	LITERAL1
 kRho	LITERAL1
 kTineModes	LITERAL1
@@ -275,7 +266,6 @@ kAftersound	LITERAL1
 kUnisonGain	LITERAL1
 kTipHard	LITERAL1
 kTipLoss	LITERAL1
-kTineLoad	LITERAL1
 kExponentLo	LITERAL1
 kExponentHi	LITERAL1
 kMaxT60	LITERAL1

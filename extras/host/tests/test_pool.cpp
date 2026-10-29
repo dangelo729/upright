@@ -7,7 +7,7 @@
 // voice (finite, its onset within 2 db of a fresh strike's); noteOff lands
 // the damper and the pedal holds it; the pool's output is its voices' pairs
 // through one board, summed by hand, bit for bit; two pools share nothing;
-// a pool-wide vector reaches a later note and moves the board; the same calls
+// a pool-wide shape reaches a later note and moves the board; the same calls
 // give the same bytes at render sizes 1, 128 and 1000; a stolen voice's
 // waiting note lands whole with the pool's pedal. and the umbrella header
 // compiles on the host, its teensy wrappers empty.
@@ -19,6 +19,7 @@
 #include "Upright.h"
 #include "up_analysis.h"
 #include "up_pool_access.h"
+#include "up_shapes.h"
 #include "up_test.h"
 
 using namespace up;
@@ -26,7 +27,6 @@ using namespace up;
 namespace {
 
 constexpr float kFs = 44100.0f;
-const Knobs kGrand = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}};
 
 int blocks(float sec) { return (int)(sec * kFs) / kBlock; }
 
@@ -103,7 +103,7 @@ UP_TEST(pool_steals_the_quietest_without_a_cut) {
     float lastLevel = 1.0f;
     auto run = [&](bool steal) {
         Pool<4> pool(3);
-        pool.setKnobs(kGrand);
+        pool.setShape(grand());
         Record r;
         for (int k = 0; k < 4; ++k) {
             pool.noteOn(keys[k], vels[k]);
@@ -142,7 +142,7 @@ UP_TEST(pool_steals_the_quietest_without_a_cut) {
     };
     const Record stolen = run(true), rung = run(false);
     CHECK_MSG(landed > 0, "the new note never landed on the stolen voice");
-    const Shape body = pianoOf(kGrand);
+    const Shape& body = grand();
     const std::vector<float> a = shareOf(stolen, body, 64.0f), b = shareOf(rung, body, 64.0f);
     const size_t from = (size_t)(stealAt - lead);
     const double click = clickRatio(a.data() + from, a.size() - from, kFs), ring = clickRatio(b.data() + from, a.size() - from, kFs);
@@ -166,7 +166,7 @@ UP_TEST(pool_steals_the_quietest_without_a_cut) {
 // strike's (a strike on a moving string: not the sum of two)
 UP_TEST(pool_restrike_meets_the_moving_string) {
     Pool<4> pool(5);
-    pool.setKnobs(kGrand);
+    pool.setShape(grand());
     Record r;
     pool.noteOn(60.0f, 0.8f);
     renderInto(pool, r, kBlock);
@@ -181,7 +181,7 @@ UP_TEST(pool_restrike_meets_the_moving_string) {
     renderInto(pool, r, blocks(1.0f) * kBlock);
     CHECK(allFinite(r.out.data(), r.out.size()));
     Pool<4> fresh(5);
-    fresh.setKnobs(kGrand);
+    fresh.setShape(grand());
     Record f;
     fresh.noteOn(60.0f, 0.8f);
     renderInto(fresh, f, blocks(0.1f) * kBlock);
@@ -201,10 +201,10 @@ UP_TEST(pool_restrike_meets_the_moving_string) {
 // pedal's fall at 2 s lands the damper within the pedal's ease and 1.5 x the
 // damper's t60
 UP_TEST(pool_note_off_lands_the_damper) {
-    const double t60 = 6.907755 / pianoOf(kGrand)[Channel::dampRate], ease = -std::log(0.05) / Tuning().ratePedal;
+    const double t60 = 6.907755 / grand()[Channel::dampRate], ease = -std::log(0.05) / Tuning().ratePedal;
     auto run = [&](bool pedal, bool fall, float sec) {
         Pool<4> pool(6);
-        pool.setKnobs(kGrand);
+        pool.setShape(grand());
         if (pedal) pool.pedal(1.0f);
         Record r;
         pool.noteOn(60.0f, 1.0f);
@@ -240,7 +240,7 @@ UP_TEST(pool_note_off_lands_the_damper) {
 }
 
 // the pool's output is its voices' pairs through one board, summed by hand:
-// four keys, a release, the pedal down and up, a pool-wide vector that
+// four keys, a release, the pedal down and up, a pool-wide shape that
 // moves the plate, a key's own voice again, no steal; each voice driven alone
 // the same way (its seed the pool's for it, the same writes: at a landing
 // note on the voice the pool chose, the pool's pedal, then the note; a voice
@@ -261,10 +261,10 @@ UP_TEST(pool_is_its_voices_through_one_board) {
     Board board;
     board.init(kFs);
     float w[4][kBoardModes], point[4] = {-1.0f, -1.0f, -1.0f, -1.0f}, pedal = 0.0f;
-    const Knobs other = {{-0.3f, 0.2f, 0.4f, 0.4f, 0.6f, -0.6f, 0.5f, 0.6f}};
-    auto knobs = [&](const Knobs& k) {
-        pool.setKnobs(k);
-        const Shape s = pianoOf(k);
+    // upright's piano with the generator at -0.6: its board moves the plate, both outputs live
+    const Shape other = with(upright(), {{Channel::generator, -0.6f}, {Channel::tonebar, 0.4f}});
+    auto write = [&](const Shape& s) {
+        pool.setShape(s);
         for (Voice& x : v) x.setShape(s);
         const float a = board.table().a, b = board.table().b;
         board.setPlate(s[Channel::boardArea], s[Channel::boardLoss], s[Channel::open]);
@@ -291,11 +291,11 @@ UP_TEST(pool_is_its_voices_through_one_board) {
     std::vector<float> sum((size_t)total), alone2((size_t)total);
     for (int step = 0; step < 9; ++step) {
         switch (step) {
-            case 0: knobs(kGrand); land(48.0f, 1.0f); break;
+            case 0: write(grand()); land(48.0f, 1.0f); break;
             case 1: land(55.0f, 0.7f); break;
             case 2: land(60.0f, 0.9f); pool.noteOff(48.0f); v[0].noteOff(); break;
             case 3: pedals(0.6f); break;
-            case 4: knobs(other); break;
+            case 4: write(other); break;
             case 5: land(64.0f, 1.0f); break;
             case 6: pedals(0.0f); break;
             case 7: pool.noteOn(60.0f, 0.5f); v[2].noteOn(60.0f, 0.5f); break;      // the key's own voice again
@@ -327,7 +327,7 @@ UP_TEST(pool_is_its_voices_through_one_board) {
     CHECK(std::memcmp(r.out.data(), sum.data(), sum.size() * sizeof(float)) == 0);
     CHECK(std::memcmp(r.bridge.data(), alone2.data(), alone2.size() * sizeof(float)) == 0);
     CHECK(rms(r.out.data(), r.out.size()) > 0.0 && rms(r.pickup.data(), r.pickup.size()) > 0.0);
-    printf("    four keys on voices %d, %d, %d, %d over %.2f s (a release, the pedal, a vector moving the plate, a re-strike; both outputs live): "
+    printf("    four keys on voices %d, %d, %d, %d over %.2f s (a release, the pedal, a shape moving the plate, a re-strike; both outputs live): "
            "the pool's output and its voices through one board by hand are the same bytes, and the window's share is its voice's force alone\n",
            landed[0], landed[1], landed[2], landed[3], (double)total / kFs);
 }
@@ -342,7 +342,7 @@ UP_TEST(pool_two_pools_independent) {
             p.noteOn(55.0f + 3.0f * (float)s, 1.0f);
             if (other) {
                 other->noteOn(40.0f + (float)s, 1.0f);
-                other->setKnobs({{0.5f, -0.5f, 0.0f, 0.0f, 1.0f, -0.5f, 1.0f, 1.0f}});
+                other->setShape(with(concertGrand(), {{Channel::generator, -0.5f}, {Channel::tonebar, 0.5f}}));
                 other->pedal(0.8f);
             }
             renderInto(p, o, 6000);
@@ -356,9 +356,9 @@ UP_TEST(pool_two_pools_independent) {
     CHECK(beside.sounding() > 0 && rms(a.data(), a.size()) > 0.0);
 }
 
-// pool-wide writes reach later notes and the board: a vector written after
+// pool-wide writes reach later notes and the board: a shape written after
 // c4 sounds is c4's voice's instrument now and the instrument of a note
-// struck after it, and the board's plate is the vector's body; a partial
+// struck after it, and the board's plate is the shape's body; a partial
 // written by hand pool-wide stands on a later note until the instrument is
 // written again
 UP_TEST(pool_writes_reach_later_notes_and_the_board) {
@@ -367,9 +367,8 @@ UP_TEST(pool_writes_reach_later_notes_and_the_board) {
     pool.noteOn(60.0f, 1.0f);
     renderInto(pool, r, kBlock);
     const float hz0 = pool.board().modeInfo(0).hz;
-    const Knobs k = {{0.6f, -0.4f, 0.5f, -0.5f, 0.8f, -0.7f, -0.6f, 0.4f}};
-    const Shape want = pianoOf(k);
-    pool.setKnobs(k);
+    const Shape want = with(concertGrand(), {{Channel::strings, 2.0f}, {Channel::generator, -0.7f}, {Channel::tonebar, 0.3f}});
+    pool.setShape(want);
     pool.noteOn(67.0f, 0.8f);
     renderInto(pool, r, kBlock);
     const int c4 = slotOf(pool, 60.0f), g4 = slotOf(pool, 67.0f);
@@ -382,23 +381,23 @@ UP_TEST(pool_writes_reach_later_notes_and_the_board) {
     CHECK(same);
     const BoardTable t = boardOf(want[Channel::boardArea], want[Channel::boardLoss], want[Channel::open]);
     CHECK_MSG(pool.board().modeInfo(0).hz == t.mode[0].hz && pool.board().table().a == t.a && hz0 != t.mode[0].hz,
-              "the board's first mode %.2f hz, the vector's %.2f (before %.2f)", pool.board().modeInfo(0).hz, t.mode[0].hz, hz0);
+              "the board's first mode %.2f hz, the shape's %.2f (before %.2f)", pool.board().modeInfo(0).hz, t.mode[0].hz, hz0);
     pool.setPartial(4, 5.31f, 2.0f, 0.4f, -3.0f);
     pool.noteOn(72.0f, 1.0f);
     renderInto(pool, r, kBlock);
     const int c5 = slotOf(pool, 72.0f);
     CHECK(c5 >= 0 && pool.voice(c5).shape()[ratioChannel(4)] == 5.31f && pool.voice(c5).state().shape[ratioChannel(4)] == 5.31f);
-    pool.setKnobs(kGrand);
+    pool.setShape(grand());
     renderInto(pool, r, kBlock);
     CHECK(pool.voice(c5).shape()[ratioChannel(4)] != 5.31f && pool.board().modeInfo(0).hz == hz0);
-    printf("    a vector written under c4 is c4's and g4's (struck after); the board's first mode %.1f -> %.1f hz with its body; the 5th partial by "
+    printf("    a shape written under c4 is c4's and g4's (struck after); the board's first mode %.1f -> %.1f hz with its body; the 5th partial by "
            "hand at 5.31 stood on c5, struck after; the instrument written again took it back\n",
            hz0, t.mode[0].hz);
 }
 
 // the same calls at the same samples give the same bytes whatever size the
 // pool is rendered in (1, 128, 1000; a render split where a call falls):
-// notes, a steal, a release, the pedal, a vector, a tuning, a partial by hand
+// notes, a steal, a release, the pedal, a shape, a tuning, a partial by hand
 UP_TEST(pool_same_bytes_at_any_render_size) {
     struct Call { int at; int what; };
     const int total = (int)(4.0f * kFs);
@@ -411,11 +410,11 @@ UP_TEST(pool_same_bytes_at_any_render_size) {
         while (at < total) {
             while (c < sizeof calls / sizeof calls[0] && calls[c].at == at) {
                 switch (calls[c].what) {
-                    case 0: p.setKnobs(kGrand); p.noteOn(48.0f, 1.0f); p.noteOn(52.0f, 0.6f); break;
+                    case 0: p.setShape(grand()); p.noteOn(48.0f, 1.0f); p.noteOn(52.0f, 0.6f); break;
                     case 1: p.noteOn(55.0f, 0.9f); p.noteOn(60.0f, 0.3f); break;
                     case 2: p.noteOn(64.0f, 1.0f); break;                                  // a fifth key: a steal
                     case 3: p.noteOff(48.0f); p.pedal(0.5f); break;
-                    case 4: p.setKnobs({{-0.5f, 0.3f, 0.6f, 0.2f, 0.4f, -0.3f, 0.7f, 0.9f}}); p.noteOn(67.0f, 0.8f); break;
+                    case 4: p.setShape(with(spinet(), {{Channel::generator, -0.3f}, {Channel::tonebar, 0.7f}})); p.noteOn(67.0f, 0.8f); break;
                     case 5: { Tuning t; t.stealRate = 90.0f; p.setTuning(t); p.allNotesOff(); } break;
                     case 6: p.pedal(0.0f); p.setPartial(2, 3.05f, 1.5f, 0.5f, 2.0f); break;
                     case 7: p.noteOn(72.0f, 1.0f); p.noteOn(72.0f, 0.5f); break;
@@ -434,7 +433,7 @@ UP_TEST(pool_same_bytes_at_any_render_size) {
     CHECK(std::memcmp(a.data(), b.data(), a.size() * sizeof(float)) == 0);
     CHECK(std::memcmp(a.data(), c.data(), a.size() * sizeof(float)) == 0);
     CHECK(rms(a.data(), a.size()) > 0.0 && allFinite(a.data(), a.size()));
-    printf("    4 s of notes, a steal, a release, the pedal, two vectors, a tuning and a partial by hand at render sizes 1, 128 and 1000: the same "
+    printf("    4 s of notes, a steal, a release, the pedal, two shapes, a tuning and a partial by hand at render sizes 1, 128 and 1000: the same "
            "bytes\n");
 }
 
@@ -445,7 +444,7 @@ UP_TEST(pool_same_bytes_at_any_render_size) {
 // on its target), its note the fifth key's
 UP_TEST(pool_steal_lands_whole_with_the_pool_pedal) {
     Pool<4> pool(14);
-    pool.setKnobs(kGrand);
+    pool.setShape(grand());
     Record r;
     for (float key : {48.0f, 52.0f, 55.0f, 60.0f}) pool.noteOn(key, 1.0f);
     renderInto(pool, r, blocks(0.3f) * kBlock);

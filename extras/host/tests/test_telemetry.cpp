@@ -11,19 +11,13 @@
 #include <initializer_list>
 #include <vector>
 
-#include "core/up_knobs.h"
+#include "core/up_presets.h"
 #include "core/up_telemetry.h"
 #include "core/up_voice.h"
 #include "up_fit.h"
 #include "up_test.h"
 
 using namespace up;
-
-namespace {
-
-const Knobs kGrand = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}};
-
-}  // namespace
 
 // grand at c3, c4 and c5, velocity 0.4 and 1: the voice rendered a sample at
 // a time while the hammer touches, its force read at every substep; at the
@@ -37,7 +31,7 @@ UP_TEST(telemetry_amplitude_is_drive_times_force) {
     for (float midi : {48.0f, 60.0f, 72.0f})
         for (float vel : {0.4f, 1.0f}) {
             Voice v(4);
-            v.setShape(pianoOf(kGrand));
+            v.setShape(grand());
             v.noteOn(midi, vel);
             std::vector<double> force;
             int samples = 0;
@@ -75,7 +69,7 @@ UP_TEST(telemetry_force_is_the_momentum) {
     for (float midi : {36.0f, 60.0f, 84.0f})
         for (float vel : {0.3f, 1.0f}) {
             Voice v(4);
-            v.setShape(pianoOf(kGrand));
+            v.setShape(grand());
             v.noteOn(midi, vel);
             float b[kBlock], p[kBlock];
             v.render(b, p, kBlock);
@@ -97,7 +91,7 @@ UP_TEST(telemetry_force_is_the_momentum) {
 // are the string's fixed ends; the state's note, rank and partials on
 UP_TEST(telemetry_shape_at_the_strike_point) {
     Voice v(4);
-    v.setShape(pianoOf(kGrand));
+    v.setShape(grand());
     v.noteOn(60.0f, 0.8f);
     float b[kBlock], p[kBlock];
     double worst = 0.0, largest = 0.0;

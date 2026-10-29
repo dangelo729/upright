@@ -1,14 +1,16 @@
 // upright — tests/test_presets.cpp  (plan §12 presets; the tests' "presets" bullet; stage 2)
 //
-// the nine presets: each found by name, its shape pianoOf(its vector) to the
-// bit and its accessor's; every preset sounds at every semitone of its range
-// (2 s at velocity 1, its level undone: the peak over 0.022, the last 100
-// ms's rms under the first 100 ms's, every sample finite); the presets'
-// levels undone by the level table, read as octaves, within 3 db of each
-// other from c4 and 4 db from their middle notes; honkyTonk beats faster
-// than upright; rhodesBark's thd at e4 10 points and more over rhodes's;
-// concertGrand's and upright's b against their tables as the fit test holds
-// them; print's line for each reads back to its name, vector and range.
+// the nine presets: each found by name, its shape its table of the
+// twenty-four instrument channels to the bit (the pianos as measured and
+// heard, the tine's t60 and load 10.4 s and 1.18 on every one), the partial
+// and player channels nan, its accessor's the same object; every preset
+// sounds at every semitone of its range (2 s at velocity 1 at the gain that
+// brings its octave to grand's: the peak over 0.022, the last 100 ms's rms
+// under the first 100 ms's, every sample finite); each preset's octave from
+// c4 against grand's; honkyTonk beats
+// faster than upright; rhodesBark's thd at e4 10 points and more over
+// rhodes's; concertGrand's and upright's b against their tables as the fit
+// test holds them; print's --set lines for each read back to its shape.
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -31,48 +33,64 @@ bool sameBits(float a, float b) {
     return x == y;
 }
 
+// each preset's instrument channels in the enum's order, as measured and heard
+const float kTables[9][kInstrumentChannels] = {
+    {0.614f, 1.61375f, 553.0f, 1.0f, 3.0f, 0.5f, 0.12f, 0.45f, 2.0f, 142.0f, 2.5f, 0.0005f, 2.97f, 1.0f, 0.03f, 0.5f, -1.0f, 1.5f, 0.9f, 0.0f,
+     10.4f, 1.18f, 20.0f, 89.0f},
+    {0.6264942f, 2.1145327f, 553.0f, 1.0f, 3.0f, 1.2800001f, 0.12f, 0.45f, 2.0f, 142.0f, 2.5f, 0.0005f, 2.97f, 1.6245048f, 0.018467166f, 1.0f,
+     -1.0f, 1.5f, 0.9f, 0.0f, 10.4f, 1.18f, 20.0f, 89.0f},
+    {0.6082418f, 1.4221112f, 553.0f, 1.0f, 3.0f, 0.5f, 0.12f, 0.45f, 2.0f, 100.409164f, 2.5f, 0.0005743492f, 2.97f, 0.7120251f, 0.042133342f,
+     0.15f, -1.0f, 1.5f, 0.9f, 0.0f, 10.4f, 1.18f, 20.0f, 89.0f},
+    {0.6013641f, 1.2208763f, 553.0f, 1.0f, 3.0f, 0.5f, 0.12f, 0.45f, 2.0f, 238.81459f, 2.5f, 0.00040612623f, 2.97f, 0.6155722f, 0.04873514f, 0.0f,
+     -1.0f, 1.5f, 0.9f, 0.0f, 10.4f, 1.18f, 20.0f, 89.0f},
+    {0.6082418f, 1.4221112f, 553.0f, 1.0f, 3.0f, 20.0f, 0.12f, 0.45f, 2.0f, 59.703648f, 2.5f, 0.0007071068f, 2.97f, 0.7120251f, 0.042133342f, 0.15f,
+     -1.0f, 1.5f, 0.9f, 0.0f, 10.4f, 1.18f, 20.0f, 89.0f},
+    {0.6101816f, 1.484181f, 553.0f, 1.0f, 3.0f, 0.5f, 0.12f, 0.45f, 2.0f, 42.21685f, 2.5f, 0.00081225246f, 2.97f, 0.7845841f, 0.038236815f, 0.25f,
+     -1.0f, 1.5f, 0.9f, 0.0f, 10.4f, 1.18f, 20.0f, 89.0f},
+    {0.614f, 1.61375f, 553.0f, 1.0f, 3.0f, 1.513688f, 0.12f, 0.45f, 2.0f, 142.0f, 2.5f, 0.0005f, 2.97f, 1.0f, 0.03f, 0.5f, 0.0f, 1.5f, 0.9f, 1.0f,
+     10.4f, 1.18f, 20.0f, 89.0f},
+    {0.614f, 1.61375f, 553.0f, 1.0f, 3.0f, 1.513688f, 0.12f, 0.45f, 2.0f, 337.7348f, 2.5f, 0.0003535534f, 2.97f, 1.0f, 0.03f, 0.5f, 0.0f, 0.75f,
+     0.29999995f, 1.0f, 10.4f, 1.18f, 20.0f, 89.0f},
+    {0.614f, 1.61375f, 553.0f, 1.0f, 3.0f, 0.5f, 0.12f, 0.45f, 2.0f, 84.4337f, 2.5f, 0.00061557227f, 2.97f, 1.0f, 0.03f, 0.5f, 1.0f, 1.2183785f,
+     0.71999997f, 0.0f, 10.4f, 1.18f, 20.0f, 89.0f},
+};
+
 }  // namespace
 
-// every preset by name and in order; its shape pianoOf(its vector) to the
-// bit, its accessor's the same object; each knob inside -1 .. 1 and read back
-// by knobsOf within 1e-3; its range in order and inside the keyboard
-UP_TEST(presets_are_vectors) {
+// every preset by name and in order; its shape's instrument channels its
+// table to the bit, the tine's t60 and load 10.4 s and 1.18, the partial and
+// player channels nan, its accessor's the same object; its range in order
+// and inside the keyboard; the tool's anchors the presets of their names
+UP_TEST(presets_are_tables) {
     const char* names[9] = {"grand", "concertGrand", "upright", "spinet", "honkyTonk", "fortepiano", "rhodes", "rhodesBark", "wurlitzer"};
     const Shape* shapes[9] = {&grand(), &concertGrand(), &upright(), &spinet(), &honkyTonk(), &fortepiano(), &rhodes(), &rhodesBark(), &wurlitzer()};
     CHECK(presetCount() == 9);
     for (int i = 0; i < presetCount(); ++i) {
         const PresetInfo& p = presetAt(i);
         CHECK_MSG(std::strcmp(p.name, names[i]) == 0 && presetByName(names[i]) == &p, "%s", names[i]);
-        const Shape s = pianoOf(p.knobs);
-        bool bits = &p.shape() == shapes[i];
-        for (int c = 0; c < kChannelCount; ++c) bits = bits && sameBits(s.v[c], p.shape().v[c]);
-        CHECK_MSG(bits, "%s's shape is not pianoOf(its vector)", p.name);
-        const Knobs back = knobsOf(p.shape());
-        double worst = 0.0;
-        bool inside = p.lo < p.hi && p.lo >= 21 && p.hi <= 108;
-        for (int k = 0; k < kKnobCount; ++k) {
-            inside = inside && p.knobs.v[k] >= -1.0f && p.knobs.v[k] <= 1.0f;
-            worst = std::fmax(worst, std::fabs(back.v[k] - p.knobs.v[k]));
-        }
-        CHECK_MSG(inside && worst <= 1e-3, "%s: a knob or the range outside, or read back %.3g off", p.name, worst);
+        const Shape& s = p.shape();
+        bool bits = &s == shapes[i] && s[Channel::tineT60] == 10.4f && s[Channel::tineLoad] == 1.18f;
+        for (int c = 0; c < kInstrumentChannels; ++c) bits = bits && sameBits(s.v[c], kTables[i][c]);
+        for (int c = kInstrumentChannels; c < kChannelCount; ++c) bits = bits && s.v[c] != s.v[c];
+        CHECK_MSG(bits, "%s's shape is not its table", p.name);
+        CHECK_MSG(p.lo < p.hi && p.lo >= 21 && p.hi <= 108, "%s: its range %d .. %d", p.name, p.lo, p.hi);
     }
     CHECK(presetByName("piano") == nullptr && presetByName(nullptr) == nullptr);
-    PresetInfo copy = presetAt(2);
+    const PresetInfo copy = presetAt(2);
     CHECK(&copy.shape() == &upright());
-    copy.knobs.v[0] = 0.5f;
-    const Shape other = pianoOf(copy.knobs);
-    CHECK(std::memcmp(&copy.shape(), &other, sizeof(Shape)) == 0);
     // the tool's anchors are the presets of their names
-    for (int a = 0; a < kAnchorCount; ++a) CHECK(std::memcmp(&knobAnchors()[a].k, &presetByName(knobAnchors()[a].name)->knobs, sizeof(Knobs)) == 0);
+    for (int a = 0; a < kAnchorCount; ++a)
+        CHECK(std::memcmp(&anchors()[a].s, &presetByName(anchors()[a].name)->shape(), sizeof(Shape)) == 0);
 }
 
-// every preset sounds at every semitone of its range: 2 s at velocity 1, its
-// level undone in the gain: every sample finite and the peak over
-// kSoundPeak, 0.022 (checks); through the board the last 100 ms's rms under
-// the first 100 ms's (the board's low modes ring up over the first 0.3 s, so
-// a short render can end in their bloom: known, naming the notes, where
-// missed), and there the strings themselves (the voice's pair before the
-// board) fall (a check)
+// every preset sounds at every semitone of its range: 2 s at velocity 1, at
+// the gain that brings its octave from c4 to grand's (hearOctave, measured:
+// the reed's is 16 db under): every sample finite and the peak over
+// kSoundPeak, 0.022 (checks); through
+// the board the last 100 ms's rms under the first 100 ms's (the board's low
+// modes ring up over the first 0.3 s, so a short render can end in their
+// bloom: known, naming the notes, where missed), and there the strings
+// themselves (the voice's pair before the board) fall (a check)
 UP_TEST(presets_sound_across_their_ranges) {
     int notes = 0, sounding = 0;
     std::string bloom;
@@ -81,8 +99,10 @@ UP_TEST(presets_sound_across_their_ranges) {
         double lowPeak = 1e9, highPeak = 0.0;
         int lowAt = p.lo, highAt = p.lo;
         std::string dead, strings;
+        Tuning t;
+        t.outputGain = (float)std::pow(10.0, -hearOctave(p.shape()).level / 20.0);
         for (int midi = p.lo; midi <= p.hi; ++midi) {
-            const Heard h = hearVector(p.knobs, (float)midi, 2.0f, true);
+            const Heard h = hearShape(p.shape(), (float)midi, 2.0f, t);
             ++notes;
             sounding += h.sounds.sounds;
             if (h.sounds.peak < lowPeak) {
@@ -108,52 +128,31 @@ UP_TEST(presets_sound_across_their_ranges) {
         }
         CHECK_MSG(dead.empty(), "%s does not sound at%s", p.name, dead.c_str());
         CHECK_MSG(strings.empty(), "%s: the strings do not fall at%s", p.name, strings.c_str());
-        printf("    %-13s %3d .. %3d: every semitone finite and over %.3f; the quietest peak %.3f at %d, the loudest %.3f at %d (undone)\n", p.name, p.lo,
-               p.hi, kSoundPeak, lowPeak, lowAt, highPeak, highAt);
+        printf("    %-13s %3d .. %3d at a gain of %.3f: every semitone finite and over %.3f; the quietest peak %.3f at %d, the loudest %.3f at %d\n",
+               p.name, p.lo, p.hi, t.outputGain, kSoundPeak, lowPeak, lowAt, highPeak, highAt);
     }
     KNOWN_FAILURE(bloom.empty(), "through the board the last 100 ms of 2 s over the first at:%s", bloom.c_str());
     printf("    %d of %d notes sound by every part of the reading\n", sounding, notes);
 }
 
-// the presets' levels undone by levelDb, each read as the level table reads
-// a cell (up_play.h: the octave's twelve notes, each 0.6 s at velocity 1, the
-// first half second's rms, the mean of the twelve powers, against grand's
-// octave): from c4 within 3 db of each other, and from each preset's middle
-// note within 4 db (known, with the numbers, where missed: the table reads
-// the octave from c4, and a board's level moves with the octave); the single
-// notes (c4, the middle) printed beside
-UP_TEST(presets_levels_undone) {
+// each preset's loudness: its octave from c4 (up_play.h: the twelve notes,
+// each 0.6 s at velocity 1, the first half second's rms, the mean of the
+// twelve powers) against grand's, db: none over grand's by more than 3 db,
+// the string presets within 10 db under it, the tine's and the reed's within
+// 20 (the reed's sits 16 db under, as measured); the octave from each
+// preset's middle note and c4 alone printed beside
+UP_TEST(presets_levels) {
     const double ref = levelReferenceRms();
-    double lo = 1e9, hi = -1e9, mlo = 1e9, mhi = -1e9, slo = 1e9, shi = -1e9, smlo = 1e9, smhi = -1e9, rawLo = 1e9, rawHi = -1e9;
-    const char *loAt = "", *hiAt = "", *mloAt = "", *mhiAt = "";
     for (int i = 0; i < presetCount(); ++i) {
         const PresetInfo& p = presetAt(i);
         const int mid = (p.lo + p.hi) / 2;
-        const double table = levelDb(p.knobs);
-        const double level = hearOctave(p.knobs).level, undone = level - table;
-        const double midUndone = hearOctave(p.knobs, (float)mid).undone;
-        const double one = 20.0 * std::log10(levelReading(p.shape()).rms / ref) - table;
-        const double midOne = 20.0 * std::log10(levelReading(p.shape(), (float)mid).rms / ref) - table;
-        if (undone < lo) { lo = undone; loAt = p.name; }
-        if (undone > hi) { hi = undone; hiAt = p.name; }
-        if (midUndone < mlo) { mlo = midUndone; mloAt = p.name; }
-        if (midUndone > mhi) { mhi = midUndone; mhiAt = p.name; }
-        slo = std::fmin(slo, one);
-        shi = std::fmax(shi, one);
-        smlo = std::fmin(smlo, midOne);
-        smhi = std::fmax(smhi, midOne);
-        rawLo = std::fmin(rawLo, level);
-        rawHi = std::fmax(rawHi, level);
-        printf("    %-13s the octave from c4 %+6.2f db, levelDb %+6.2f, undone %+6.2f (c4 alone %+6.2f); from its middle (%s) undone %+6.2f (alone "
-               "%+6.2f)\n",
-               p.name, level, table, undone, one, noteName(mid).c_str(), midUndone, midOne);
+        const OctaveHeard o = hearOctave(p.shape()), m = hearOctave(p.shape(), (float)mid);
+        const double one = 20.0 * std::log10(levelReading(p.shape()).rms / ref);
+        const bool string = p.shape()[Channel::generator] == -1.0f;
+        CHECK_MSG(o.level <= 3.0 && o.level >= (string ? -10.0 : -20.0), "%s: the octave from c4 %+.2f db against grand's", p.name, o.level);
+        printf("    %-13s the octave from c4 %+6.2f db against grand's (its peak %.3f), c4 alone %+6.2f; from its middle (%s) %+6.2f\n", p.name, o.level,
+               o.peak, one, noteName(mid).c_str(), m.level);
     }
-    CHECK_MSG(hi - lo <= 3.0, "the presets' octaves from c4 undone spread %.2f db (%s %+.2f, %s %+.2f)", hi - lo, loAt, lo, hiAt, hi);
-    KNOWN_FAILURE(mhi - mlo <= 4.0, "the presets' octaves from their middles undone spread %.2f db (%s %+.2f, %s %+.2f; the table is c4's octave)",
-                  mhi - mlo, mloAt, mlo, mhiAt, mhi);
-    printf("    undone, as octaves: from c4 %.2f db from %s to %s (before undoing %.2f), from their middles %.2f db; as single notes: c4 %.2f, the "
-           "middles %.2f\n",
-           hi - lo, loAt, hiAt, rawHi - rawLo, mhi - mlo, shi - slo, smhi - smlo);
 }
 
 // honkyTonk beats faster than upright: the beat rate on the fundamental at c4
@@ -217,20 +216,20 @@ UP_TEST(presets_b_against_their_tables) {
     }
 }
 
-// print's line for each preset (uptool print --preset NAME) reads back to its
-// name, its vector to the bit and its range
+// print's --set lines for each preset (uptool print --preset NAME) read back
+// onto a nan shape to its instrument channels to the bit, and nothing else
 UP_TEST(presets_print_round_trips) {
     int same = 0;
     for (int i = 0; i < presetCount(); ++i) {
         const PresetInfo& p = presetAt(i);
-        const std::string line = knobLine(p.name, p.knobs, p.lo, p.hi);
-        std::string name;
-        Knobs back{};
-        int lo = 0, hi = 0;
-        bool ok = parseKnobLine(line, name, back, lo, hi) && name == p.name && lo == p.lo && hi == p.hi;
-        for (int k = 0; k < kKnobCount; ++k) ok = ok && sameBits(back.v[k], p.knobs.v[k]);
-        CHECK_MSG(ok, "%s does not read back", line.c_str());
+        const std::string lines = setLines(p.shape());
+        Shape back = nanShape();
+        bool ok = parseSetLines(lines, back);
+        for (int c = 0; c < kChannelCount; ++c) ok = ok && (c < kInstrumentChannels ? sameBits(back.v[c], p.shape().v[c]) : back.v[c] != back.v[c]);
+        CHECK_MSG(ok, "%s does not read back from:\n%s", p.name, lines.c_str());
         same += ok;
     }
-    printf("    %d of %d preset lines read back to the bit\n", same, presetCount());
+    Shape bad = nanShape();
+    CHECK(!parseSetLines("--set nope=1", bad) && !parseSetLines("--set length=", bad) && !parseSetLines("--set length=1x", bad));
+    printf("    %d of %d presets' --set lines read back to the bit\n", same, presetCount());
 }

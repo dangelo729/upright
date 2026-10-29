@@ -6,7 +6,7 @@
 #   reliability degrades above a5 and missing keys had estimates above the plot range. keys above g#5 are kept as comments only.
 # units: midi = key number (a0 = 21), b dimensionless (f_n = n f0 sqrt(1 + b n^2))
 # kind: B
-# hold: scale=1 (a concert grand: the constants' fit holds it at the scale knob's +1 end)
+# hold: length=0.626901448 bass=2.13304901 (a concert grand: the constants' fit holds its strings there)
 # columns: midi B
 21 1.45e-4   # A0
 22 1.38e-4   # Bb0

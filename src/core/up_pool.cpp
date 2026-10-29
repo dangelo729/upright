@@ -124,8 +124,6 @@ void PoolBase::setShape(const Shape& s) {
     for (int i = 0; i < m_; ++i) v_[i].setShape(s);
 }
 
-void PoolBase::setKnobs(const Knobs& k) { setShape(pianoOf(k, tuning_)); }
-
 void PoolBase::setPartial(int k, float ratio, float t60, float gain, float out) {
     for (int i = 0; i < m_; ++i) v_[i].setPartial(k, ratio, t60, gain, out);
 }

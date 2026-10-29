@@ -1,8 +1,8 @@
 // upright — uptool.cpp  (plan §15)
 // the one cli.
 //
-//   uptool partials --knob NAME=VALUE ... | --preset NAME [--zero] [--midi M] [--set CHANNEL=VALUE ...] [--tune NAME=VALUE]
-//       the law's partial table at midi M (60) for a vector: slot, partial,
+//   uptool partials [--preset NAME] [--set CHANNEL=VALUE ...] [--midi M] [--tune NAME=VALUE]
+//       the law's partial table at midi M (60) for a piano: slot, partial,
 //       ratio to f0, hz, cents off the harmonic n f0, t60 at the note (the
 //       law's x the rank's t60Scale), gain, out, on or off (the ceiling); and
 //       the rank's line (L, d, wrapped, mu, Z, B, the hammer's mass, the
@@ -10,14 +10,14 @@
 //       before the law and on a partial channel after it
 //   uptool partials --table FILE
 //       a reference table's partials as read (extras/reference/), placed on
-//       slots by partial number, beside the law's at the table's vector
-//   uptool string --knob ... [--from M --to M]
+//       slots by partial number, beside the law's at the shape its fit finds
+//   uptool string ... [--from M --to M]
 //       the rank across the keyboard, a row a semitone (21 .. 108): f0, L, d,
 //       wrapped, mu, Z, B, the hammer's mass, its felt's K and p at the
 //       note (the rank's hardnessScale and pAdd), the strike share, the damper;
 //       B against each B table's note in percent where it has the note; the
 //       bass break (the lowest plain-wire note)
-//   uptool hammer --knob ... [--midi M --vel V]
+//   uptool hammer ... [--midi M --vel V]
 //       the contact alone through the offline simulator (up_contact.h) at
 //       32 fs, the truth: the force every 0.1 ms, the contact length, the
 //       peak, the impulse, the hammer's momentum change, the force's spectrum
@@ -27,14 +27,14 @@
 //       substeps, the loss implicit) and the truth, kth's c4 contact beside;
 //       the felt table's c^p against powf's, its worst relative error over
 //       0.01 .. 4 mm
-//   uptool pickup --knob ... [--amp A] [--from-hammer --midi M --vel V]
-//       the curve C(x) and C'(x) over ±3 mm at the vector's gap and offset
+//   uptool pickup ... [--amp A] [--from-hammer --midi M --vel V]
+//       the curve C(x) and C'(x) over ±3 mm at the piano's gap and offset
 //       (magnetic, electrostatic, and the one curve at the generator); a sine
 //       of amplitude A mm (0.2) through the voltage: harmonics 1 .. 8 in db
 //       and the thd; a ladder of amplitudes 0.05, 0.1, 0.2, 0.5, 1, 2 mm.
 //       --from-hammer: the tip from the simulator at --vel over the first 100
 //       ms after the hammer leaves, in place of the sine
-//   uptool board --knob ... [--sweep --out FILE]
+//   uptool board ... [--sweep --out FILE]
 //       the plate's modes: m, n, hz, t60, radiation; the bridge-line weights
 //       per octave (a0, a1 .. a7, c8); the listening weights; the radiation's
 //       -3 db low edge; the shelf: the top mode, kBoardShelf, the infinite
@@ -45,61 +45,58 @@
 //       matches, the energy's arrival for 1 N at c4's bridge point, the
 //       swept transfer's means over f_top / 2 .. f_top, 2 .. 4 and 4 .. 8
 //       f_top with the field and with the modes alone, a flat shelf's level.
-//       --sweep: the transfer at 1/12 octave from 20 hz to 10 khz at body
-//       -1, 0 and +1 into FILE (board_sweep.txt)
-//   uptool print --knob ... | --preset NAME [--shape]
-//       the vector as an up_presets.cpp line, {"vector", {sc, ha, st, un, bo,
-//       ge, pi, da}, 21, 108},; a preset's own line, its name and range;
-//       --shape every instrument channel the recipe writes and the read-back
+//       --sweep: the transfer at 1/12 octave from 20 hz to 10 khz at the
+//       spinet's, grand's and the concert grand's boards into FILE
+//       (board_sweep.txt)
+//   uptool print [--preset NAME] [--set CHANNEL=VALUE ...]
+//       the piano's twenty-four instrument channels as --set lines, a line a
+//       group, each value read back to the same bits
 //   uptool random [--seed S --count N --midi M]
-//       N vectors uniform in the box, each as print prints it, with its B at
-//       the note, its first partial's t60, its 8th partial's gain in db and
-//       its strings count; each heard 2 s at M (60), velocity 1, its level
-//       undone in the gain: the peak, the first half second's rms against
-//       grand's octave, levelDb, the level undone, sounds or not (the peak
-//       over 0.022, the last 100 ms's rms under the first 100 ms's, finite);
-//       beside it the octave from M up as the level table reads one, and
-//       that undone; both undone levels' spread over the N
-//   uptool fit --table FILE [--lock KNOB=V ...] [--set CHANNEL=VALUE ...]
-//       the vector nearest a reference table (up_fit.h: by kind, the scale
-//       for B and decay tables, the hammer for a hammer table, the generator
-//       for a tine table; a grid in fifths, then descent to 0.01): the
-//       vector, each entry's residual, the line; the vector heard as random
-//       hears it
+//       N pianos, each instrument channel drawn inside its span (log-uniform
+//       where the span is log, uniform otherwise: up_fit.h's channelSpan),
+//       each as print prints it, with its B at the note, its first partial's
+//       t60, its 8th partial's gain in db and its strings count; each heard
+//       2 s at M (60), velocity 1: the peak, the first half second's rms
+//       against grand's octave, sounds or not (the peak over 0.022, the last
+//       100 ms's rms under the first 100 ms's, finite); beside it the octave
+//       from M up against grand's; both levels' spread over the N
+//   uptool fit --table FILE [--set CHANNEL=VALUE ...]
+//       the shape nearest a reference table (up_fit.h: by kind, length and
+//       bass for B and decay tables, the hardness for a hammer table, the
+//       generator and tineT60 for a tine table, each along its span; a grid
+//       in fifths, then descent to 0.001; a channel --set names is held
+//       there): the channels found, each entry's residual, the --set lines;
+//       the shape heard as random hears it
 //   uptool fit --constants --tables DIR [--kind KIND] [--out FILE] [--fix NAME,...]
-//       the LawConstants against every table in DIR at once (--kind: those of
-//       one kind; those --fix names held where they stand): each table its
-//       own vector, the constants by coordinate descent on the sum of the
-//       tables' errors, the tables refitted until it settles; the constants
-//       and each table's residual before and after, each B table's own best
-//       tension; the proposed block into FILE (constants.txt).
+//       the LawConstants and the channels every table shares (tension,
+//       lossRate, lossSlope, hardness, exponent, hammerMass) against every
+//       table in DIR at once (--kind: those of one kind; those --fix names
+//       held where they stand): each table its own shape at its holds, the
+//       constants and the shared channels by coordinate descent on the sum
+//       of the tables' errors, the tables refitted until it settles; the
+//       values and each table's residual before and after, each B table's
+//       own best tension; the proposed values into FILE (constants.txt).
 //       nothing in src/ changes
 //   uptool chart [DIR]
-//       each knob alone in tenths at the three anchors (grand, rhodes,
-//       wurlitzer) and the pairs scale x hammer, strike x unison, body x
-//       scale at grand, generator x pickup, hammer x pickup at rhodes, in
-//       fifths, as text tables into DIR; summary.txt, the cells that fail a
-//       check; floors.txt, the audibility floors the table and the simulator
-//       can read. each cell's strikes at c4 through the engine's scheme
-//       (velocity 0.3 and 1) and the truth (velocity 1): contact, peak, band;
-//       the electric side's thd from the engine's tip
+//       each instrument channel alone at 21 points along its span at the
+//       three anchors (grand, rhodes, wurlitzer) and the pairs bass x
+//       hardness, strikeShare x detune, boardArea x bass at grand,
+//       generator x gap, hardness x gap at rhodes, in fifths of their spans,
+//       as text tables into DIR; summary.txt, the cells that fail a check;
+//       floors.txt, the audibility floors the table and the simulator can
+//       read across named spans of the channels. each cell's strikes at c4
+//       through the engine's scheme (velocity 0.3 and 1) and the truth
+//       (velocity 1): contact, peak, band; the electric side's thd from the
+//       engine's tip
 //   uptool chart --audio [DIR]
-//       the 1-d sweeps (each knob in tenths at the three anchors) rendered
-//       2 s at velocity 1, c4 (e3 at rhodes and wurlitzer): the table's 10th
-//       partial's cents, fundamental's t60, contact, peak and thd beside the
-//       render's (the tracker, the telemetry, play's thd), audio_KNOB.txt
-//       each, and audio_summary.txt with the worst disagreements
-//   uptool level [--write] [--out PATH]
-//       the level table measured (up_play.h): grand over the octave c4 ..
-//       b4, each note at velocity 1, 0.6 s as play renders it, its first
-//       half second's rms, the octave the mean of the twelve powers; each
-//       knob alone at eleven points about the generator's four anchors
-//       (string, middle, tine, reed), db against the anchor's own level, the
-//       generator's row once against the reference; each cell's largest
-//       peak, the run time; --write writes src/core/up_level_table.inc (or
-//       PATH)
-//   uptool play --preset NAME | --knob ... | --table FILE [--midi M --vel V --sec S --off-at S --restrike-at S
-//               --pedal --pedal-off-at S --glide-to M2 [--glide-at S --glide-sec S] --undo-level -o x.wav --png p.png]
+//       the 1-d sweeps (each instrument channel at 21 points along its span
+//       at the three anchors) rendered 2 s at velocity 1, c4 (e3 at rhodes
+//       and wurlitzer): the table's 10th partial's cents, fundamental's t60,
+//       contact, peak and thd beside the render's (the tracker, the
+//       telemetry, play's thd), audio_CHANNEL.txt each, and
+//       audio_summary.txt with the worst disagreements
+//   uptool play [--preset NAME | --table FILE] [--midi M --vel V --sec S --off-at S --restrike-at S
+//               --pedal --pedal-off-at S --glide-to M2 [--glide-at S --glide-sec S] -o x.wav --png p.png]
 //       one note through a voice and a board of its own (up_play.h), S
 //       seconds (4): the law's table beside what the voice's pair shows
 //       (each partial's measured hz and cents off the table, its level, its
@@ -107,37 +104,30 @@
 //       second's rms, the first three partials' t60s, the beat and the two
 //       slopes on the fundamental, the hammer's contact and peak force (the
 //       telemetry), the thd on the electric side, the release's t60, the
-//       sleep. --table: a tine table set whole over the vector (rhodes's when
-//       none is named). --undo-level: the level table undone in the gain
-//       (outputGain x 10^(-levelDb / 20)). a render that peaks over full
-//       scale is written to the wav at the gain that brings it to 0.99, and
-//       the gain printed
+//       sleep. --table: a tine table set whole over the piano (rhodes's when
+//       no preset is named). a render that peaks over full scale is written
+//       to the wav at the gain that brings it to 0.99, and the gain printed
 //   uptool corpus DIR [--tune NAME=VALUE ...]
 //       the byte baseline: the three anchors at 36, 60, 84 at velocity 0.5
 //       and 1; grand at 60 re-struck at 1 s, released at 1 s, released
 //       under the pedal (up at 2.5 s), gliding to 67 from 1 s over 2 s;
 //       rhodes at 52 and 64; wurlitzer at 57; the measured tine whole at 64;
 //       every preset at the bottom, middle and top of its range at velocity
-//       0.5 and 1, the level table undone (preset_NAME_MIDI_vVEL); 4 s each;
-//       and a Pool<4> of grand, 6 s each: a chord (c3 e3 g3 c4, the pedal
-//       from 2 s, the keys up at 3 s) and five keys on four voices (the
-//       fifth steals the quietest): a wav and a png each, index.txt with what
-//       play read (for the pool: the calls, the peak, the steal). --tune
-//       lands on every render (a preset's gain over it, the pool's tuning)
+//       0.5 and 1 (preset_NAME_MIDI_vVEL); 4 s each; and a Pool<4> of grand,
+//       6 s each: a chord (c3 e3 g3 c4, the pedal from 2 s, the keys up at
+//       3 s) and five keys on four voices (the fifth steals the quietest): a
+//       wav and a png each, index.txt with what play read (for the pool: the
+//       calls, the peak, the steal). --tune lands on every render
 //   uptool size
 //       sizeof(up::Voice) by part; the board; the pending table; Pool<4> and
 //       Pool<8>
 //
-// on every command: --knob NAME=VALUE ... (scale, hammer, strike, unison,
-// body, generator, pickup, damper, each -1 .. 1; repeatable, each taking
-// every pair up to the next option, by spaces or commas; a knob not named is
-// grand's: 0, the generator -1)  --preset NAME (up_presets.h: grand,
-// concertGrand, upright, spinet, honkyTonk, fortepiano, rhodes, rhodesBark,
-// wurlitzer; a --knob after it wins)  --zero (all eight at 0)  --set
-// CHANNEL=VALUE (any channel, up_channels.h)  --tune NAME=VALUE (any Tuning
-// field)  --midi M.
+// on every command the piano is grand, or --preset NAME (up_presets.h:
+// grand, concertGrand, upright, spinet, honkyTonk, fortepiano, rhodes,
+// rhodesBark, wurlitzer), with --set CHANNEL=VALUE ... over it (any channel,
+// up_channels.h; repeatable, each taking every pair up to the next option,
+// by spaces or commas); --tune NAME=VALUE (any Tuning field); --midi M.
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -151,10 +141,10 @@
 #include "core/up_board.h"
 #include "core/up_channels.h"
 #include "core/up_hammer.h"
-#include "core/up_knobs.h"
 #include "core/up_law.h"
 #include "core/up_pickup.h"
 #include "core/up_pool.h"
+#include "core/up_presets.h"
 #include "core/up_rank.h"
 #include "core/up_voice.h"
 #include "up_analysis.h"
@@ -169,18 +159,16 @@ using namespace up;
 namespace {
 
 struct Args {
-    Knobs knobs = knobAnchors()[0].k;
-    const PresetInfo* preset = nullptr;
-    bool  shapeOut = false, constants = false, fromHammer = false, sweep = false, write = false, audio = false, undoLevel = false;
+    const PresetInfo* preset = nullptr;          // the piano: grand when none is named
+    bool  constants = false, fromHammer = false, sweep = false, audio = false;
     Spec  sets;
     Tuning tuning;
     float midi = 60.0f, vel = 1.0f, amp = 0.2f;
     float from = 21.0f, to = 108.0f;
     float sec = -1.0f, offAt = -1.0f, restrikeAt = -1.0f, pedalOffAt = -1.0f;
     float glideTo = -1.0f, glideAt = 1.0f, glideSec = -1.0f;
-    bool  pedal = false, knobsGiven = false;
+    bool  pedal = false;
     std::string table, tables, out, dir, fix, kind, wav, png;
-    FitSpec lock;
     uint32_t seed = 1;
     int count = 8;
 };
@@ -204,7 +192,7 @@ bool parsePair(const std::string& token, Channel& c, float& v) {
         std::fprintf(stderr, "no channel named '%s'\n", token.substr(0, eq).c_str());
         return false;
     }
-    v = (float)std::atof(token.c_str() + eq + 1);
+    v = std::strtof(token.c_str() + eq + 1, nullptr);
     return true;
 }
 
@@ -227,27 +215,6 @@ bool parseSpec(const std::string& text, Spec& out) {
     return true;
 }
 
-// name=value pairs of knobs, by spaces or commas, into a vector (and a lock's flags)
-bool parseKnobs(const std::string& text, Knobs& out, bool* flags = nullptr) {
-    std::string token;
-    for (size_t i = 0; i <= text.size(); ++i) {
-        const char ch = i < text.size() ? text[i] : ' ';
-        if (ch != ' ' && ch != ',' && ch != '\t') { token += ch; continue; }
-        if (token.empty()) continue;
-        const size_t eq = token.find('=');
-        Knob k;
-        if (eq == std::string::npos || !knobByName(token.substr(0, eq).c_str(), k)) {
-            std::fprintf(stderr, "no knob named '%s' (scale, hammer, strike, unison, body, generator, pickup, damper)\n",
-                         token.substr(0, eq).c_str());
-            return false;
-        }
-        out.v[(int)k] = (float)std::atof(token.c_str() + eq + 1);
-        if (flags) flags[(int)k] = true;
-        token.clear();
-    }
-    return true;
-}
-
 bool parseTune(const char* text, Tuning& t) {
     const char* eq = std::strchr(text, '=');
     if (!eq) return false;
@@ -265,18 +232,7 @@ bool parseArgs(int argc, char** argv, int first, Args& a) {
         auto next = [&](const char*& v) { if (i + 1 >= argc) return false; v = argv[++i]; return true; };
         auto more = [&]() { return i + 1 < argc && std::strncmp(argv[i + 1], "--", 2) != 0; };
         const char* v = nullptr;
-        if (s == "--knob") {
-            a.knobsGiven = true;
-            if (!next(v) || !parseKnobs(v, a.knobs)) return false;
-            while (more()) if (!parseKnobs(argv[++i], a.knobs)) return false;
-        } else if (s == "--lock") {
-            Knobs at{};
-            bool flags[kKnobCount] = {};
-            if (!next(v) || !parseKnobs(v, at, flags)) return false;
-            while (more()) if (!parseKnobs(argv[++i], at, flags)) return false;
-            for (int k = 0; k < kKnobCount; ++k)
-                if (flags[k]) { a.lock.locked[k] = true; a.lock.lockAt[k] = knobHeld(at.v[k]); }
-        } else if (s == "--preset") {
+        if (s == "--preset") {
             if (!next(v)) return false;
             a.preset = presetByName(v);
             if (!a.preset) {
@@ -285,11 +241,6 @@ bool parseArgs(int argc, char** argv, int first, Args& a) {
                 std::fprintf(stderr, ")\n");
                 return false;
             }
-            a.knobs = a.preset->knobs;
-            a.knobsGiven = true;
-        } else if (s == "--zero") {
-            a.knobs = Knobs{};
-            a.knobsGiven = true;
         } else if (s == "--set") {
             if (!next(v) || !parseSpec(v, a.sets)) return false;
             while (more()) if (!parseSpec(argv[++i], a.sets)) return false;
@@ -315,12 +266,9 @@ bool parseArgs(int argc, char** argv, int first, Args& a) {
         else if (s == "-o") { if (!next(v)) return false; a.wav = v; }
         else if (s == "--png") { if (!next(v)) return false; a.png = v; }
         else if (s == "--constants") { a.constants = true; }
-        else if (s == "--shape") { a.shapeOut = true; }
         else if (s == "--from-hammer") { a.fromHammer = true; }
         else if (s == "--sweep") { a.sweep = true; }
-        else if (s == "--write") { a.write = true; }
         else if (s == "--audio") { a.audio = true; }
-        else if (s == "--undo-level") { a.undoLevel = true; }
         else if (s == "--seed") { if (!next(v)) return false; a.seed = (uint32_t)std::strtoul(v, nullptr, 10); }
         else if (s == "--count") { if (!next(v)) return false; a.count = std::atoi(v); }
         else if (s.compare(0, 2, "--") != 0 && a.dir.empty()) { a.dir = s; }
@@ -329,11 +277,27 @@ bool parseArgs(int argc, char** argv, int first, Args& a) {
     return true;
 }
 
-std::string vectorText(const Knobs& k) {
-    char b[200];
-    std::snprintf(b, sizeof b, "scale %+.2f hammer %+.2f strike %+.2f unison %+.2f body %+.2f generator %+.2f pickup %+.2f damper %+.2f",
-                  k.v[0], k.v[1], k.v[2], k.v[3], k.v[4], k.v[5], k.v[6], k.v[7]);
-    return b;
+// the piano the arguments name: the preset's shape (grand's when none), --set's instrument channels over it
+Shape pianoShape(const Args& a) { return withSets(a.preset ? a.preset->shape() : grand(), a.sets); }
+
+// the piano as a reader sees it: the preset, and the channels --set writes
+std::string pianoText(const Args& a) {
+    std::string t = a.preset ? a.preset->name : "grand";
+    for (const auto& p : a.sets) t += std::string(" ") + channelName(p.first) + "=" + floatText(p.second);
+    return t;
+}
+
+// a shape with channels written over it
+Shape with(Shape s, std::initializer_list<std::pair<Channel, float>> sets) {
+    for (const auto& p : sets) s[p.first] = p.second;
+    return s;
+}
+
+// channels of a shape as NAME=V, by spaces
+std::string channelsText(const Shape& s, const std::vector<Channel>& which) {
+    std::string t;
+    for (Channel c : which) t += std::string(t.empty() ? "" : " ") + channelName(c) + "=" + floatText(s[c]);
+    return t;
 }
 
 void makeDirs(const std::string& path) {
@@ -355,15 +319,15 @@ std::vector<RefTable> refTables(const char* kind = nullptr) {
     return out;
 }
 
-// the vector's instrument with --set over it, the rank and the table at the note
+// a shape with --set over it, the rank and the table at the note
 struct At {
     Shape s;
     RankState r;
     PartialTable p;
 };
-At atNote(const Knobs& k, const Spec& sets, float midi, const Tuning& t = Tuning(), const LawConstants& c = lawConstants()) {
+At atNote(const Shape& base, const Spec& sets, float midi, const Tuning& t = Tuning(), const LawConstants& c = lawConstants()) {
     At a;
-    a.s = shapeOf(k, c, sets, t);
+    a.s = withSets(base, sets);
     a.r = rankAt(a.s, midi, c);
     a.p = partialsAt(a.s, a.r, c, sets, t);
     return a;
@@ -393,8 +357,8 @@ int cmdPartialsTable(const Args& a);
 int cmdPartials(const Args& a) {
     if (!a.table.empty()) return cmdPartialsTable(a);
     const Tuning t = clamped(a.tuning);
-    const At x = atNote(a.knobs, a.sets, a.midi, t);
-    std::printf("%s\n", vectorText(a.knobs).c_str());
+    const At x = atNote(pianoShape(a), a.sets, a.midi, t);
+    std::printf("%s\n", pianoText(a).c_str());
     printRank(x.r, a.midi);
     std::printf("strings %.3f (capped %.3f), detune %.2f cents, generator %+.2f, ceiling %.0f hz\n", x.s[Channel::strings],
                 stringsOf(x.s), x.s[Channel::detune], x.s[Channel::generator], t.ceiling * kDefaultFs);
@@ -417,9 +381,9 @@ int cmdPartialsTable(const Args& a) {
     std::printf("%s\n  source: %s\n%s%s  units: %s, kind %s\n", t.title.c_str(), t.source.c_str(), t.via.empty() ? "" : "  via: ",
                 t.via.empty() ? "" : (t.via + "\n").c_str(), t.units.c_str(), t.kind.c_str());
     if (t.kind == "tine") {
-        const KnobFit f = fitTable(t, lawConstants(), FitSpec());
-        const At x = atNote(f.k, Spec(), (float)tableMidi(t));
-        std::printf("measured at %s; the law at %s\n", noteName(tableMidi(t)).c_str(), vectorText(f.k).c_str());
+        const ChannelFit f = fitTable(t, lawConstants());
+        const At x = atNote(f.s, Spec(), (float)tableMidi(t));
+        std::printf("measured at %s; the law at rhodes with %s\n", noteName(tableMidi(t)).c_str(), channelsText(f.s, f.free).c_str());
         std::printf("slot  partial  ratio (table)  ratio (law)   cents   t60 (table)  t60 (law)\n");
         for (const TinePoint& p : tinePoints(t)) {
             const int k = p.partial - 1;
@@ -429,8 +393,8 @@ int cmdPartialsTable(const Args& a) {
                         p.t60 > 0.0 ? std::to_string(p.t60).substr(0, 8).c_str() : "-", x.p.t60[k] * x.r.t60Scale);
         }
     } else if (t.kind == "decay") {
-        const KnobFit f = fitTable(t, lawConstants(), FitSpec());
-        std::printf("the law at %s\n", vectorText(f.k).c_str());
+        const ChannelFit f = fitTable(t, lawConstants());
+        std::printf("the law at grand with %s\n", channelsText(f.s, f.free).c_str());
         std::printf("note   slot partial  t60 (table)  t60 (law)  log2\n");
         for (const Residual& r : f.error.items) std::printf("%-22s %10.3f %10.3f %+6.2f\n", r.label.c_str(), r.ref, r.law, r.err);
     } else if (t.kind == "B") {
@@ -448,9 +412,9 @@ int cmdPartialsTable(const Args& a) {
 // ---- string ----------------------------------------------------------------------------------------
 
 int cmdString(const Args& a) {
-    const Shape s = shapeOf(a.knobs, lawConstants(), a.sets, clamped(a.tuning));
+    const Shape s = pianoShape(a);
     const std::vector<RefTable> bt = refTables("B");
-    std::printf("%s\n", vectorText(a.knobs).c_str());
+    std::printf("%s\n", pianoText(a).c_str());
     std::printf("note  midi       f0       L (m)   d (mm)  wound core  mu (g/m)  Z (kg/s)          B   hammer g   K N/mm^p      p   share  damper");
     for (const RefTable& t : bt) std::printf("  %s %%", t.name.c_str());
     std::printf("\n");
@@ -524,10 +488,10 @@ double feltTableError(float p, float* worstAtMm = nullptr) {
 
 int cmdHammer(const Args& a) {
     const Tuning t = clamped(a.tuning);
-    const Shape s = shapeOf(a.knobs, lawConstants(), a.sets, t);
+    const Shape s = pianoShape(a);
     Contact sim(s, a.midi, t, lawConstants(), kTruthRate * kDefaultFs);
     const ContactRun& r = sim.strike(a.vel, 0.0);
-    std::printf("%s\n", vectorText(a.knobs).c_str());
+    std::printf("%s\n", pianoText(a).c_str());
     printRank(sim.rank(), a.midi);
     std::printf("the hammer at the note: K %.4g N/mm^p (%.4g N/m^p), p %.3f, lambda %.4g s/m, mass %.3f g; %zu partials in the string, "
                 "modal mass %.4g g, the point under the hammer %.4g g\n",
@@ -578,9 +542,9 @@ int cmdHammer(const Args& a) {
 
 int cmdPickup(const Args& a) {
     const Tuning t = clamped(a.tuning);
-    const Shape s = shapeOf(a.knobs, lawConstants(), a.sets, t);
+    const Shape s = pianoShape(a);
     const float g = s[Channel::generator], gap = s[Channel::gap], off = s[Channel::offset];
-    std::printf("%s\n", vectorText(a.knobs).c_str());
+    std::printf("%s\n", pianoText(a).c_str());
     std::printf("gap %.3f mm, offset %.3f mm, generator %+.2f: the curve's centre %.3f mm (the offset slid toward the gap by %.2f)\n", gap, off, g,
                 pickupOffset(g, gap, off), clamp(g, 0.0f, 1.0f));
     std::printf("   x (mm)   C mag     C' mag    C elec    C' elec   C' at g\n");
@@ -622,9 +586,9 @@ int cmdPickup(const Args& a) {
 // ---- board -----------------------------------------------------------------------------------------
 
 int cmdBoard(const Args& a) {
-    const Shape s = shapeOf(a.knobs, lawConstants(), a.sets, clamped(a.tuning));
+    const Shape s = pianoShape(a);
     const BoardTable t = boardOf(s[Channel::boardArea], s[Channel::boardLoss], s[Channel::open]);
-    std::printf("%s\n", vectorText(a.knobs).c_str());
+    std::printf("%s\n", pianoText(a).c_str());
     std::printf("area %.3f m², a %.3f m along the grain, b %.3f m across; eta %.4f, open %.2f; the radiation's -3 db low edge %.1f hz\n",
                 s[Channel::boardArea], t.a, t.b, s[Channel::boardLoss], s[Channel::open], radiationEdge(s[Channel::open]));
     float out[kBoardModes];
@@ -714,31 +678,30 @@ int cmdBoard(const Args& a) {
     FILE* f = std::fopen(path.c_str(), "w");
     if (!f) { std::fprintf(stderr, "cannot write %s\n", path.c_str()); return 2; }
     std::fprintf(f, "# the board's swept transfer |out / F| (db full scale per N): a unit force sine in at c4's bridge point, 1/12 octave from %.0f\n"
-                    "# hz to %.0f khz, each run to steady state, the output's rms read; at body -1, 0 and +1 (the eight at grand's but the body),\n"
-                    "# kBoardShelf %.5g um/s per N, kBoardOut %.5g; the infinite plate's mobility %.4g m/s per N\n",
+                    "# hz to %.0f khz, each run to steady state, the output's rms read; at the spinet's, grand's and the concert grand's\n"
+                    "# boards, kBoardShelf %.5g um/s per N, kBoardOut %.5g; the infinite plate's mobility %.4g m/s per N\n",
                  kSweepLo, kSweepHi / 1000.0, (double)kBoardShelf, (double)kBoardOut, plateMobility());
+    const char* const names[3] = {"spinet", "grand", "concertGrand"};
     float bodies[3][3];
     double tops[3];
     for (int b = 0; b < 3; ++b) {
-        Knobs k = a.knobs;
-        k.v[(int)Knob::body] = (float)(b - 1);
-        const Shape sb = pianoOf(k);
+        const Shape& sb = presetByName(names[b])->shape();
         bodies[b][0] = sb[Channel::boardArea];
         bodies[b][1] = sb[Channel::boardLoss];
         bodies[b][2] = sb[Channel::open];
         tops[b] = boardOf(bodies[b][0], bodies[b][1], bodies[b][2]).mode[kBoardModes - 1].hz;
-        std::fprintf(f, "# body %+d: area %.3f m2, loss %.4f, open %.2f, the top mode %.1f hz\n", b - 1, bodies[b][0], bodies[b][1], bodies[b][2], tops[b]);
+        std::fprintf(f, "# %s: area %.3f m2, loss %.4f, open %.2f, the top mode %.1f hz\n", names[b], bodies[b][0], bodies[b][1], bodies[b][2], tops[b]);
     }
-    std::fprintf(f, "%10s %10s %10s %10s\n", "hz", "body -1", "body 0", "body +1");
+    std::fprintf(f, "%10s %10s %10s %13s\n", "hz", names[0], names[1], names[2]);
     for (double hz : sweepHz()) {
         std::fprintf(f, "%10.2f", hz);
-        for (int b = 0; b < 3; ++b) std::fprintf(f, " %+10.2f", dbfs(boardTransfer(bodies[b][0], bodies[b][1], bodies[b][2], 60.0f, hz, kBoardShelf)));
+        for (int b = 0; b < 3; ++b) std::fprintf(f, " %+*.2f", b == 2 ? 13 : 10, dbfs(boardTransfer(bodies[b][0], bodies[b][1], bodies[b][2], 60.0f, hz, kBoardShelf)));
         std::fprintf(f, "\n");
     }
     for (int b = 0; b < 3; ++b) {
         const SweepRuns u = sweepRuns(bodies[b][0], bodies[b][1], bodies[b][2], 60.0f, 0.5 * tops[b], tops[b]);
         const SweepRuns o = sweepRuns(bodies[b][0], bodies[b][1], bodies[b][2], 60.0f, 2.0 * tops[b], 4.0 * tops[b]);
-        std::fprintf(f, "# body %+d: the mean over f_top / 2 .. f_top %+.2f db, over 2 .. 4 f_top %+.2f db (%+.2f apart)\n", b - 1,
+        std::fprintf(f, "# %s: the mean over f_top / 2 .. f_top %+.2f db, over 2 .. 4 f_top %+.2f db (%+.2f apart)\n", names[b],
                      bandAverageDb(u, kBoardShelf), bandAverageDb(o, kBoardShelf), bandAverageDb(u, kBoardShelf) - bandAverageDb(o, kBoardShelf));
     }
     std::fclose(f);
@@ -749,13 +712,9 @@ int cmdBoard(const Args& a) {
 // ---- print, random ---------------------------------------------------------------------------------
 
 int cmdPrint(const Args& a) {
-    const bool own = a.preset && std::memcmp(&a.knobs, &a.preset->knobs, sizeof a.knobs) == 0;
-    std::printf("%s\n", own ? knobLine(a.preset->name, a.preset->knobs, a.preset->lo, a.preset->hi).c_str() : knobLine("vector", a.knobs, 21, 108).c_str());
-    if (!a.shapeOut) return 0;
-    const Shape s = pianoOf(a.knobs, clamped(a.tuning));
-    for (int i = 0; i < kInstrumentChannels; ++i) std::printf("  %-12s %.6g\n", channelName((Channel)i), s.v[i]);
-    const Knobs back = knobsOf(s);
-    std::printf("  read back:  %s\n", vectorText(back).c_str());
+    std::printf("%s", pianoText(a).c_str());
+    if (a.preset) std::printf(" (midi %d .. %d)", a.preset->lo, a.preset->hi);
+    std::printf("\n%s", setLines(pianoShape(a)).c_str());
     return 0;
 }
 
@@ -763,40 +722,38 @@ int cmdRandom(const Args& a) {
     Rng r;
     r.seed(a.seed);
     const int n = a.count > 0 ? a.count : 1;
-    std::printf("%d vectors drawn from seed %u; each with its B at midi %.0f, its first partial's t60, its 8th partial's gain, its strings\n"
-                "and partials on; then each heard 2 s at midi %.0f, velocity 1, its level undone in the gain (10^(-levelDb / 20)): the peak\n"
-                "(undone), the first half second's rms against grand's octave c4 .. b4 (db, before the undoing), levelDb, the level undone\n"
-                "(the rms's db less levelDb), and whether it sounds (the peak undone over %.3f, the last 100 ms's rms under the first 100\n"
-                "ms's, finite); beside it the octave from midi %.0f up as the level table reads one (the mean of the twelve notes' powers)\n"
-                "and that undone\n",
+    std::printf("%d pianos drawn from seed %u, every instrument channel inside its span; each with its B at midi %.0f, its first partial's\n"
+                "t60, its 8th partial's gain, its strings and partials on; then each heard 2 s at midi %.0f, velocity 1: the peak, the first\n"
+                "half second's rms against grand's octave c4 .. b4 (db), and whether it sounds (the peak over %.3f, the last 100 ms's rms\n"
+                "under the first 100 ms's, finite); beside it the octave from midi %.0f up against grand's (the mean of the twelve notes'\n"
+                "powers)\n",
                 n, (unsigned)a.seed, a.midi, a.midi, kSoundPeak, a.midi);
     int sounding = 0;
     double lo = 1e9, hi = -1e9, sum = 0.0, sq = 0.0, olo = 1e9, ohi = -1e9, osum = 0.0, osq = 0.0;
     for (int i = 0; i < n; ++i) {
-        const Knobs k = drawKnobs(r);
-        const At x = atNote(k, Spec(), a.midi);
-        std::printf("%s\n", knobLine("vector", k, 21, 108).c_str());
+        const Shape s = drawShape(r);
+        const At x = atNote(s, Spec(), a.midi);
+        std::printf("%s", setLines(s).c_str());
         std::printf("    at %s: B %.4g, partial 1's t60 %.3f s, partial 8's gain %s, strings %.2f, %d partials on\n",
                     noteName(a.midi).c_str(), x.r.B, x.p.t60[0] * x.r.t60Scale,
                     x.p.gain[7] != 0.0f ? num(dbOf(x.p.gain[7]), "%+.1f db").c_str() : "off", stringsOf(x.s), partialsOnOf(x.p));
-        const Heard h = hearVector(k, a.midi, 2.0f, true, a.tuning);
+        const Heard h = hearShape(s, a.midi, 2.0f, a.tuning);
         sounding += h.sounds.sounds;
-        lo = std::fmin(lo, h.undone);
-        hi = std::fmax(hi, h.undone);
-        sum += h.undone;
-        sq += h.undone * h.undone;
-        const OctaveHeard o = hearOctave(k, a.midi, a.tuning);
-        olo = std::fmin(olo, o.undone);
-        ohi = std::fmax(ohi, o.undone);
-        osum += o.undone;
-        osq += o.undone * o.undone;
-        std::printf("    heard: peak %.3f, rms %+.1f db, levelDb %+.1f, undone %+.1f db; %s; the octave %+.1f db, undone %+.1f db\n", h.sounds.peak,
-                    h.level, h.table, h.undone,
+        lo = std::fmin(lo, h.level);
+        hi = std::fmax(hi, h.level);
+        sum += h.level;
+        sq += h.level * h.level;
+        const OctaveHeard o = hearOctave(s, a.midi, a.tuning);
+        olo = std::fmin(olo, o.level);
+        ohi = std::fmax(ohi, o.level);
+        osum += o.level;
+        osq += o.level * o.level;
+        std::printf("    heard: peak %.3f, rms %+.1f db; %s; the octave %+.1f db\n", h.sounds.peak, h.level,
                     h.sounds.sounds ? "sounds" : (!h.sounds.finite ? "NOT FINITE" : (!h.sounds.decaying ? "does not decay" : "under the peak")),
-                    o.level, o.undone);
+                    o.level);
     }
     const double mean = sum / n, omean = osum / n;
-    std::printf("%d of %d sound; the level undone %+.1f .. %+.1f db (mean %+.2f, standard deviation %.2f); the octave undone %+.1f .. %+.1f db "
+    std::printf("%d of %d sound; the level %+.1f .. %+.1f db (mean %+.2f, standard deviation %.2f); the octave %+.1f .. %+.1f db "
                 "(mean %+.2f, standard deviation %.2f)\n",
                 sounding, n, lo, hi, mean, std::sqrt(std::fmax(0.0, sq / n - mean * mean)), olo, ohi, omean,
                 std::sqrt(std::fmax(0.0, osq / n - omean * omean)));
@@ -805,10 +762,10 @@ int cmdRandom(const Args& a) {
 
 // ---- fit -------------------------------------------------------------------------------------------
 
-void printFit(const RefTable& t, const KnobFit& f) {
+void printFit(const RefTable& t, const ChannelFit& f, const Spec& sets) {
     std::printf("%s (%s)\n  source: %s\n", t.title.c_str(), t.kind.c_str(), t.source.c_str());
     std::printf("  at the anchor: %.5f; fitted: %.5f (rms %.4g %s)\n", f.atAnchor.value, f.error.value, f.error.rms, residualUnit(t));
-    std::printf("  vector: %s\n", vectorText(f.k).c_str());
+    std::printf("  the channels found: %s\n", f.free.empty() ? "none (every one held)" : channelsText(f.s, f.free).c_str());
     std::printf("  entry                         table          law     residual\n");
     for (const Residual& r : f.error.items) std::printf("  %-26s %12.5g %12.5g %+12.4f\n", r.label.c_str(), r.ref, r.law, r.err);
     if (t.kind == "B") {
@@ -816,26 +773,27 @@ void printFit(const RefTable& t, const KnobFit& f) {
         for (const Residual& r : f.error.items) worst = std::fmax(worst, std::fabs(std::exp(r.err) - 1.0));
         std::printf("  the worst note %.1f %% off\n", 100.0 * worst);
     }
-    std::printf("  %s\n", knobLine("vector", f.k, 21, 108).c_str());
+    std::printf("%s", setLines(withSets(f.s, sets)).c_str());
 }
 
-void printConstants(FILE* f, const char* title, const LawConstants& c, const LawConstants* before = nullptr) {
+void printConstants(FILE* f, const char* title, const LawConstants& c, const Spec& shared, const LawConstants* before = nullptr,
+                    const Spec* sharedBefore = nullptr) {
     std::fprintf(f, "%s\n", title);
     for (const ConstantSpec& cs : constantSpecs()) {
-        std::fprintf(f, "  %-12s %12.6g", cs.name, (double)(c.*(cs.field)));
-        if (before) std::fprintf(f, "   (from %.6g)", (double)(before->*(cs.field)));
-        std::fprintf(f, "\n");
+        std::fprintf(f, "  %-15s %12.6g", cs.name, (double)constantOf(cs, c, shared));
+        if (before && sharedBefore) std::fprintf(f, "   (from %.6g)", (double)constantOf(cs, *before, *sharedBefore));
+        std::fprintf(f, "%s\n", cs.field ? "" : "   (a channel every table shares)");
     }
 }
 
-// a B table's own best tension: the tension and the table's scale knob fitted together
-double tensionFor(const RefTable& t, const LawConstants& c, double& errOut, Knobs& kOut) {
-    LawConstants x = c;
-    double best = 1e30, bestT = c.tension;
+// a B table's own best tension: the tension channel and the table's free channels fitted together
+double tensionFor(const RefTable& t, const LawConstants& c, const Spec& shared, const Spec& held, double& errOut) {
+    Spec x = shared;
+    double best = 1e30, bestT = NAN;
     for (float T = 200.0f; T <= 1600.0f; T += 10.0f) {
-        x.tension = T;
-        const KnobFit f = fitTable(t, x, constantsSpec(t));
-        if (f.error.value < best) { best = f.error.value; bestT = T; kOut = f.k; }
+        specSet(x, Channel::tension, T);
+        const ChannelFit f = fitTable(t, c, held, x);
+        if (f.error.value < best) { best = f.error.value; bestT = T; }
     }
     errOut = best;
     return bestT;
@@ -848,38 +806,42 @@ int cmdFitConstants(const Args& a) {
         RefTable t;
         std::string err;
         if (!readTable(path, t, err)) { std::fprintf(stderr, "%s\n", err.c_str()); continue; }
-        if (!fitsKnobs(t) || (!a.kind.empty() && t.kind != a.kind)) continue;
+        if (!fitsChannels(t) || (!a.kind.empty() && t.kind != a.kind)) continue;
         TableFitState s;
         s.table = t;
-        s.spec = constantsSpec(t);
+        s.held = constantsHolds(t);
         tables.push_back(s);
     }
     if (tables.empty()) { std::fprintf(stderr, "no fit tables in %s\n", dir.c_str()); return 1; }
     const LawConstants before = lawConstants();
+    const Spec sharedBefore = sharedStart();
     std::vector<TableFitState> start = tables;
-    for (TableFitState& t : start) t.fit = fitTable(t.table, before, t.spec);
+    for (TableFitState& t : start) t.fit = fitTable(t.table, before, t.held, sharedBefore);
     int passes = 0;
-    const LawConstants after = fitConstants(tables, before, &passes, a.fix);
+    Spec shared = sharedBefore;
+    const LawConstants after = fitConstants(tables, before, shared, &passes, a.fix);
     if (!a.fix.empty()) std::printf("held where they stand: %s\n", a.fix.c_str());
-    printConstants(stdout, "the constants before:", before);
-    printConstants(stdout, "the constants after:", after, &before);
-    std::printf("the tables, each at its own vector (the error's value; rms in its units):\n");
+    printConstants(stdout, "the constants and shared channels before (the channels grand's):", before, sharedBefore);
+    printConstants(stdout, "after:", after, shared, &before, &sharedBefore);
+    std::printf("the tables, each at its own shape (the error's value; rms in its units; the channels its fit moves):\n");
     for (size_t i = 0; i < tables.size(); ++i) {
+        const ChannelFit& f = tables[i].fit;
         std::printf("  %-26s before %9.5f (rms %.4g)  after %9.5f (rms %.4g)   %s\n", tables[i].table.name.c_str(), start[i].fit.error.value,
-                    start[i].fit.error.rms, tables[i].fit.error.value, tables[i].fit.error.rms, vectorText(tables[i].fit.k).c_str());
+                    start[i].fit.error.rms, f.error.value, f.error.rms, f.free.empty() ? "held" : channelsText(f.s, f.free).c_str());
     }
-    std::printf("each B table's own tension (the tension fitted with the table's free knobs at its holds, the other constants held):\n");
+    std::printf("each B table's own tension (the tension fitted with the table's free channels at its holds, the rest held):\n");
     for (int which = 0; which < 2; ++which) {
         const LawConstants& c = which ? after : before;
-        std::printf("  under the constants %s:\n", which ? "after" : "before");
+        const Spec& sh = which ? shared : sharedBefore;
+        float T0 = NAN;
+        specHas(sh, Channel::tension, &T0);
+        std::printf("  under the values %s:\n", which ? "after" : "before");
         for (size_t i = 0; i < start.size(); ++i) {
             const TableFitState& t = which ? tables[i] : start[i];
             if (t.table.kind != "B" || bPoints(t.table).empty()) continue;
             double e;
-            Knobs k{};
-            const double T = tensionFor(t.table, c, e, k);
-            std::printf("    %-26s %6.0f N, error %.5f at scale %+.3f (at %.0f N: %.5f)\n", t.table.name.c_str(), T, e, k.v[0], c.tension,
-                        t.fit.error.value);
+            const double T = tensionFor(t.table, c, sh, t.held, e);
+            std::printf("    %-26s %6.0f N, error %.5f (at %.0f N: %.5f)\n", t.table.name.c_str(), T, e, T0, t.fit.error.value);
         }
     }
     std::printf("the entries before and after:\n");
@@ -896,10 +858,10 @@ int cmdFitConstants(const Args& a) {
     makeDirs(std::filesystem::path(outPath).parent_path().string());
     FILE* f = std::fopen(outPath.c_str(), "w");
     if (!f) { std::fprintf(stderr, "cannot write %s\n", outPath.c_str()); return 1; }
-    std::fprintf(f, "# the LawConstants block uptool fit --constants proposes against %s%s%s\n", dir.c_str(), a.kind.empty() ? "" : ", the tables of kind ",
-                 a.kind.c_str());
-    printConstants(f, "# before:", before);
-    printConstants(f, "# proposed:", after, &before);
+    std::fprintf(f, "# the LawConstants and shared channels uptool fit --constants proposes against %s%s%s\n", dir.c_str(),
+                 a.kind.empty() ? "" : ", the tables of kind ", a.kind.c_str());
+    printConstants(f, "# before:", before, sharedBefore);
+    printConstants(f, "# proposed:", after, shared, &before, &sharedBefore);
     std::fclose(f);
     std::printf("written: %s\n", outPath.c_str());
     return 0;
@@ -910,14 +872,12 @@ int cmdFit(const Args& a) {
     RefTable t;
     std::string err;
     if (!readTable(a.table, t, err)) { std::fprintf(stderr, "%s\n", err.c_str()); return 1; }
-    if (!fitsKnobs(t)) { std::fprintf(stderr, "%s: a %s table has nothing to fit\n", a.table.c_str(), t.kind.c_str()); return 1; }
-    const KnobFit f = fitTable(t, lawConstants(), a.lock, a.sets);
-    printFit(t, f);
-    const Heard h = hearVector(f.k, a.midi, 2.0f, true, a.tuning);
-    std::printf("  heard 2 s at %s, velocity 1, its level undone: peak %.3f, rms %+.1f db against grand's octave, levelDb %+.1f, undone %+.1f db; "
-                "%s\n",
-                noteName(a.midi).c_str(), h.sounds.peak, h.level, h.table, h.undone,
-                h.sounds.sounds ? "sounds" : (!h.sounds.finite ? "NOT FINITE" : (!h.sounds.decaying ? "does not decay" : "under the peak")));
+    if (!fitsChannels(t)) { std::fprintf(stderr, "%s: a %s table has nothing to fit\n", a.table.c_str(), t.kind.c_str()); return 1; }
+    const ChannelFit f = fitTable(t, lawConstants(), Spec(), a.sets);
+    printFit(t, f, a.sets);
+    const Heard h = hearShape(withSets(f.s, a.sets), a.midi, 2.0f, a.tuning);
+    std::printf("  heard 2 s at %s, velocity 1: peak %.3f, rms %+.1f db against grand's octave; %s\n", noteName(a.midi).c_str(), h.sounds.peak,
+                h.level, h.sounds.sounds ? "sounds" : (!h.sounds.finite ? "NOT FINITE" : (!h.sounds.decaying ? "does not decay" : "under the peak")));
     return 0;
 }
 
@@ -982,9 +942,8 @@ void checkTable(const PartialTable& p, float f0, Cell& c) {
     }
 }
 
-Cell cellOf(const Knobs& k) {
+Cell cellOf(const Shape& s) {
     Cell c;
-    const Shape s = pianoOf(k);
     const float bn[3] = {36.0f, 60.0f, 84.0f};
     for (int i = 0; i < 3; ++i) c.B[i] = rankAt(s, bn[i]).B;
     const RankState r4 = rankAt(s, 60.0f);
@@ -1022,14 +981,14 @@ std::string num(double x, const char* fmt) {
 }
 
 void cellHeader(FILE* f) {
-    std::fprintf(f, "%6s %10s %10s %10s %8s %7s %7s %7s %7s %5s %6s %5s %7s %7s %7s %7s %7s %7s %7s %7s %6s %6s %6s %6s %3s %3s %3s\n", "x",
+    std::fprintf(f, "%10s %10s %10s %10s %8s %7s %7s %7s %7s %5s %6s %5s %7s %7s %7s %7s %7s %7s %7s %7s %6s %6s %6s %6s %3s %3s %3s\n", "x",
                  "B c2", "B c4", "B c6", "c10 c", "t60 n1", "n2", "n10", "g8 db", "str", "detune", "after", "ms .3", "N .3", "band .3", "ms 1",
                  "N 1", "band 1", "ms 1t", "N 1t", "thd .3", "thd 1", "brd1", "edge", "a0", "c4", "c7");
 }
 
 void cellRow(FILE* f, double x, const Cell& c) {
     std::fprintf(f,
-                 "%+6.2f %10.4g %10.4g %10.4g %8.1f %7.2f %7.2f %7.3f %7s %5.2f %6.2f %5.2f %7.3f %7.1f %7s %7.3f %7.1f %7s %7.3f %7.1f %6s %6s "
+                 "%10.4g %10.4g %10.4g %10.4g %8.1f %7.2f %7.2f %7.3f %7s %5.2f %6.2f %5.2f %7.3f %7.1f %7s %7.3f %7.1f %7s %7.3f %7.1f %6s %6s "
                  "%6.1f %6.1f %3d %3d %3d\n",
                  x, c.B[0], c.B[1], c.B[2], c.c10, c.t60[0], c.t60[1], c.t60[2], num(c.g8, "%.1f").c_str(), c.strings, c.detune, kAftersound,
                  c.v03.contactMs, c.v03.peak, num(c.v03.band, "%+.1f").c_str(), c.v1.contactMs, c.v1.peak, num(c.v1.band, "%+.1f").c_str(),
@@ -1066,9 +1025,8 @@ struct AudioCell {
     double rc10 = NAN, rt60 = NAN, rcontact = NAN, rpeak = NAN, rthd = NAN; // the render's
 };
 
-AudioCell audioCellOf(const Knobs& k, float midi) {
+AudioCell audioCellOf(const Shape& s, float midi) {
     AudioCell c;
-    const Shape s = pianoOf(k);
     const RankState r = rankAt(s, midi);
     const PartialTable p = partialsOf(s, r);
     if (partialOn(p, kTenth) && (double)p.ratio[kTenth] * r.f0 < kCeiling * kDefaultFs) c.c10 = centsOf(p.ratio[kTenth] / (kTenth + 1.0));
@@ -1103,32 +1061,32 @@ int cmdChartAudio(const std::string& dir) {
     const char* what[5] = {"the 10th partial's cents (render - table)", "the fundamental's t60 (render / table, in octaves)",
                            "the contact (render / table - 1)", "the peak force (render / table - 1)", "the thd (render - table, points)"};
     int cells = 0;
-    for (int k = 0; k < kKnobCount; ++k) {
-        const std::string path = dir + "/audio_" + knobName((Knob)k) + ".txt";
+    for (int k = 0; k < kInstrumentChannels; ++k) {
+        const Channel ch = (Channel)k;
+        const std::string path = dir + "/audio_" + channelName(ch) + ".txt";
         FILE* f = std::fopen(path.c_str(), "w");
         if (!f) { std::fprintf(stderr, "cannot write %s\n", path.c_str()); return 2; }
-        std::fprintf(f, "# %s alone in tenths at the three anchors, rendered 2 s at velocity 1 at c4 (e3 at rhodes and wurlitzer), as play renders\n"
-                        "# it: beside the table's measures at the note (t: the law's 10th partial in cents off 10 f0, the fundamental's t60 at\n"
-                        "# the note, the contact and the peak at velocity 1 through the engine's scheme, the thd of its tip on the electric\n"
-                        "# side), the render's (r: the tracker's 10th partial and fundamental's t60 (- where 2 s cannot read it), the\n"
-                        "# telemetry's contact and peak, play's thd over the 100 ms after the hammer leaves)\n",
-                     knobName((Knob)k));
+        std::fprintf(f, "# %s alone at 21 points along its span at the three anchors, rendered 2 s at velocity 1 at c4 (e3 at rhodes and\n"
+                        "# wurlitzer), as play renders it: beside the table's measures at the note (t: the law's 10th partial in cents off\n"
+                        "# 10 f0, the fundamental's t60 at the note, the contact and the peak at velocity 1 through the engine's scheme, the\n"
+                        "# thd of its tip on the electric side), the render's (r: the tracker's 10th partial and fundamental's t60 (- where\n"
+                        "# 2 s cannot read it), the telemetry's contact and peak, play's thd over the 100 ms after the hammer leaves)\n",
+                     channelName(ch));
         for (int an = 0; an < kAnchorCount; ++an) {
             const float midi = an == 0 ? 60.0f : 52.0f;
-            std::fprintf(f, "\n# at %s, %s: %s\n", knobAnchors()[an].name, noteName(midi).c_str(), vectorText(knobAnchors()[an].k).c_str());
-            std::fprintf(f, "%6s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n", "x", "c10 t", "c10 r", "t60 t", "t60 r", "ms t", "ms r", "N t", "N r", "thd t",
+            std::fprintf(f, "\n# at %s, %s\n", anchors()[an].name, noteName(midi).c_str());
+            std::fprintf(f, "%10s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n", "x", "c10 t", "c10 r", "t60 t", "t60 r", "ms t", "ms r", "N t", "N r", "thd t",
                          "thd r");
             for (int j = 0; j <= 20; ++j) {
-                const float x = (float)(j - 10) / 10.0f;
-                Knobs v = knobAnchors()[an].k;
-                v.v[k] = x;
+                Shape v = anchors()[an].s;
+                const float x = v[ch] = spanAt(ch, (float)j / 20.0f);
                 const AudioCell c = audioCellOf(v, midi);
                 ++cells;
-                std::fprintf(f, "%+6.1f %8s %8s %8s %8s %8.3f %8.3f %8.2f %8.2f %8s %8s\n", x, num(c.c10, "%+.1f").c_str(), num(c.rc10, "%+.1f").c_str(),
+                std::fprintf(f, "%10.4g %8s %8s %8s %8s %8.3f %8.3f %8.2f %8.2f %8s %8s\n", x, num(c.c10, "%+.1f").c_str(), num(c.rc10, "%+.1f").c_str(),
                              num(c.t60, "%.3f").c_str(), num(c.rt60, "%.3f").c_str(), c.contact, c.rcontact, c.peak, c.rpeak,
                              num(100.0 * c.thd, "%.2f").c_str(), num(100.0 * c.rthd, "%.2f").c_str());
                 char where[96];
-                std::snprintf(where, sizeof where, "%s %+.1f at %s (%s)", knobName((Knob)k), x, knobAnchors()[an].name, noteName(midi).c_str());
+                std::snprintf(where, sizeof where, "%s %.4g at %s (%s)", channelName(ch), x, anchors()[an].name, noteName(midi).c_str());
                 const double d[5] = {c.rc10 - c.c10, std::log2(c.rt60 / c.t60), c.rcontact / c.contact - 1.0, c.rpeak / c.peak - 1.0, 100.0 * (c.rthd - c.thd)};
                 for (int m = 0; m < 5; ++m) {
                     if (!std::isfinite(d[m]) || std::fabs(d[m]) <= std::fabs(worst[m].by)) continue;
@@ -1164,63 +1122,61 @@ int cmdChart(const Args& a) {
     if (a.audio) return cmdChartAudio(dir);
     makeDirs(dir);
     Tally tally;
-    // each knob alone in tenths at the three anchors
-    Cell ends[kAnchorCount][kKnobCount][2];
-    for (int k = 0; k < kKnobCount; ++k) {
-        const std::string path = dir + "/" + knobName((Knob)k) + ".txt";
+    // each instrument channel alone at 21 points along its span at the three anchors
+    for (int k = 0; k < kInstrumentChannels; ++k) {
+        const Channel ch = (Channel)k;
+        const std::string path = dir + "/" + channelName(ch) + ".txt";
         FILE* f = std::fopen(path.c_str(), "w");
         if (!f) { std::fprintf(stderr, "cannot write %s\n", path.c_str()); return 1; }
-        std::fprintf(f, "# %s: %s · %s · %s, alone in tenths at each anchor\n", knobName((Knob)k), knobEnd((Knob)k, 0), knobEnd((Knob)k, 1),
-                     knobEnd((Knob)k, 2));
+        float lo, hi;
+        const bool lg = channelSpan(ch, lo, hi);
+        std::fprintf(f, "# %s alone at 21 points from %.4g to %.4g (%s) at each anchor\n", channelName(ch), lo, hi, lg ? "log" : "linear");
         std::fprintf(f, "# B at c2, c4, c6; the 10th partial's cents off 10 f0 at c4; t60 (s, at the note) of partials 1, 2, 10 at c4; the\n"
                         "# 8th partial's gain at c4 (db); the strings (capped), the detune (cents), the tonebar's aftersound (kAftersound); the\n"
                         "# hammer's contact (ms) and peak force (N) at c4 at velocity 0.3 and 1 (up_contact.h); the thd (%%) at velocity\n"
                         "# 0.3 and 1 of the tip through the pickup over the first 100 ms after the hammer leaves (the electric side);\n"
                         "# the board's first mode and the radiation's -3 db low edge (hz); the partials on at a0, c4, c7\n");
         for (int an = 0; an < kAnchorCount; ++an) {
-            std::fprintf(f, "\n# at %s: %s\n", knobAnchors()[an].name, vectorText(knobAnchors()[an].k).c_str());
+            std::fprintf(f, "\n# at %s (its %s %.4g)\n", anchors()[an].name, channelName(ch), anchors()[an].s[ch]);
             cellHeader(f);
             for (int i = 0; i <= 20; ++i) {
-                Knobs kv = knobAnchors()[an].k;
-                const float x = (float)(i - 10) / 10.0f;
-                kv.v[k] = x;
-                const Cell c = cellOf(kv);
+                Shape v = anchors()[an].s;
+                const float x = v[ch] = spanAt(ch, (float)i / 20.0f);
+                const Cell c = cellOf(v);
                 cellRow(f, x, c);
                 char name[96];
-                std::snprintf(name, sizeof name, "%s %s %+.1f", knobAnchors()[an].name, knobName((Knob)k), x);
+                std::snprintf(name, sizeof name, "%s %s %.4g", anchors()[an].name, channelName(ch), x);
                 tally.add(c, name);
-                if (i == 0) ends[an][k][0] = c;
-                if (i == 20) ends[an][k][1] = c;
             }
         }
         std::fclose(f);
     }
-    // the pairs in fifths
-    struct Pair { Knob a, b; int anchor; };
-    const Pair pairs[5] = {{Knob::scale, Knob::hammer, 0}, {Knob::strike, Knob::unison, 0}, {Knob::body, Knob::scale, 0},
-                           {Knob::generator, Knob::pickup, 1}, {Knob::hammer, Knob::pickup, 1}};
-    const float fifths[5] = {-1.0f, -0.5f, 0.0f, 0.5f, 1.0f};
+    // the pairs in fifths of their spans
+    struct Pair { Channel a, b; int anchor; };
+    const Pair pairs[5] = {{Channel::bass, Channel::hardness, 0}, {Channel::strikeShare, Channel::detune, 0}, {Channel::boardArea, Channel::bass, 0},
+                           {Channel::generator, Channel::gap, 1}, {Channel::hardness, Channel::gap, 1}};
+    const float fifths[5] = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
     for (const Pair& p : pairs) {
-        const std::string path = dir + "/pair_" + knobName(p.a) + "_" + knobName(p.b) + ".txt";
+        const std::string path = dir + "/pair_" + channelName(p.a) + "_" + channelName(p.b) + ".txt";
         FILE* f = std::fopen(path.c_str(), "w");
         if (!f) return 1;
-        std::fprintf(f, "# %s x %s in fifths at %s: B at c4, the 10th partial's cents, the 8th's gain (db), the contact (ms), the\n"
-                        "# peak force (N) and the band (db) at velocity 1 through the engine's scheme, the contact and the peak by the\n"
-                        "# truth (32 fs), the thd (%%) at velocity 1\n",
-                     knobName(p.a), knobName(p.b), knobAnchors()[p.anchor].name);
-        std::fprintf(f, "%6s %6s %10s %8s %7s %7s %8s %7s %7s %8s %7s\n", knobName(p.a), knobName(p.b), "B c4", "c10 c", "g8 db", "ms 1", "N 1",
+        std::fprintf(f, "# %s x %s in fifths of their spans at %s: B at c4, the 10th partial's cents, the 8th's gain (db), the contact\n"
+                        "# (ms), the peak force (N) and the band (db) at velocity 1 through the engine's scheme, the contact and the peak\n"
+                        "# by the truth (32 fs), the thd (%%) at velocity 1\n",
+                     channelName(p.a), channelName(p.b), anchors()[p.anchor].name);
+        std::fprintf(f, "%11s %11s %10s %8s %7s %7s %8s %7s %7s %8s %7s\n", channelName(p.a), channelName(p.b), "B c4", "c10 c", "g8 db", "ms 1", "N 1",
                      "band 1", "ms 1t", "N 1t", "thd 1");
-        for (float x : fifths)
-            for (float y : fifths) {
-                Knobs kv = knobAnchors()[p.anchor].k;
-                kv.v[(int)p.a] = x;
-                kv.v[(int)p.b] = y;
-                const Cell c = cellOf(kv);
-                std::fprintf(f, "%+6.1f %+6.1f %10.4g %8.1f %7s %7.3f %8.1f %7s %7.3f %8.1f %7s\n", x, y, c.B[1], c.c10, num(c.g8, "%.1f").c_str(),
+        for (float u : fifths)
+            for (float w : fifths) {
+                Shape v = anchors()[p.anchor].s;
+                const float x = v[p.a] = spanAt(p.a, u);
+                const float y = v[p.b] = spanAt(p.b, w);
+                const Cell c = cellOf(v);
+                std::fprintf(f, "%11.4g %11.4g %10.4g %8.1f %7s %7.3f %8.1f %7s %7.3f %8.1f %7s\n", x, y, c.B[1], c.c10, num(c.g8, "%.1f").c_str(),
                              c.v1.contactMs, c.v1.peak, num(c.v1.band, "%+.1f").c_str(), c.v1t.contactMs, c.v1t.peak,
                              num(100.0 * c.v1.thd, "%.2f").c_str());
                 char name[96];
-                std::snprintf(name, sizeof name, "%s %s %+.1f %s %+.1f", knobAnchors()[p.anchor].name, knobName(p.a), x, knobName(p.b), y);
+                std::snprintf(name, sizeof name, "%s %s %.4g %s %.4g", anchors()[p.anchor].name, channelName(p.a), x, channelName(p.b), y);
                 tally.add(c, name);
             }
         std::fclose(f);
@@ -1252,102 +1208,102 @@ int cmdChart(const Args& a) {
         const std::string path = dir + "/floors.txt";
         FILE* f = std::fopen(path.c_str(), "w");
         if (!f) return 1;
-        const Knobs grand = knobAnchors()[0].k, rhodes = knobAnchors()[1].k;
-        auto with = [](Knobs k, Knob which, float x) { k.v[(int)which] = x; return k; };
-        // scale: the 10th partial of c2 in cents end to end
-        auto c10at = [](const Knobs& k, float midi) {
-            const Shape s = pianoOf(k);
-            return centsOf(partialsOf(s, rankAt(s, midi)).ratio[kTenth] / (kTenth + 1.0));
-        };
-        const double scaleSpan = std::fabs(c10at(with(grand, Knob::scale, 1.0f), 36.0f) - c10at(with(grand, Knob::scale, -1.0f), 36.0f));
+        // the spans the floors are read across, each over its anchor: a spinet's strings to a concert grand's;
+        // chaigne & askenfelt's c2 hammer to their c6 (the felt's loss twice grand's to half); the strike at the end
+        // to the middle; one string to three 20 cents apart; the spinet's board to the concert grand's; a heavy
+        // damper to a light one; the pickup far to close (falaize & helie's 3 mm gap and 1.5 mm off its axis to
+        // rhodesBark's); the string to the tine
+        const Shape& grandS = anchors()[0].s;
+        const Shape& rhodesS = anchors()[1].s;
+        const Shape stringsLo = with(grandS, {{Channel::length, 0.601364076f}, {Channel::bass, 1.22087634f}});
+        const Shape stringsHi = with(grandS, {{Channel::length, 0.626901448f}, {Channel::bass, 2.13304901f}});
+        const Shape soft = with(grandS, {{Channel::hardness, 25.1022911f}, {Channel::felt, 0.00100000005f}});
+        const Shape hard = with(grandS, {{Channel::hardness, 803.273315f}, {Channel::felt, 0.000250000012f}});
+        // strings: the 10th partial of c2 in cents end to end
+        auto c10at = [](const Shape& s, float midi) { return centsOf(partialsOf(s, rankAt(s, midi)).ratio[kTenth] / (kTenth + 1.0)); };
+        const double scaleSpan = std::fabs(c10at(stringsHi, 36.0f) - c10at(stringsLo, 36.0f));
         // hammer: the band (partials 8 .. 16 against 1 .. 3) by the truth (32 fs) and by the engine's scheme
         struct Bands { double soft03, soft05, soft1, med03, med05, med1, hard05, hard1; };
         auto bands = [&](bool truth) {
-            const Shape soft = pianoOf(with(grand, Knob::hammer, -1.0f)), med = pianoOf(grand), hard = pianoOf(with(grand, Knob::hammer, 1.0f));
             Bands x;
             x.soft03 = strikeAt(soft, 60.0f, 0.3f, truth).band;
             x.soft05 = strikeAt(soft, 60.0f, 0.5f, truth).band;
             x.soft1 = strikeAt(soft, 60.0f, 1.0f, truth).band;
-            x.med03 = strikeAt(med, 60.0f, 0.3f, truth).band;
-            x.med05 = strikeAt(med, 60.0f, 0.5f, truth).band;
-            x.med1 = strikeAt(med, 60.0f, 1.0f, truth).band;
+            x.med03 = strikeAt(grandS, 60.0f, 0.3f, truth).band;
+            x.med05 = strikeAt(grandS, 60.0f, 0.5f, truth).band;
+            x.med1 = strikeAt(grandS, 60.0f, 1.0f, truth).band;
             x.hard05 = strikeAt(hard, 60.0f, 0.5f, truth).band;
             x.hard1 = strikeAt(hard, 60.0f, 1.0f, truth).band;
             return x;
         };
         const Bands bt = bands(true), be = bands(false);
         // strike: the 8th partial's gain end to end
-        auto g8at = [](const Knobs& k) {
-            const Shape s = pianoOf(k);
-            return dbOf(partialsOf(s, rankAt(s, 60.0f)).gain[7]);
-        };
-        const double g8lo = g8at(with(grand, Knob::strike, -1.0f)), g8hi = g8at(with(grand, Knob::strike, 1.0f));
+        auto g8at = [](const Shape& s) { return dbOf(partialsOf(s, rankAt(s, 60.0f)).gain[7]); };
+        const double g8lo = g8at(with(grandS, {{Channel::strikeShare, 0.04f}})), g8hi = g8at(with(grandS, {{Channel::strikeShare, 0.5f}}));
         // unison: the strings and the detune end to end
-        const Shape uLo = pianoOf(with(grand, Knob::unison, -1.0f)), uHi = pianoOf(with(grand, Knob::unison, 1.0f));
+        const Shape uLo = with(grandS, {{Channel::strings, 1.0f}}), uHi = with(grandS, {{Channel::detune, 20.0f}});
         // body: the first mode end to end
-        const Shape bLo = pianoOf(with(grand, Knob::body, -1.0f)), bHi = pianoOf(with(grand, Knob::body, 1.0f));
+        const Shape& bLo = spinet();
+        const Shape& bHi = concertGrand();
         const double f1lo = boardOf(bLo[Channel::boardArea], bLo[Channel::boardLoss], bLo[Channel::open]).mode[0].hz;
         const double f1hi = boardOf(bHi[Channel::boardArea], bHi[Channel::boardLoss], bHi[Channel::open]).mode[0].hz;
         // damper: the release t60 of c4's first partial end to end, the string's own loss plus the damper's
-        auto releaseT60 = [](const Knobs& k) {
-            Shape s = pianoOf(k);
+        auto releaseT60 = [](Shape s) {
             s[Channel::midi] = 60.0f;
             const RankState r = rankAt(s, 60.0f);
             const PartialTable p = partialsOf(s, r);
             const double own = 6.907755 / (p.t60[0] * r.t60Scale);
             return 6.907755 / (own + dampRateOf(r.f0 * p.ratio[0], s, 0.0f, lawConstants()));
         };
-        const double relHeavy = releaseT60(with(grand, Knob::damper, -1.0f)), relLight = releaseT60(with(grand, Knob::damper, 1.0f));
+        const double relHeavy = releaseT60(with(grandS, {{Channel::dampRate, 60.6286621f}}));
+        const double relLight = releaseT60(with(grandS, {{Channel::dampRate, 6.59753895f}}));
         // pickup: thd far against close at velocity 1 on rhodes, at e3 (the plan's) and c4
-        const double farE3 = strikeAt(pianoOf(with(rhodes, Knob::pickup, -1.0f)), 52.0f, 1.0f).thd;
-        const double closeE3 = strikeAt(pianoOf(with(rhodes, Knob::pickup, 1.0f)), 52.0f, 1.0f).thd;
-        const double farC4 = strikeAt(pianoOf(with(rhodes, Knob::pickup, -1.0f)), 60.0f, 1.0f).thd;
-        const double closeC4 = strikeAt(pianoOf(with(rhodes, Knob::pickup, 1.0f)), 60.0f, 1.0f).thd;
+        const Shape far = with(rhodesS, {{Channel::gap, 3.0f}, {Channel::offset, 1.5f}});
+        const Shape close = with(rhodesS, {{Channel::gap, rhodesBark()[Channel::gap]}, {Channel::offset, rhodesBark()[Channel::offset]}});
+        const double farE3 = strikeAt(far, 52.0f, 1.0f).thd, closeE3 = strikeAt(close, 52.0f, 1.0f).thd;
+        const double farC4 = strikeAt(far, 60.0f, 1.0f).thd, closeC4 = strikeAt(close, 60.0f, 1.0f).thd;
         // generator: the partials on at grand against rhodes, at c4
-        auto onAt = [](const Knobs& k) {
-            const Shape s = pianoOf(k);
-            return partialsOnOf(partialsOf(s, rankAt(s, 60.0f)));
-        };
-        const int onGrand = onAt(grand), onRhodes = onAt(rhodes);
+        auto onAt = [](const Shape& s) { return partialsOnOf(partialsOf(s, rankAt(s, 60.0f))); };
+        const int onGrand = onAt(grandS), onRhodes = onAt(rhodesS);
         std::fprintf(f, "# the audibility floors the table and the simulator read, at grand's c4 and velocity 1 unless named; the hammer's\n"
                         "# band by the truth (32 fs) and by the engine's scheme (%d substeps, the loss implicit)\n", kContactRate);
-        std::fprintf(f, "%-10s %-62s %-28s %-34s %s\n", "knob", "the measure", "the floor", "reads", "");
+        std::fprintf(f, "%-26s %-62s %-28s %-34s %s\n", "the channels", "the measure", "the floor", "reads", "");
         auto row = [&](const char* k, const char* what, const char* floor, const std::string& reads, const char* met) {
-            std::fprintf(f, "%-10s %-62s %-28s %-34s %s\n", k, what, floor, reads.c_str(), met);
+            std::fprintf(f, "%-26s %-62s %-28s %-34s %s\n", k, what, floor, reads.c_str(), met);
         };
         char b[128];
-        std::snprintf(b, sizeof b, "%.1f c (%+.1f -> %+.1f)", scaleSpan, c10at(with(grand, Knob::scale, -1.0f), 36.0f), c10at(with(grand, Knob::scale, 1.0f), 36.0f));
-        row("scale", "the 10th partial of c2, cents, end to end", "30 c", b, scaleSpan >= 30.0 ? "met" : "NOT MET");
+        std::snprintf(b, sizeof b, "%.1f c (%+.1f -> %+.1f)", scaleSpan, c10at(stringsLo, 36.0f), c10at(stringsHi, 36.0f));
+        row("length, bass", "the 10th partial of c2, cents, end to end", "30 c", b, scaleSpan >= 30.0 ? "met" : "NOT MET");
         for (int which = 0; which < 2; ++which) {
             const Bands& x = which ? be : bt;
             const char* by = which ? ", the engine" : ", the truth";
             char what[96];
             std::snprintf(b, sizeof b, "%.1f db (%+.1f -> %+.1f)", x.med1 - x.med03, x.med03, x.med1);
             std::snprintf(what, sizeof what, "the band, medium, velocity 0.3 -> 1%s", by);
-            row("hammer", what, "12 db (a check)", b, x.med1 - x.med03 >= 12.0 ? "met" : "NOT MET");
+            row("hardness, felt", what, "12 db (a check)", b, x.med1 - x.med03 >= 12.0 ? "met" : "NOT MET");
             std::snprintf(b, sizeof b, "%.1f db (%+.1f -> %+.1f)", x.hard1 - x.soft1, x.soft1, x.hard1);
             std::snprintf(what, sizeof what, "the band, soft -> hard, velocity 1%s", by);
-            row("hammer", what, "3 db (the plan's 6)", b, x.hard1 - x.soft1 >= 3.0 ? "met" : "NOT MET");
+            row("hardness, felt", what, "3 db (the plan's 6)", b, x.hard1 - x.soft1 >= 3.0 ? "met" : "NOT MET");
             std::snprintf(b, sizeof b, "%.1f db (%+.1f -> %+.1f)", x.hard05 - x.soft05, x.soft05, x.hard05);
             std::snprintf(what, sizeof what, "the band, soft -> hard, velocity 0.5%s", by);
-            row("hammer", what, "10 db (the plan's 12)", b, x.hard05 - x.soft05 >= 10.0 ? "met" : "NOT MET");
+            row("hardness, felt", what, "10 db (the plan's 12)", b, x.hard05 - x.soft05 >= 10.0 ? "met" : "NOT MET");
             std::snprintf(b, sizeof b, "%.1f db (%+.1f -> %+.1f)", x.soft1 - x.soft03, x.soft03, x.soft1);
             std::snprintf(what, sizeof what, "the band, soft, velocity 0.3 -> 1%s", by);
-            row("hammer", what, "printed", b, "");
+            row("hardness, felt", what, "printed", b, "");
         }
         std::snprintf(b, sizeof b, "%.1f db (%+.1f -> %s)", std::fabs(g8lo - std::fmax(g8hi, -120.0)), g8lo, num(g8hi, "%+.1f").c_str());
-        row("strike", "the 8th partial's gain end to end, db (a node at +1)", "20 db", b, std::fabs(g8lo - std::fmax(g8hi, -120.0)) >= 20.0 ? "met" : "NOT MET");
+        row("strikeShare", "the 8th partial's gain end to end, db (a node at 0.5)", "20 db", b, std::fabs(g8lo - std::fmax(g8hi, -120.0)) >= 20.0 ? "met" : "NOT MET");
         std::snprintf(b, sizeof b, "strings %.0f -> %.0f, detune %.1f -> %.1f c", uLo[Channel::strings], uHi[Channel::strings], uLo[Channel::detune],
                       uHi[Channel::detune]);
-        row("unison", "the strings and the detune end to end", "beat 6 db, after 2 (render)", b, "stage 1 renders it");
+        row("strings, detune", "the strings and the detune end to end", "beat 6 db, after 2 (render)", b, "stage 1 renders it");
         std::snprintf(b, sizeof b, "%.2f octaves (%.1f -> %.1f hz)", std::log2(f1lo / f1hi), f1lo, f1hi);
-        row("body", "the board's first mode end to end", "an octave", b, std::log2(f1lo / f1hi) >= 1.0 ? "met" : "NOT MET");
+        row("boardArea, boardLoss, open", "the board's first mode end to end", "an octave", b, std::log2(f1lo / f1hi) >= 1.0 ? "met" : "NOT MET");
         std::snprintf(b, sizeof b, "%.1f x (%.3f -> %.3f s)", relLight / relHeavy, relHeavy, relLight);
-        row("damper", "the release t60 of c4's first partial end to end (dampRateOf)", "8 x", b, relLight / relHeavy >= 8.0 ? "met" : "NOT MET");
+        row("dampRate", "the release t60 of c4's first partial end to end (dampRateOf)", "8 x", b, relLight / relHeavy >= 8.0 ? "met" : "NOT MET");
         std::snprintf(b, sizeof b, "%.2f %% -> %.2f %%", 100.0 * farE3, 100.0 * closeE3);
-        row("pickup", "thd far -> close, velocity 1, rhodes at e3", "under 3 %, over 15 %", b, farE3 < 0.03 && closeE3 > 0.15 ? "met" : "NOT MET");
+        row("gap, offset", "thd far -> close, velocity 1, rhodes at e3", "under 3 %, over 15 %", b, farE3 < 0.03 && closeE3 > 0.15 ? "met" : "NOT MET");
         std::snprintf(b, sizeof b, "%.2f %% -> %.2f %%", 100.0 * farC4, 100.0 * closeC4);
-        row("pickup", "the same at c4", "under 3 %, over 15 %", b, farC4 < 0.03 && closeC4 > 0.15 ? "met" : "NOT MET");
+        row("gap, offset", "the same at c4", "under 3 %, over 15 %", b, farC4 < 0.03 && closeC4 > 0.15 ? "met" : "NOT MET");
         std::snprintf(b, sizeof b, "%d -> %d", onGrand, onRhodes);
         row("generator", "the partials on at c4, grand -> rhodes", "over 30 -> 6", b, onGrand > 30 && onRhodes <= 6 ? "met" : "NOT MET");
         std::fclose(f);
@@ -1361,27 +1317,26 @@ int cmdChart(const Args& a) {
 
 // ---- play, corpus, size ----------------------------------------------------------------------------
 
-// the render's spec from the arguments: the vector's instrument (--set's instrument channels over it); with
-// --table, a tine table set whole over it (rhodes's when no vector was named); --set's partial and player
+// the render's spec from the arguments: the piano's instrument (--set's instrument channels over it); with
+// --table, a tine table set whole over it (over rhodes when no preset is named); --set's partial and player
 // channels after; the note, the velocity, the length and the events. what: the source, for a reader
 bool playSpecOf(const Args& a, PlaySpec& sp, std::string& what) {
     sp = PlaySpec();
     sp.tuning = a.tuning;
-    const Tuning t = clamped(a.tuning);
-    Knobs k = a.knobs;
+    Args x = a;
     if (!a.table.empty()) {
         RefTable rt;
         std::string err;
         if (!readTable(a.table, rt, err)) { std::fprintf(stderr, "%s\n", err.c_str()); return false; }
         if (!partialTableOf(rt, sp.tableP)) { std::fprintf(stderr, "%s holds no partials to set whole\n", a.table.c_str()); return false; }
         sp.table = true;
-        if (!a.knobsGiven) k = knobAnchors()[1].k;
-        what = "the table " + std::filesystem::path(a.table).filename().string() + " set whole over " + knobLine("vector", k, 21, 108);
+        if (!x.preset) x.preset = presetByName("rhodes");
+        what = "the table " + std::filesystem::path(a.table).filename().string() + " set whole over " + pianoText(x);
     } else {
-        what = a.preset && std::memcmp(&a.knobs, &a.preset->knobs, sizeof a.knobs) == 0 ? knobLine(a.preset->name, k, a.preset->lo, a.preset->hi)
-                                                                                       : knobLine("vector", k, 21, 108);
+        what = pianoText(x);
+        if (x.preset) what += " (midi " + std::to_string(x.preset->lo) + " .. " + std::to_string(x.preset->hi) + ")";
     }
-    sp.instrument = shapeOf(k, lawConstants(), a.sets, t);
+    sp.instrument = pianoShape(x);
     for (const auto& p : a.sets)
         if (!isInstrumentChannel(p.first)) sp.sets.push_back(p);
     sp.midi = a.midi;
@@ -1451,11 +1406,6 @@ int cmdPlay(const Args& a) {
     std::string what;
     if (!playSpecOf(a, sp, what)) return 2;
     std::printf("play\n");
-    if (a.undoLevel && a.table.empty()) {
-        const float db = levelDb(a.knobs);
-        sp.tuning.outputGain = clamped(sp.tuning).outputGain * std::pow(10.0f, -db / 20.0f);
-        std::printf("  levelDb %+.2f db, undone: outputGain %.4f\n", db, sp.tuning.outputGain);
-    }
     return playInto(stdout, sp, what, a.wav, a.png);
 }
 
@@ -1484,9 +1434,7 @@ int cmdCorpus(const Args& a) {
     auto base = [&](int anchor, float midi, float vel) {
         Args x;
         x.tuning = a.tuning;
-        x.preset = presetByName(knobAnchors()[anchor].name);
-        x.knobs = x.preset->knobs;
-        x.knobsGiven = true;
+        x.preset = presetByName(anchors()[anchor].name);
         x.midi = midi;
         x.vel = vel;
         x.sec = 4.0f;
@@ -1497,7 +1445,7 @@ int cmdCorpus(const Args& a) {
         for (float note : notes)
             for (float vel : vels) {
                 char name[96];
-                std::snprintf(name, sizeof name, "%s_%d_v%.1f", knobAnchors()[an].name, (int)note, vel);
+                std::snprintf(name, sizeof name, "%s_%d_v%.1f", anchors()[an].name, (int)note, vel);
                 if (one(name, base(an, note, vel))) return 2;
             }
     Args x = base(0, 60.0f, 1.0f);
@@ -1522,9 +1470,8 @@ int cmdCorpus(const Args& a) {
     x = base(1, 64.0f, 1.0f);
     x.table = refDir() + "/tine_rhodes.txt";
     if (one("tine_table_64", x)) return 2;
-    // every preset at the bottom, the middle and the top of its range, the level table undone in the render's gain
-    std::fprintf(index, "\n# the presets: each at the bottom, middle and top of its range, velocities 0.5 and 1, 4 s, at an outputGain of\n"
-                        "# 10^(-levelDb / 20), the level table undone\n");
+    // every preset at the bottom, the middle and the top of its range
+    std::fprintf(index, "\n# the presets: each at the bottom, middle and top of its range, velocities 0.5 and 1, 4 s\n");
     for (int i = 0; i < presetCount(); ++i) {
         const PresetInfo& p = presetAt(i);
         const int notes3[3] = {p.lo, (p.lo + p.hi) / 2, p.hi};
@@ -1532,26 +1479,23 @@ int cmdCorpus(const Args& a) {
             for (float vel : vels) {
                 Args y;
                 y.preset = &p;
-                y.knobs = p.knobs;
-                y.knobsGiven = true;
                 y.midi = (float)note;
                 y.vel = vel;
                 y.sec = 4.0f;
                 y.tuning = a.tuning;
-                y.tuning.outputGain = a.tuning.outputGain * std::pow(10.0f, -levelDb(p.knobs) / 20.0f);
                 char name[96];
                 std::snprintf(name, sizeof name, "preset_%s_%d_v%.1f", p.name, note, vel);
                 if (one(name, y)) return 2;
             }
     }
     // the pool: grand on four voices, a chord with the pedal and five keys on four voices (the fifth steals the quietest)
-    std::fprintf(index, "\n# the pool: up::Pool<4> (seed 1, the default tuning), grand (setKnobs), each call landing at the top of the block its\n"
+    std::fprintf(index, "\n# the pool: up::Pool<4> (seed 1, the default tuning), grand (setShape), each call landing at the top of the block its\n"
                         "# time falls in; the sum, not clamped, written at the gain that brings its peak to 0.99 where it passes full scale\n");
     struct PoolCall { float at; int what; float key, vel; };     // what: 0 a note on, 1 a note off, 2 the pedal (key: its value)
     auto pool = [&](const std::string& name, const char* what, const std::vector<PoolCall>& calls, float sec) {
         Pool<4> p(1);
         p.setTuning(a.tuning);
-        p.setKnobs(knobAnchors()[0].k);
+        p.setShape(grand());
         const float fs = kDefaultFs;
         const int total = (int)std::lround(sec * fs);
         std::vector<float> x((size_t)total, 0.0f);
@@ -1613,95 +1557,6 @@ int cmdCorpus(const Args& a) {
     return 0;
 }
 
-// ---- level -----------------------------------------------------------------------------------------
-
-// the level table as up_level_table.inc holds it: no date, so the same engine writes the same bytes
-bool writeLevelTable(const std::string& path, const LevelTable& t) {
-    FILE* out = std::fopen(path.c_str(), "wb");
-    if (!out) return false;
-    const int floats = kLevelAnchors * kKnobCount * kLevelCells;
-    std::fprintf(out,
-                 "// upright — up_level_table.inc  (plan §2, the level table)\n"
-                 "// generated by `uptool level --write`; never edited by hand.\n"
-                 "// how loud a vector sounds, db against the reference: grand (the eight at 0 but generator -1) over the\n"
-                 "// octave c4 .. b4 (midi %.0f .. %.0f), each note struck at velocity 1 and rendered %.1f s as uptool play renders\n"
-                 "// it (the voice's bridge force through a board of its own, the pickup added) at the default tuning, its rms\n"
-                 "// over the first %.1f s after the strike, the octave's level the mean of the twelve powers (%.2f db full\n"
-                 "// scale), to 0.01 db. four anchors along the generator, the string, the middle, the tine and the reed: at\n"
-                 "// each, the eight at 0 but the generator at the anchor's, and a row a knob, that knob alone at each of its\n"
-                 "// eleven points from -1 to +1, db against the anchor's own level (each row 0 where the anchor sits on its\n"
-                 "// knob; the generator's row, measured once against the reference, is held in each block against that\n"
-                 "// anchor's level). levelDb reads the string's generator row, and the other seven rows at the two anchors\n"
-                 "// about the vector's generator, each read linearly between points and held past either end, summed, the\n"
-                 "// two anchors' sums linear in the generator between them (%d floats, %zu bytes)\n",
-                 kLevelMidi, kLevelMidi + (float)(kLevelNotes - 1), kLevelSec, kLevelWindow, 20.0 * std::log10(t.refRms), floats,
-                 sizeof(float) * (size_t)floats);
-    std::fprintf(out, "constexpr int kLevelPoints = %d;                 // a knob's points: eleven evenly from -1 to +1\n", kLevelCells);
-    std::fprintf(out, "constexpr int kLevelAnchors = %d;                 // the generator's anchors, each a block of rows\n", kLevelAnchors);
-    std::fprintf(out, "constexpr float kLevelAnchor[kLevelAnchors] = {");
-    for (int a = 0; a < kLevelAnchors; ++a) std::fprintf(out, "%s%+.1ff", a ? ", " : "", (double)levelAnchor(a));
-    std::fprintf(out, "};   // the string, the middle, the tine, the reed\n");
-    std::fprintf(out, "constexpr float kLevelRows[kLevelAnchors][kKnobCount][kLevelPoints] = {\n");
-    for (int a = 0; a < kLevelAnchors; ++a) {
-        std::fprintf(out, "  {  // the %s: generator %+.1f, its own level %+.2f db against the reference\n", levelAnchorName(a), (double)levelAnchor(a),
-                     t.anchorDb[a]);
-        for (int k = 0; k < kKnobCount; ++k) {
-            std::fprintf(out, "    {");
-            for (int i = 0; i < kLevelCells; ++i) std::fprintf(out, "%s%+.2ff", i ? ", " : "", (double)t.row[a][k][i]);
-            std::fprintf(out, "},  // %s\n", knobName((Knob)k));
-        }
-        std::fprintf(out, "  },\n");
-    }
-    std::fprintf(out, "};\n");
-    std::fclose(out);
-    return true;
-}
-
-int cmdLevel(const Args& a) {
-    const auto t0 = std::chrono::steady_clock::now();
-    const LevelTable t = measureLevelTable();
-    const double took = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("the level table: the reference, grand over the octave c4 .. b4 (midi %.0f .. %.0f), each note at velocity 1, %.1f s as play\n"
-                "renders it, its rms over the first %.1f s, the octave the mean of the twelve powers: %.4f (%+.2f db full scale); at each of\n"
-                "the generator's four anchors, each knob alone at eleven points, db against the anchor's own level (the cell's largest peak\n"
-                "under it), the generator's row measured once; %d octaves, %d renders in %.2f s\n",
-                kLevelMidi, kLevelMidi + (float)(kLevelNotes - 1), kLevelSec, kLevelWindow, t.refRms, 20.0 * std::log10(t.refRms), t.octaves,
-                t.octaves * kLevelNotes, took);
-    double loudest = 0.0;
-    for (int an = 0; an < kLevelAnchors; ++an) {
-        std::printf("\nthe %s (generator %+.1f, the eight at 0 but the generator): its own level %+.2f db against the reference\n", levelAnchorName(an),
-                    (double)levelAnchor(an), t.anchorDb[an]);
-        std::printf("  %-9s", "");
-        for (int i = 0; i < kLevelCells; ++i) std::printf("  %+6.1f", levelPoint(i));
-        std::printf("   span\n");
-        for (int k = 0; k < kKnobCount; ++k) {
-            std::printf("  %-9s", knobName((Knob)k));
-            float lo = 1e9f, hi = -1e9f;
-            for (int i = 0; i < kLevelCells; ++i) {
-                std::printf("  %+6.2f", (double)t.row[an][k][i]);
-                lo = std::min(lo, t.row[an][k][i]);
-                hi = std::max(hi, t.row[an][k][i]);
-            }
-            std::printf("  %5.2f\n  %-9s", (double)(hi - lo), "");
-            for (int i = 0; i < kLevelCells; ++i) {
-                std::printf("  %6.3f", t.peak[an][k][i]);
-                loudest = std::max(loudest, t.peak[an][k][i]);
-            }
-            std::printf("\n");
-        }
-    }
-    std::printf("\nthe largest cell's peak %.3f full scale%s\n", loudest, loudest >= 1.0 ? " (over full scale: a wav would clamp)" : "");
-    if (!a.write) return 0;
-    const std::string path =
-        a.out.empty() ? std::filesystem::path(refDir() + "/../../src/core/up_level_table.inc").lexically_normal().string() : a.out;
-    if (!writeLevelTable(path, t)) {
-        std::fprintf(stderr, "cannot write %s\n", path.c_str());
-        return 2;
-    }
-    std::printf("written: %s\n", path.c_str());
-    return 0;
-}
-
 int cmdSize(const Args&) {
     const size_t voice = sizeof(Voice), ch = sizeof(Channels), main = sizeof(Bank<kMaxModes>), sec = 2 * sizeof(Bank<kUnisonModes>);
     const size_t hammer = sizeof(Hammer), pickup = sizeof(Pickup), state = sizeof(State), attack = sizeof(Attack);
@@ -1727,26 +1582,24 @@ int cmdSize(const Args&) {
 
 void usage() {
     std::fprintf(stderr,
-                 "uptool partials --knob NAME=VALUE ... | --preset NAME [--zero] [--midi M] [--set CHANNEL=VALUE ...] [--tune NAME=VALUE]\n"
+                 "uptool partials [--preset NAME] [--set CHANNEL=VALUE ...] [--midi M] [--tune NAME=VALUE]\n"
                  "uptool partials --table FILE\n"
-                 "uptool string --knob ... [--from M --to M]\n"
-                 "uptool hammer --knob ... [--midi M --vel V]\n"
-                 "uptool pickup --knob ... [--amp A] [--from-hammer --midi M --vel V]\n"
-                 "uptool board --knob ... [--sweep --out FILE]\n"
-                 "uptool print --knob ... | --preset NAME [--shape]\n"
+                 "uptool string ... [--from M --to M]\n"
+                 "uptool hammer ... [--midi M --vel V]\n"
+                 "uptool pickup ... [--amp A] [--from-hammer --midi M --vel V]\n"
+                 "uptool board ... [--sweep --out FILE]\n"
+                 "uptool print [--preset NAME] [--set CHANNEL=VALUE ...]\n"
                  "uptool random [--seed S --count N --midi M]\n"
-                 "uptool fit --table FILE [--lock KNOB=VALUE ...]\n"
+                 "uptool fit --table FILE [--set CHANNEL=VALUE ...]\n"
                  "uptool fit --constants --tables DIR [--kind KIND] [--out FILE] [--fix NAME,...]\n"
                  "uptool chart [DIR]\n"
                  "uptool chart --audio [DIR]\n"
-                 "uptool level [--write] [--out PATH]\n"
-                 "uptool play --preset NAME | --knob ... | --table FILE [--midi M --vel V --sec S --off-at S --restrike-at S --pedal\n"
-                 "            --pedal-off-at S --glide-to M2 [--glide-at S --glide-sec S] --set ... --tune ... --undo-level -o x.wav --png p.png]\n"
+                 "uptool play [--preset NAME | --table FILE] [--midi M --vel V --sec S --off-at S --restrike-at S --pedal\n"
+                 "            --pedal-off-at S --glide-to M2 [--glide-at S --glide-sec S] --set ... --tune ... -o x.wav --png p.png]\n"
                  "uptool corpus DIR [--tune NAME=VALUE ...]\n"
                  "uptool size\n"
-                 "  --knob NAME=VALUE (scale hammer strike unison body generator pickup damper, -1 .. 1; a knob not named is grand's: 0,\n"
-                 "  the generator -1)  --preset NAME (grand concertGrand upright spinet honkyTonk fortepiano rhodes rhodesBark wurlitzer;\n"
-                 "  a --knob after it wins)  --zero (all eight at 0)  --set CHANNEL=VALUE  --tune NAME=VALUE  --midi M\n");
+                 "  the piano: grand, or --preset NAME (grand concertGrand upright spinet honkyTonk fortepiano rhodes rhodesBark\n"
+                 "  wurlitzer), with --set CHANNEL=VALUE ... over it (any channel)  --tune NAME=VALUE  --midi M\n");
 }
 
 }  // namespace
@@ -1768,7 +1621,6 @@ int main(int argc, char** argv) {
     if (cmd == "play") return cmdPlay(a);
     if (cmd == "corpus") return cmdCorpus(a);
     if (cmd == "size") return cmdSize(a);
-    if (cmd == "level") return cmdLevel(a);
     usage();
     return 2;
 }

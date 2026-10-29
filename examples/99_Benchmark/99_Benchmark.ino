@@ -6,21 +6,22 @@
 // pool of eight, every partial of the build on (64 by default: the notes are
 // e1 .. g3, under which every partial of every scale sits below the
 // ceiling), three strings a note coupled through the bridge on their first
-// sixteen partials (unison 0), a chord of eight re-struck every two
-// seconds, and the scale knob gliding from spinet to concert and back over
-// 20 s, written fifty times a second through setKnobs, so the law runs
-// at every write and every partial's coefficients are computed again every
-// block (an expm1 and a sin pair a partial a block, for the main string and
-// its two secondaries: the libm the plan budgeted for a glide). then the
-// pool of eight at rhodes (the electric side's cost: six partials, the
-// tonebar, the pickup), then the same as the first on a pool of four.
+// sixteen partials, a chord of eight re-struck every two seconds, and the
+// strings (length and bass) gliding from the spinet's to the concert
+// grand's and back over 20 s, written fifty times a second through setShape
+// (a shape from nanShape holding the two), so the law runs at every write
+// and every partial's coefficients are computed again every block (an expm1
+// and a sin pair a partial a block, for the main string and its two
+// secondaries: the libm the plan budgeted for a glide). then the pool of
+// eight at rhodes (the electric side's cost: six partials, the tonebar, the
+// pickup), then the same as the first on a pool of four.
 //
 // four phases, a line a second, then a summary, then again:
 //
 //   pool8   60 s   the AudioSynthUprightPool<8> playing grand; the pool of
 //                  four asleep (its column is what four idle voices and an
 //                  idle board cost)
-//   rhodes  60 s   the pool of eight playing rhodes (the vector written at
+//   rhodes  60 s   the pool of eight playing rhodes (its shape written at
 //                  the phase's start, eased in under the ringing keys)
 //   pool4   60 s   the AudioSynthUprightPool<4> playing grand; the pool of
 //                  eight let go to sleep at the phase's start
@@ -46,8 +47,8 @@
 //
 // the output gain is 0.35 a voice and the mixer halves each pool, holding
 // the mix under 0.1 of full scale: measured on the host as the phases play
-// (20 s, the scale gliding, the level not undone), at a gain of 1 the pool
-// of eight peaks 0.47 at grand and 0.54 at rhodes, the pool of four 0.35.
+// (20 s, the strings gliding), at a gain of 1 the pool of eight peaks 0.53
+// at grand and 0.56 at rhodes, the pool of four 0.35.
 // the sum is for hearing that it rings, not for listening.
 //
 // teensy 4.1 + the audio shield (sgtl5000), 600 mhz. both pools into one
@@ -85,7 +86,6 @@ int       phase = kPool8;
 uint32_t  second = 0, lastPrintMs = 0, lastStrikeMs = 0, lastGlideMs = 0, phaseMs = 0;
 float     phaseMax[kPhases], max8[kPhases], max4[kPhases], lastRing = 0.0f;
 uint16_t  memMax = 0;
-up::Knobs knobs;                            // grand or rhodes, the scale gliding
 
 void strikeAll() {
     if (phase == kPool8 || phase == kRhodes)
@@ -94,12 +94,17 @@ void strikeAll() {
         for (float n : kNotes4) pool4.noteOn(n, kVel);
 }
 
-// scale from spinet to concert and back over 20 s
+// the strings from the spinet's to the concert grand's and back over 20 s, each channel along the geometric mean's path
 void glide(uint32_t now) {
     const float t = (float)((now - phaseMs) % 20000u) / 10000.0f;          // 0 .. 2
-    knobs.v[(int)up::Knob::scale] = t < 1.0f ? 2.0f * t - 1.0f : 3.0f - 2.0f * t;
-    if (phase == kPool8 || phase == kRhodes) pool8.setKnobs(knobs);
-    if (phase == kPool4) pool4.setKnobs(knobs);
+    const float u = t < 1.0f ? t : 2.0f - t;
+    const up::Shape& from = up::spinet();
+    const up::Shape& to = up::concertGrand();
+    up::Shape s = up::nanShape();                                        // every other channel stands
+    s[up::Channel::length] = from[up::Channel::length] * powf(to[up::Channel::length] / from[up::Channel::length], u);
+    s[up::Channel::bass] = from[up::Channel::bass] * powf(to[up::Channel::bass] / from[up::Channel::bass], u);
+    if (phase == kPool8 || phase == kRhodes) pool8.setShape(s);
+    if (phase == kPool4) pool4.setShape(s);
 }
 
 void enter(int p) {
@@ -107,13 +112,13 @@ void enter(int p) {
     second = 0;
     phaseMs = millis();
     phaseMax[p] = max8[p] = max4[p] = 0.0f;
-    knobs = up::presetByName(p == kRhodes ? "rhodes" : "grand")->knobs;
+    const up::Shape& piano = p == kRhodes ? up::rhodes() : up::grand();
     if (p == kPool8 || p == kRhodes) {
         pool4.allNotesOff();                  // the other pool's dampers land: it sleeps
-        pool8.setKnobs(knobs);
+        pool8.setShape(piano);
     } else if (p == kPool4) {
         pool8.allNotesOff();
-        pool4.setKnobs(knobs);
+        pool4.setShape(piano);
     }
     if (p != kRing) {
         strikeAll();
@@ -168,7 +173,7 @@ void setup() {
     pool4.setTuning(t);
 
     while (!Serial && millis() < 3000) {}
-    Serial.print("upright benchmark: grand (then rhodes), three strings, a chord of eight re-struck every 2 s, the scale gliding; ");
+    Serial.print("upright benchmark: grand (then rhodes), three strings, a chord of eight re-struck every 2 s, the strings gliding; ");
     Serial.print(up::kMaxModes);
     Serial.println(" partials a voice");
     Serial.print("F_CPU_ACTUAL ");

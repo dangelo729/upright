@@ -1,12 +1,13 @@
 // upright — up_channels.cpp  (plan §1)
 // runs per write and per block (tick), never per sample; defaultShape runs
-// the knobs and the law once.
+// the law once.
 #include "up_channels.h"
 
 #include <cstring>
+#include <limits>
 
-#include "up_knobs.h"
 #include "up_law.h"
+#include "up_presets.h"
 #include "up_rank.h"
 
 namespace up {
@@ -17,7 +18,7 @@ const char* const kNames[kChannelCount] = {
     "length", "bass", "tension", "gauge", "strings", "detune", "strikeShare", "lossRate", "lossSlope",
     "hardness", "exponent", "felt", "hammerMass",
     "boardArea", "boardLoss", "open",
-    "generator", "gap", "offset", "tonebar",
+    "generator", "gap", "offset", "tonebar", "tineT60", "tineLoad",
     "dampRate", "damperTop",
 #define UP_MODE(k) "ratio" #k,
 #include "up_modes.inc"
@@ -104,6 +105,8 @@ void channelRange(Channel c, float& lo, float& hi) {
         case Channel::generator:   lo = -1.0f; break;
         case Channel::gap:         lo = 0.1f; hi = 10.0f; break;
         case Channel::offset:      hi = 5.0f; break;
+        case Channel::tineT60:     lo = 0.05f; hi = 100.0f; break;
+        case Channel::tineLoad:    lo = 0.5f; hi = 4.0f; break;
         case Channel::dampRate:    hi = 500.0f; break;
         case Channel::damperTop:   hi = 127.0f; break;
         case Channel::midi:        hi = 127.0f; break;
@@ -133,12 +136,17 @@ PartialTable fromShape(const Shape& s) {
 }
 
 Shape defaultShape(const Tuning& t) {
-    Knobs grand = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}};
-    Shape s = pianoOf(grand, t);
+    Shape s = grand();
     toShape(partialsOf(s, rankAt(s, kScaleMidi), t), s);
     s[Channel::midi] = kScaleMidi;
     s[Channel::glide] = 0.0f;
     s[Channel::pedal] = 0.0f;
+    return s;
+}
+
+Shape nanShape() {
+    Shape s;
+    for (int i = 0; i < kChannelCount; ++i) s.v[i] = std::numeric_limits<float>::quiet_NaN();
     return s;
 }
 

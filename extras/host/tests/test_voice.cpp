@@ -1,6 +1,6 @@
 // upright — tests/test_voice.cpp  (plan §11; the tests' "the voice" bullet)
 //
-// 30 s of knob thrash under a strike every 100 ms is finite through a board,
+// 30 s of channel thrash under a strike every 100 ms is finite through a board,
 // its pickup under 1.5 and its board under 1; a key jump on a ringing voice,
 // up or down, grows in neither output and the corpus's glide stays under the
 // click bound; grand at c4 released lands the damper, f#6 over damperTop
@@ -20,11 +20,12 @@
 #include <vector>
 
 #include "core/up_board.h"
-#include "core/up_knobs.h"
+#include "core/up_presets.h"
 #include "core/up_voice.h"
 #include "up_analysis.h"
 #include "up_fit.h"
 #include "up_play.h"
+#include "up_shapes.h"
 #include "up_test.h"
 
 using namespace up;
@@ -32,13 +33,6 @@ using namespace up;
 namespace {
 
 constexpr float kFs = 44100.0f;
-const Knobs kGrand = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}};
-
-Knobs with(Knobs k, Knob which, float x) {
-    k.v[(int)which] = x;
-    return k;
-}
-
 double db(double x) { return 20.0 * std::log10(x + 1e-30); }
 
 // the first time (s) from `from` on where every 10 ms frame after it peaks under the record's peak by `under`
@@ -74,13 +68,36 @@ int blockAt(double sec) { return (int)(sec * kFs) / kBlock; }
 
 }  // namespace
 
-// 30 s of thrash: every 100 ms a random vector through pianoOf and setShape
-// (the generator among the eight) and a strike at a random note (24 .. 108)
-// and velocity, the pair through a board of the voice's own as play renders
-// it: finite, no nan (a check). the voice is not clamped and its level is the
-// level table's: the raw peaks (the whole, the board's, the pickup's)
-// printed, the pickup's under 1.5 and the board's under 1.0 (checks, known
-// with the number where missed): a key struck on a ringing voice retunes its
+namespace {
+
+// a shape drawn inside the presets' box: each instrument channel between the
+// nine presets' lowest and highest values, log where its span is (up_fit.h),
+// the generator from -1 to +1 with the tonebar beside it as every preset
+// holds it (1 - |g|)
+Shape drawInPresets(Rng& r) {
+    Shape s = nanShape();
+    for (int i = 0; i < kInstrumentChannels; ++i) {
+        const Channel c = (Channel)i;
+        float lo = presetAt(0).shape()[c], hi = lo, a, b;
+        for (int p = 1; p < presetCount(); ++p) {
+            lo = std::fmin(lo, presetAt(p).shape()[c]);
+            hi = std::fmax(hi, presetAt(p).shape()[c]);
+        }
+        const float u = 0.5f * (r.bipolar() + 1.0f);
+        s.v[i] = channelSpan(c, a, b) && lo > 0.0f ? lo * std::pow(hi / lo, u) : lo + (hi - lo) * u;
+    }
+    return withGenerator(s, s[Channel::generator]);
+}
+
+}  // namespace
+
+// 30 s of thrash: every 100 ms a random shape (drawInPresets, the generator
+// among its channels) through setShape and a strike at a random note
+// (24 .. 108) and velocity, the pair through a board of the voice's own as
+// play renders it: finite, no nan (a check). the voice is not clamped and the
+// shape's level is its own: the raw peaks (the whole, the board's, the
+// pickup's) printed, the pickup's under 1.5 and the board's under 1.0
+// (checks, known with the number where missed): a key struck on a ringing voice retunes its
 // strings, which grow in neither output (up_bank.h), so the pickup does not
 // read a bass string's millimetres at a treble frequency, nor the bridge a
 // treble string's velocity as bass millimetres. the board's largest peaks
@@ -100,9 +117,7 @@ UP_TEST(voice_thrash_30s) {
     const int step = (int)(0.1f * kFs) / kBlock;
     for (int blk = 0; blk < 300 * step; ++blk) {
         if (blk % step == 0) {
-            Knobs k;
-            for (int i = 0; i < kKnobCount; ++i) k.v[i] = r.bipolar();
-            v.setShape(pianoOf(k));
+            v.setShape(drawInPresets(r));
             v.noteOn(uni(24.0f, 108.0f), uni(0.05f, 1.0f));
         }
         v.render(bridge, pickup, kBlock);
@@ -176,7 +191,7 @@ struct Jump {
 };
 Jump jumpOf(float from, float to) {
     Voice v(3);
-    v.setShape(pianoOf(kGrand));
+    v.setShape(grand());
     v.noteOn(from, 1.0f);
     Board board;
     board.init(kFs);
@@ -240,7 +255,7 @@ UP_TEST(voice_key_jump_grows_in_neither_output) {
                i ? "c5 -> c3" : "c3 -> c5", j.span, j.tip, j.board, j.force, j.tip1, j.board1, j.force1);
     }
     PlaySpec sp;
-    sp.instrument = pianoOf(kGrand);
+    sp.instrument = grand();
     sp.sec = 4.0f;
     sp.glideTo = 67.0f;
     sp.glideAt = 1.0f;
@@ -263,11 +278,11 @@ UP_TEST(voice_key_jump_grows_in_neither_output) {
 
 // grand at c4, velocity 1, released at 1 s: its bridge force falls 60 db
 // under its peak within 1.5 x the damper's t60 (6.907755 / dampRate at the
-// damper knob's 0: 0.345 s) of the release; at f#6, over damperTop, the
+// grand's 20 /s: 0.345 s) of the release; at f#6, over damperTop, the
 // release changes nothing: the same bytes as a key held (its own fall 60 db
 // under its peak printed: the fundamental's t60 1.2 s at the loss knee)
 UP_TEST(voice_release_lands_the_damper) {
-    const Shape s = pianoOf(kGrand);
+    const Shape s = grand();
     const double t60 = 6.907755 / s[Channel::dampRate];
     auto released = [&](float midi) {
         return bridgeOf(s, 4.0f, [&](Voice& v, int b) {
@@ -293,7 +308,7 @@ UP_TEST(voice_release_lands_the_damper) {
 // the damper within 1.5 x its t60 after the pedal's ease (the eased pedal
 // under 0.05: -ln 0.05 / ratePedal)
 UP_TEST(voice_pedal_holds_the_damper) {
-    const Shape s = pianoOf(kGrand);
+    const Shape s = grand();
     const double t60 = 6.907755 / s[Channel::dampRate], ease = -std::log(0.05) / Tuning().ratePedal;
     const std::vector<float> held = bridgeOf(s, 3.0f, [&](Voice& v, int b) {
         if (b == 0) {
@@ -330,7 +345,7 @@ UP_TEST(voice_same_bytes_at_any_render_size) {
     const Call calls[] = {{0, 0}, {(int)(0.5f * kFs), 1}, {(int)(0.8f * kFs), 2}, {(int)(1.0f * kFs), 3}};
     auto run = [&](int size) {
         Voice v(77);
-        v.setShape(pianoOf(with(kGrand, Knob::generator, -0.4f)));
+        v.setShape(withGenerator(grand(), -0.4f));
         std::vector<float> b((size_t)total), p((size_t)total);
         int at = 0;
         size_t c = 0;
@@ -372,14 +387,14 @@ UP_TEST(voice_handoff_same_bytes) {
     PartialTable table = fromShape(defaultShape());
     table.ratio[3] = 4.07f;
     table.t60[5] = 0.5f;
-    const Knobs other = {{0.5f, -0.6f, 0.2f, 0.7f, -0.3f, -0.6f, 0.6f, -0.2f}};
+    const Shape other = with(withGenerator(fortepiano(), -0.6f), {{Channel::detune, 8.0f}});
     auto script = [&](Voice& v, int block) {
         switch (block) {
-            case 0:    v.setShape(pianoOf(kGrand)); v.noteOn(60.0f, 1.0f); break;
+            case 0:    v.setShape(grand()); v.noteOn(60.0f, 1.0f); break;
             case 40:   v.setPartial(2, 3.02f, 3.0f, 0.7f, -2.5f); break;
             case 80:   v.setTuning(t); v.setGlide(5.0f); v.setPitch(64.0f); break;
             case 120:  v.setPartials(table); v.noteOn(64.0f, 0.6f); break;
-            case 200:  v.setShape(pianoOf(other)); v.setPedal(0.6f); break;
+            case 200:  v.setShape(other); v.setPedal(0.6f); break;
             case 260:  v.noteOn(50.0f, 0.2f); v.noteOn(52.0f, 0.9f); v.noteOff(); break;
             case 300:  v.setPedal(0.0f); break;
             case 1400: v.setStrings(0.6f, 1.5f, 520.0f, 1.0f); v.setUnison(2.5f, 4.0f); v.setHammer(200.0f, 2.7f, 3e-4f, 3.0f);
@@ -427,7 +442,7 @@ UP_TEST(voice_measured_table_rings_where_it_says) {
     PlaySpec sp;
     CHECK(partialTableOf(t, sp.tableP));
     sp.table = true;
-    sp.instrument = pianoOf(knobAnchors()[1].k);
+    sp.instrument = rhodes();
     sp.instrument[Channel::strings] = 1.0f;
     sp.midi = 64.0f;
     sp.sec = 2.0f;
@@ -450,7 +465,7 @@ UP_TEST(voice_measured_table_rings_where_it_says) {
 // in the eased table and in the targets
 UP_TEST(voice_hand_partial_stands_until_the_instrument) {
     Voice v(5);
-    v.setShape(pianoOf(kGrand));
+    v.setShape(grand());
     v.noteOn(60.0f, 1.0f);
     float b[kBlock];
     v.render(b, nullptr, kBlock);
@@ -469,7 +484,7 @@ UP_TEST(voice_hand_partial_stands_until_the_instrument) {
     for (int i = 0; i < 400; ++i) v.render(b, nullptr, kBlock);
     v.partials(held);
     CHECK(std::fabs(held.ratio[k] - 5.31f) < 1e-4f && v.shape()[ratioChannel(k)] == 5.31f);
-    v.setShape(pianoOf(kGrand));
+    v.setShape(grand());
     for (int i = 0; i < 700; ++i) v.render(b, nullptr, kBlock);
     PartialTable back;
     v.partials(back);
@@ -478,15 +493,15 @@ UP_TEST(voice_hand_partial_stands_until_the_instrument) {
     printf("    the 5th partial by hand at 5.31 stood through a nan shape; the instrument written again took it back to %.4f\n", back.ratio[k]);
 }
 
-// the generator swept from -1 to +1 over 2 s (the knob's channels written each
-// block, the generator and the tonebar) under a held grand c4: the voice's pair
+// the generator swept from -1 to +1 over 2 s (the generator and the tonebar
+// written each block) under a held grand c4: the voice's pair
 // finite, and its click measure under the bound for its top partial (printed)
 UP_TEST(voice_generator_sweep) {
     Voice v(9);
     Tuning t;
     t.rateBody = 0.0f;                                   // the written path is the sweep
     v.setTuning(t);
-    v.setShape(pianoOf(kGrand));
+    v.setShape(grand());
     v.noteOn(60.0f, 1.0f);
     const int blocks = (int)(2.5f * kFs) / kBlock, from = blockAt(0.25), span = blockAt(2.0);
     std::vector<float> b((size_t)blocks * kBlock), p(b.size()), x(b.size());
@@ -522,7 +537,7 @@ UP_TEST(voice_generator_middle_sounds) {
     const float gs[3] = {-1.0f, -0.5f, 0.0f};
     for (int i = 0; i < 3; ++i) {
         PlaySpec sp;
-        sp.instrument = pianoOf(with(kGrand, Knob::generator, gs[i]));
+        sp.instrument = withGenerator(grand(), gs[i]);
         sp.sec = 1.0f;
         const PlayRender r = renderPlay(sp);
         const std::vector<double> f1 = {(double)r.table.ratio[0] * r.f0};
@@ -546,7 +561,7 @@ UP_TEST(voice_generator_sweep_electric) {
     Tuning t;
     t.rateBody = 0.0f;
     v.setTuning(t);
-    v.setShape(pianoOf(knobAnchors()[1].k));
+    v.setShape(rhodes());
     v.noteOn(64.0f, 1.0f);
     const int blocks = (int)(2.5f * kFs) / kBlock, from = blockAt(0.25), span = blockAt(2.0);
     std::vector<float> b((size_t)blocks * kBlock), p(b.size()), x(b.size());
@@ -576,7 +591,7 @@ UP_TEST(voice_generator_sweep_electric) {
 // kAftersound longer) printed, and known when over
 UP_TEST(voice_rhodes_sleeps) {
     PlaySpec sp;
-    sp.instrument = pianoOf(knobAnchors()[1].k);
+    sp.instrument = rhodes();
     sp.midi = 52.0f;
     PlayRender probe = renderPlay(sp);
     const double t60 = probe.table.t60[0] * probe.struck.rank.t60Scale;
@@ -594,7 +609,7 @@ UP_TEST(voice_rhodes_sleeps) {
 // has slept
 UP_TEST(voice_asleep_is_zero) {
     Voice v(6);
-    v.setShape(pianoOf(kGrand));
+    v.setShape(grand());
     v.setPedal(0.5f);
     std::vector<float> b(4 * kBlock + 17), p(b.size());
     v.render(b.data(), p.data(), (int)b.size());
@@ -615,20 +630,20 @@ UP_TEST(voice_asleep_is_zero) {
 }
 
 // the headroom kBoardOut sets: grand's octave c4 .. b4 at velocity 1 through
-// the board, read as the level table reads its reference (each note 0.6 s,
+// the board, read as up_play.h's octaveReading reads it (each note 0.6 s,
 // the rms over its first half second, the twelve powers' mean), 0.0897 rms
 // of full scale within 0.1 db (-20.9 db); grand at c4 alone (play's render,
 // 1 s) peaks near 0.18 there (printed, with the octave's largest peak).
 // rhodes at e4 through the pickup peaks between 0.2 and 0.5 (kPickupGain)
 UP_TEST(voice_headroom) {
-    const LevelReading octave = octaveReading(pianoOf(kGrand));
+    const LevelReading octave = octaveReading(grand());
     const double octaveDb = 20.0 * std::log10(octave.rms / 0.0897);
     PlaySpec g;
-    g.instrument = pianoOf(kGrand);
+    g.instrument = grand();
     g.sec = 1.0f;
     const double gp = peakAbs(renderPlay(g).x.data(), (size_t)kFs);
     PlaySpec r;
-    r.instrument = pianoOf(knobAnchors()[1].k);
+    r.instrument = rhodes();
     r.midi = 64.0f;
     r.sec = 1.0f;
     const double rp = peakAbs(renderPlay(r).x.data(), (size_t)kFs);
@@ -641,14 +656,13 @@ UP_TEST(voice_headroom) {
 
 // grand through the board at velocity 1 (play's render, 1 s): c6's peak within
 // 15 db under c4's and c2's within 15 db over it (the board's velocity, its
-// direct share and its field carry the treble; the level table carries the
-// rest)
+// direct share and its field carry the treble)
 UP_TEST(voice_board_keyboard_balance) {
     double peak[3];
     const float notes[3] = {36.0f, 60.0f, 84.0f};
     for (int i = 0; i < 3; ++i) {
         PlaySpec sp;
-        sp.instrument = pianoOf(kGrand);
+        sp.instrument = grand();
         sp.midi = notes[i];
         sp.sec = 1.0f;
         peak[i] = peakAbs(renderPlay(sp).x.data(), (size_t)kFs);
@@ -662,8 +676,8 @@ UP_TEST(voice_board_keyboard_balance) {
 // two noteOns in one block are the second: its note, its velocity
 UP_TEST(voice_second_note_in_a_block_wins) {
     Voice a(8), b(8);
-    a.setShape(pianoOf(kGrand));
-    b.setShape(pianoOf(kGrand));
+    a.setShape(grand());
+    b.setShape(grand());
     a.noteOn(60.0f, 0.3f);
     a.noteOn(65.0f, 0.9f);
     b.noteOn(65.0f, 0.9f);
@@ -680,7 +694,7 @@ UP_TEST(voice_second_note_in_a_block_wins) {
 // reseeded to another's seed renders its bytes
 UP_TEST(voice_pool_hooks) {
     Voice v(10);
-    v.setShape(pianoOf(kGrand));
+    v.setShape(grand());
     v.noteOn(62.0f, 1.0f);
     std::vector<float> x((size_t)kFs);
     v.render(x.data(), nullptr, kBlock);
@@ -701,7 +715,7 @@ UP_TEST(voice_pool_hooks) {
     Voice a(11), b(12);
     b.reseed(11);
     for (Voice* p : {&a, &b}) {
-        p->setShape(pianoOf(kGrand));
+        p->setShape(grand());
         p->noteOn(60.0f, 1.0f);
     }
     std::vector<float> ya(4000), yb(4000);

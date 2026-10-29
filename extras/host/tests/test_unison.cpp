@@ -18,10 +18,10 @@
 //                           the fast decay, the late the slow
 //   two beating at c6       2 cents: the beat at |Im sqrt(k² - eps²)| / pi,
 //                           under the free rate
-//   three tuned             the knob's detune at c4: no dip; the prompt
+//   three tuned             grand's detune at c4: no dip; the prompt
 //                           sound's slope and the aftersound's; the prompt
 //                           sound's pitch under the aftersound's; c6 printed
-//   a beating partial       the 4th at c4, two strings at the knob's detune:
+//   a beating partial       the 4th at c4, two strings at grand's detune:
 //                           the formula's beat at its own eps; three strings
 //                           printed
 //   the comb                grand at c4 as play reads it: the 8th partial 60
@@ -29,9 +29,9 @@
 //                           and ripple printed
 //   a fractional string     strings 2.5: struck, coupled and heard at half:
 //                           finite, its energy between the 2 and 3 strings'
-//   the knob under a note   unison -1 -> +1 at rateStrings over a ringing
-//                           c4: finite, under the click bound, nothing
-//                           restarts
+//   under a note            one string to three wide at rateStrings over
+//                           a ringing c4: finite, under the click bound,
+//                           nothing restarts
 //   the tine side           rhodes at e4: nothing couples; the tonebar beats
 //                           at the free rate of the preset's own detune (the
 //                           two strings' frequency difference); its decay
@@ -40,7 +40,6 @@
 #include <complex>
 #include <vector>
 
-#include "core/up_knobs.h"
 #include "core/up_presets.h"
 #include "core/up_voice.h"
 #include "up_analysis.h"
@@ -99,12 +98,9 @@ Note noteOf(const Shape& s, float midi, float strings, float detune, float sec, 
     return n;
 }
 
-const Shape& grandShape() {
-    static const Shape s = pianoOf(Knobs{{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}});
-    return s;
-}
+const Shape& grandShape() { return grand(); }
 
-// the knob's tuned detune, as pianoOf writes it at unison 0
+// grand's tuned detune
 double tunedDetune() { return grandShape()[Channel::detune]; }
 
 // pi df at a partial of hz, detuned by cents
@@ -227,7 +223,7 @@ UP_TEST(unison_two_strings_beat) {
            b.rate, want, 100.0 * (b.rate / want - 1.0), b.troughs, freeRate, 100.0 * (want / freeRate - 1.0), resistive);
 }
 
-// three strings at the knob's tuned detune (+d, -0.7 d) at c4, 16 s: no dip
+// three strings at grand's tuned detune (+d, -0.7 d) at c4, 16 s: no dip
 // (as the pair's: the largest over 0.5 .. 15 s under 6 db); the early slope
 // (the first second) within 15 % of -8.686 (sigma_n + 2 sigma_b), the in-
 // phase prompt sound, and the late (10 .. 16 s) within 15 % of -8.686
@@ -261,7 +257,7 @@ UP_TEST(unison_three_strings_tuned) {
            -kDbPerNeper * (c6.sigN + 2.0 * c6.sigB), s6.late, -kDbPerNeper * c6.sigI, -kDbPerNeper * c6.sigN);
 }
 
-// a beating partial: grand's c4, two strings at the knob's detune: the 4th
+// a beating partial: grand's c4, two strings at its detune: the 4th
 // partial's envelope (its band) beats within 5 % of |Im sqrt(k² - eps²)| /
 // pi at its own eps; the same partial with three strings printed (three
 // beat rates at once)
@@ -365,16 +361,15 @@ UP_TEST(unison_fractional_string) {
            two.e1, half.e1, three.e1, half.rise, two.r1, half.r1, three.r1, two.r2, half.r2, three.r2);
 }
 
-// the knob under a note: grand's c4 at unison -1 (one string) struck, and at
-// 1 s the instrument written at unison +1 (three strings at the wide detune)
-// and eased at rateStrings: the bridge force finite, its click measure from
+// the unison under a note: grand's c4 on one string struck, and at 1 s the
+// instrument written with three strings 20 cents wide and eased at
+// rateStrings: the bridge force finite, its click measure from
 // 0.25 s under the bound for the top partial, and nothing restarts: every
 // bank's energy never rises from block to block once the hammer has left
-UP_TEST(unison_knob_under_a_note) {
-    Knobs k = {{0.0f, 0.0f, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f}};
-    const Shape one = pianoOf(k);
-    k.v[(int)Knob::unison] = 1.0f;
-    const Shape wide = pianoOf(k);
+UP_TEST(unison_under_a_note) {
+    Shape one = grand(), wide = grand();
+    one[Channel::strings] = 1.0f;
+    wide[Channel::detune] = 20.0f;
     Voice v(4);
     v.setShape(one);
     v.noteOn(60.0f, 1.0f);
@@ -398,7 +393,7 @@ UP_TEST(unison_knob_under_a_note) {
     CHECK(allFinite(x.data(), x.size()));
     CHECK_MSG(click < bound, "the click measure %.4f, the bound %.4f (top %.0f hz)", click, bound, top);
     CHECK_MSG(rise <= 1e-6, "the energy rose %.3g from one block to the next", rise);
-    printf("    unison -1 -> +1 over a ringing c4 from 1 s: the click measure %.4f, the bound %.4f; the energy's largest rise %.2g; the force's rms "
+    printf("    one string -> three 20 cents wide over a ringing c4 from 1 s: the click measure %.4f, the bound %.4f; the energy's largest rise %.2g; the force's rms "
            "0.9 .. 1 s %.3f, 1.4 .. 1.5 s %.3f, 3.9 .. 4 s %.3f\n",
            click, bound, rise, rms(x.data() + (size_t)(0.9 * kFs), 4410), rms(x.data() + (size_t)(1.4 * kFs), 4410),
            rms(x.data() + (size_t)(3.9 * kFs), 4410));

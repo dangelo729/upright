@@ -103,7 +103,7 @@ void  outputWeights(const BoardTable& t, float* w);                      // radi
 
 // the shelf's mobility above the plate's modes, um/s per N, the direct share's and the field's scale: a flat
 // mobility at this level through the two highpasses beside the modes averages over 2 f_top .. 4 f_top what the
-// swept transfer does over the top mode's octave under it (f_top / 2 .. f_top) at body 0
+// swept transfer does over the top mode's octave under it (f_top / 2 .. f_top) at grand's board
 constexpr float kBoardShelf = 3133.0f;
 // the field's lines: lengths in samples whatever the rate and the body, 1.3 .. 6.4 ms at 44.1 khz, kFieldSamples in
 // all: one network mode per 17 hz, about the plate's own density at 1 m², n = (a b / 2) sqrt(rho h / H), one per 19 hz
@@ -117,13 +117,13 @@ constexpr float kFieldFitHz = 4000.0f;
 // infinite plate's drive-point mobility is instantaneous; the bending wave crosses 0.7 m in about 3 ms at 1 khz)
 constexpr float kFieldDirect = 0.316f;
 // the field's gain, um/s per N: its square times the network's impulse energy (a unit impulse in, no highpass, 0.5 s;
-// 17.25 at body 0, 16.26 at -1, 20.0 at +1) is (1 - kFieldDirect²) kBoardShelf² at body 0, within 0.7 db of it at -1
-// and +1, so the field and the direct share together carry the shelf's mean power transfer (a flat gain G has sum h² =
-// G²) (uptool board)
+// 17.25 at grand's board, 16.26 at the spinet's, 20.0 at the concert grand's) is (1 - kFieldDirect²) kBoardShelf² at
+// grand's, within 0.7 db of it at the other two, so the field and the direct share together carry the shelf's mean
+// power transfer (a flat gain G has sum h² = G²) (uptool board)
 constexpr float kFieldGain = 715.8f;
-// the board's output per um/s of radiated modal velocity: grand's octave c4 .. b4 at velocity 1, read as the level
-// table reads its reference (up_play.h's octaveReading), is 0.0897 rms full scale (-20.9 db), the level grand's c4
-// alone read when the table was one note's: a vector undone by the table lands there. grand's c4 peaks near 0.18
+// the board's output per um/s of radiated modal velocity: grand's octave c4 .. b4 at velocity 1 (each note's first
+// half second's rms, the octave the mean of the twelve powers: up_play.h's octaveReading) is 0.0897 rms full scale
+// (-20.9 db). grand's c4 peaks near 0.18
 constexpr float kBoardOut = 1.235e-6f;
 
 class Board {

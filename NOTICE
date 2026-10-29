@@ -110,7 +110,6 @@ of them is compiled into the library.
     the partials (0.45 of the sample rate); read, not copied.
   - The author's belfry, windstrument and monk_mouth libraries (MIT). The
     channel table and its sequence, the law as a derived-channel writer, the
-    knobs as a pure mapping with an exact read-back, the level table, the
     pool with its note table and its fade, the two Teensy wrappers and their
     handoff (the pending table under an interrupt mask, the command queue
     with its payload rings), the host rig and its tests follow their shape,

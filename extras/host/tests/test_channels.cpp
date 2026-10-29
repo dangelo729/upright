@@ -3,15 +3,16 @@
 // the last writer wins by sequence; latch; a nan is no write; tick eases and
 // says what moves; a write under an older sequence loses; the four partial
 // blocks contiguous and partialOf right at their edges; every name finds its
-// channel again; every channel's span holds the default piano; the tuning's
-// defaults and clamped(); a partial table through a shape and back; the
-// law's writer and a partial set by hand.
+// channel again; every channel's span holds the default piano; the tine's
+// two channels, their spans, names, group and defaults; nanShape; the
+// tuning's defaults and clamped(); a partial table through a shape and
+// back; the law's writer and a partial set by hand.
 #include <cmath>
 #include <cstring>
 
 #include "core/up_channels.h"
-#include "core/up_knobs.h"
 #include "core/up_law.h"
+#include "core/up_presets.h"
 #include "core/up_rank.h"
 #include "up_test.h"
 
@@ -34,7 +35,7 @@ UP_TEST(channels_names_and_blocks) {
     CHECK(channelByName("gain7", c) && c == gainChannel(7));
     CHECK(channelByName("out7", c) && c == outChannel(7));
     CHECK(std::strcmp(channelName(Channel::damperTop), "damperTop") == 0 && std::strcmp(channelName(outChannel(0)), "out0") == 0);
-    CHECK(kChannelCount == 22 + 4 * kMaxModes + 3 && kInstrumentChannels == 22);
+    CHECK(kChannelCount == 24 + 4 * kMaxModes + 3 && kInstrumentChannels == 24);
     bool blocks = true;
     for (int k = 0; k < kMaxModes; ++k) {
         blocks = blocks && (int)ratioChannel(k) == (int)Channel::ratio0 + k && (int)t60Channel(k) == (int)Channel::ratio0 + kMaxModes + k &&
@@ -57,7 +58,7 @@ UP_TEST(channels_names_and_blocks) {
           groupOf(Channel::boardArea) == Group::body && groupOf(Channel::tonebar) == Group::body && groupOf(Channel::damperTop) == Group::body &&
           groupOf(gainChannel(3)) == Group::modes && groupOf(Channel::midi) == Group::pitch && groupOf(Channel::glide) == Group::pitch &&
           groupOf(Channel::pedal) == Group::pedal);
-    printf("    %d channels: 22 instrument, 4 blocks of %d partials, 3 player\n", kChannelCount, kMaxModes);
+    printf("    %d channels: 24 instrument, 4 blocks of %d partials, 3 player\n", kChannelCount, kMaxModes);
 }
 
 // every channel's span holds the default piano, which is grand's with the
@@ -72,8 +73,7 @@ UP_TEST(channels_range_holds_the_default) {
         outside += !ok;
         CHECK_MSG(ok, "%s: %g outside %g .. %g", channelName((Channel)i), d.v[i], lo, hi);
     }
-    const Knobs grand = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}};
-    const Shape b = pianoOf(grand);
+    const Shape& b = grand();
     const PartialTable p = partialsOf(b, rankAt(b, 60.0f));
     bool same = true;
     for (int i = 0; i < kInstrumentChannels; ++i) same = same && d.v[i] == b.v[i];
@@ -83,6 +83,56 @@ UP_TEST(channels_range_holds_the_default) {
     CHECK(same);
     CHECK(d[Channel::midi] == 60.0f && d[Channel::glide] == 0.0f && d[Channel::pedal] == 0.0f && d[Channel::generator] == -1.0f);
     printf("    the default piano inside every channel's span: %d outside\n", outside);
+}
+
+// the tine's two channels: in the generator group after the tonebar, their
+// names finding them again, their spans tineT60 0.05 .. 100 s and tineLoad
+// 0.5 .. 4, eased at the body's rate; the default piano and every preset at
+// 10.4 s and 1.18
+UP_TEST(channels_the_tine_channels) {
+    CHECK((int)Channel::tineT60 == (int)Channel::tonebar + 1 && (int)Channel::tineLoad == (int)Channel::tonebar + 2 &&
+          (int)Channel::dampRate == (int)Channel::tineLoad + 1);
+    Channel c;
+    CHECK(std::strcmp(channelName(Channel::tineT60), "tineT60") == 0 && channelByName("tineT60", c) && c == Channel::tineT60);
+    CHECK(std::strcmp(channelName(Channel::tineLoad), "tineLoad") == 0 && channelByName("tineLoad", c) && c == Channel::tineLoad);
+    float lo, hi;
+    channelRange(Channel::tineT60, lo, hi);
+    CHECK(lo == 0.05f && hi == 100.0f);
+    channelRange(Channel::tineLoad, lo, hi);
+    CHECK(lo == 0.5f && hi == 4.0f);
+    CHECK(isInstrumentChannel(Channel::tineT60) && isInstrumentChannel(Channel::tineLoad) && groupOf(Channel::tineT60) == Group::body &&
+          groupOf(Channel::tineLoad) == Group::body);
+    Tuning t;
+    t.rateBody = 2.5f;
+    const Channels ch(t);
+    CHECK(ch.rateOf(Channel::tineT60) == 2.5f && ch.rateOf(Channel::tineLoad) == 2.5f);
+    const Shape d = defaultShape();
+    CHECK(d[Channel::tineT60] == 10.4f && d[Channel::tineLoad] == 1.18f);
+    CHECK(ch.target(Channel::tineT60) == 10.4f && ch.target(Channel::tineLoad) == 1.18f);
+    bool presets = true;
+    for (int i = 0; i < presetCount(); ++i) {
+        const Shape& s = presetAt(i).shape();
+        presets = presets && s[Channel::tineT60] == 10.4f && s[Channel::tineLoad] == 1.18f;
+    }
+    CHECK(presets);
+    printf("    tineT60 %d and tineLoad %d after the tonebar (%d), 0.05 .. 100 s and 0.5 .. 4, at the body's rate; 10.4 s and 1.18 in the "
+           "default and every preset\n",
+           (int)Channel::tineT60, (int)Channel::tineLoad, (int)Channel::tonebar);
+}
+
+// nanShape: every channel nan, so a shape of it writes nothing
+UP_TEST(channels_nan_shape) {
+    const Shape s = nanShape();
+    bool all = true;
+    for (int i = 0; i < kChannelCount; ++i) all = all && s.v[i] != s.v[i];
+    CHECK(all);
+    Channels ch;
+    const uint32_t before = ch.lastSeq();
+    const Shape held = ch.shape();
+    ch.setShape(s);
+    bool same = true;
+    for (int i = 0; i < kChannelCount; ++i) same = same && ch.target((Channel)i) == held.v[i] && ch.seq((Channel)i) == 0;
+    CHECK(same && ch.lastSeq() == before + 1);
 }
 
 // in one table, the last write to a channel is its target; a nan is no write
@@ -271,8 +321,7 @@ UP_TEST(channels_the_law_writes_the_partials) {
     const RankState c4 = rankAt(ch.shape(), 60.0f);
     CHECK(law.update(ch, c4, false));                     // a fresh writer writes
     CHECK(!law.update(ch, c4, false));                    // nothing new
-    const Knobs spinet = {{-1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}};
-    ch.setShape(pianoOf(spinet));
+    ch.setShape(spinet());
     const RankState r = rankAt(ch.shape(), 60.0f);
     CHECK(law.update(ch, r, false));
     const PartialTable want = partialsOf(ch.shape(), r);

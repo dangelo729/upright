@@ -27,16 +27,16 @@
 // every voice's pedal channel and is the pool's pedal: a note that lands
 // takes it. allNotesOff releases every key.
 //
-// pool-wide writes (set, setRate, setShape, setKnobs, setPartial,
-// setPartials, setTuning) go to every voice now, in the caller's order, and
-// stand over later notes: a voice keeps its channel table across notes, so a
-// note lands on the piano the pool last wrote, the last writer winning per
+// pool-wide writes (set, setRate, setShape, setPartial, setPartials,
+// setTuning) go to every voice now, in the caller's order, and stand over
+// later notes: a voice keeps its channel table across notes, so a note
+// lands on the piano the pool last wrote, the last writer winning per
 // channel by the sequence, exactly as on one voice (a partial written by hand
 // pool-wide stands on a later note until the instrument is written again).
-// setKnobs is pianoOf, then setShape. the board's plate is the written body:
-// setShape sets it from the shape's boardArea, boardLoss and open where they
-// are not nan, set from the one channel written; the plate lands at once, not
-// eased (Board::setPlate, its table rebuilt only when it moved).
+// the board's plate is the written body: setShape sets it from the shape's
+// boardArea, boardLoss and open where they are not nan, set from the one
+// channel written; the plate lands at once, not eased (Board::setPlate, its
+// table rebuilt only when it moved).
 //
 // render: control runs once per 128 samples whatever size render() is called
 // with: the pool's block (the stolen voices, the frees, the levels), then
@@ -62,7 +62,6 @@
 #include "up_board.h"
 #include "up_channels.h"
 #include "up_config.h"
-#include "up_knobs.h"
 #include "up_tuning.h"
 #include "up_voice.h"
 
@@ -114,7 +113,6 @@ public:
     void set(Channel c, float target);
     void setRate(Channel c, float perSec);
     void setShape(const Shape& s);                 // a nan entry is no write
-    void setKnobs(const Knobs& k);                 // pianoOf, then setShape
     void setPartial(int k, float ratio, float t60, float gain, float out);   // one partial by hand
     void setPartials(const PartialTable& t);       // a measured string, whole (a nan skips)
     void setTuning(const Tuning& t);

@@ -31,7 +31,7 @@
 // on a velocity output, and one retuned down at its old velocity would push
 // the bridge hz_old / hz_new harder. no piano gets louder when a string is
 // retuned. a partial coming on from off starts from rest, as before; the
-// board's modes under the body knob take the same rule.
+// board's modes under a body write take the same rule.
 //
 // the per-sample path, multiplies and adds on what the block set up, no
 // branch per partial but the live list, no libm:

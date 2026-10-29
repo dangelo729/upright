@@ -11,22 +11,24 @@
 #include <cmath>
 #include <initializer_list>
 
-#include "core/up_knobs.h"
 #include "core/up_pickup.h"
+#include "core/up_presets.h"
 #include "core/up_voice.h"
 #include "up_analysis.h"
 #include "up_contact.h"
 #include "up_fit.h"
+#include "up_shapes.h"
 #include "up_test.h"
 
 using namespace up;
 
 namespace {
 
-Shape rhodesAt(float pickup) {
-    Knobs k = knobAnchors()[1].k;
-    k.v[(int)Knob::pickup] = pickup;
-    return pianoOf(k);
+// rhodes's pickup far (gap 3 mm, offset 1.5 mm), set (its own: 1.5, 0.9) and close (0.75, 0.3: rhodesBark's)
+const char* const kSetting[3] = {"far", "set", "close"};
+Shape rhodesAt(int p) {
+    const float gap[3] = {3.0f, 1.5f, 0.75f}, offset[3] = {1.5f, 0.9f, 0.29999995f};
+    return with(rhodes(), {{Channel::gap, gap[p]}, {Channel::offset, offset[p]}});
 }
 
 }  // namespace
@@ -34,7 +36,7 @@ Shape rhodesAt(float pickup) {
 // centred (offset 0) the output is even in x: the fundamental under -30 db
 // of the second harmonic
 UP_TEST(pickup_centred) {
-    const Shape s = rhodesAt(0.0f);
+    const Shape s = rhodesAt(1);
     double h[8];
     sineThd(0.2f, 0.0f, s[Channel::gap], 0.0f, h);
     const double rel = dbOf(h[0] / h[1]);
@@ -42,11 +44,11 @@ UP_TEST(pickup_centred) {
     printf("    offset 0, gap %.2f mm, 0.2 mm: the fundamental %.1f db against the second harmonic\n", s[Channel::gap], rel);
 }
 
-// rhodes's far setting (pickup -1) under 2 % thd and its close setting (+1)
+// rhodes's far setting under 2 % thd and its close setting
 // over 15 %, a sine of 0.2 mm; where 0.2 mm misses either, the amplitude
 // that meets both is printed
 UP_TEST(pickup_far_and_close) {
-    const Shape far = rhodesAt(-1.0f), close = rhodesAt(1.0f);
+    const Shape far = rhodesAt(0), close = rhodesAt(2);
     double h[8];
     const double tf = sineThd(0.2f, 0.0f, far[Channel::gap], far[Channel::offset], h);
     const double tc = sineThd(0.2f, 0.0f, close[Channel::gap], close[Channel::offset], h);
@@ -62,18 +64,18 @@ UP_TEST(pickup_far_and_close) {
 }
 
 // doubling the amplitude raises the second harmonic by 6 db and more at
-// rhodes's far and close settings; at the set setting (pickup 0) the offset
+// rhodes's far and close settings; at the set setting (its own) the offset
 // sits near the lorentzian's inflection (offset / gap 0.6, the second
 // harmonic's term zero at 1 / sqrt 3), printed
 UP_TEST(pickup_second_harmonic_grows) {
-    for (float p : {-1.0f, 0.0f, 1.0f}) {
+    for (int p : {0, 1, 2}) {
         const Shape s = rhodesAt(p);
         double a[8], b[8];
         sineThd(0.2f, 0.0f, s[Channel::gap], s[Channel::offset], a);
         sineThd(0.4f, 0.0f, s[Channel::gap], s[Channel::offset], b);
         const double rise = dbOf(b[1] / a[1]);
-        if (p != 0.0f) CHECK_MSG(rise >= 6.0, "pickup %+.0f: the second harmonic rises %.1f db", p, rise);
-        printf("    pickup %+.0f (offset / gap %.2f): 0.2 -> 0.4 mm moves the second harmonic %+.1f db (%+.1f -> %+.1f db re the first)\n", p,
+        if (p != 1) CHECK_MSG(rise >= 6.0, "%s: the second harmonic rises %.1f db", kSetting[p], rise);
+        printf("    %s (offset / gap %.2f): 0.2 -> 0.4 mm moves the second harmonic %+.1f db (%+.1f -> %+.1f db re the first)\n", kSetting[p],
                s[Channel::offset] / s[Channel::gap], rise, dbOf(a[1] / a[0]), dbOf(b[1] / b[0]));
     }
 }
@@ -111,7 +113,7 @@ UP_TEST(pickup_electrostatic_thd) {
 
 // the electrostatic curve's thd rises with amplitude, at wurlitzer's gap
 UP_TEST(pickup_electrostatic_monotone) {
-    const Shape s = pianoOf(knobAnchors()[2].k);
+    const Shape& s = wurlitzer();
     double h[8], last = -1.0;
     bool rising = true;
     for (float a : {0.02f, 0.05f, 0.1f, 0.2f, 0.4f, 0.8f, 1.2f}) {
@@ -126,7 +128,7 @@ UP_TEST(pickup_electrostatic_monotone) {
 // at the far setting the output is a sine's derivative: the fundamental in
 // phase with cos (within 1 degree) at C'(0) A w (within 2 %)
 UP_TEST(pickup_far_is_a_derivative) {
-    const Shape s = rhodesAt(-1.0f);
+    const Shape s = rhodesAt(0);
     const double fs = 44100.0, f = 100.0, amp = 0.2, gap = s[Channel::gap], off = s[Channel::offset];
     double re = 0.0, im = 0.0;
     const int n = 44100;
@@ -177,7 +179,7 @@ UP_TEST(pickup_amp_pole) {
 UP_TEST(pickup_stage_is_the_curve) {
     double worst = 0.0;
     for (float g : {0.0f, 0.4f, 1.0f})
-        for (float p : {-1.0f, 1.0f}) {
+        for (int p : {0, 2}) {
             const Shape s = rhodesAt(p);
             Pickup stage;
             stage.setPole(6000.0f, kDefaultFs);
@@ -203,7 +205,7 @@ UP_TEST(pickup_stage_is_the_curve) {
 // against the simulator's tip (the engine's scheme at kContactRate fs, the state after each whole sample)
 // through pickupVoltage, the amp's pole and kPickupGain, within 1 % rms over the first 100 ms
 UP_TEST(pickup_in_the_voice) {
-    Shape s = rhodesAt(0.0f);
+    Shape s = rhodesAt(1);
     s[Channel::strings] = 1.0f;
     const int n = (int)(0.1 * kDefaultFs);
     Voice v(1);
@@ -229,10 +231,10 @@ UP_TEST(pickup_in_the_voice) {
     printf("    rhodes at e4, one string: the voice's pickup %.4f %% rms off the simulator's tip through the curve over 100 ms\n", 100.0 * rel);
 }
 
-// rhodes at e4, velocity 1, its pickup's thd over the 100 ms after the hammer leaves: at pickup -1 under 2 %,
-// at +1 over 15 % (known, with the tip's swing, where missed); pickup 0 printed
+// rhodes at e4, velocity 1, its pickup's thd over the 100 ms after the hammer leaves: far under 2 %, close over
+// 15 % (known, with the tip's swing, where missed); set printed
 UP_TEST(pickup_thd_in_the_voice) {
-    for (float p : {-1.0f, 0.0f, 1.0f}) {
+    for (int p : {0, 1, 2}) {
         const Shape s = rhodesAt(p);
         const int n = (int)(0.15 * kDefaultFs);
         Voice v(1);
@@ -248,9 +250,9 @@ UP_TEST(pickup_thd_in_the_voice) {
             for (int k = 0; k < kTineModes; ++k) tip = std::fmax(tip, v.state().amp[k]);
         }
         const double thd = thdOf(pk.data(), (size_t)(left > 0 ? left : 0), (size_t)(0.1 * kDefaultFs), midiToHz(64.0f), kDefaultFs);
-        printf("    pickup %+.0f (gap %.2f mm, offset %.2f mm): thd %.2f %%, the tip's partials up to %.3f mm\n", p, s[Channel::gap], s[Channel::offset],
+        printf("    %s (gap %.2f mm, offset %.2f mm): thd %.2f %%, the tip's partials up to %.3f mm\n", kSetting[p], s[Channel::gap], s[Channel::offset],
                100.0 * thd, tip);
-        if (p < 0.0f) KNOWN_FAILURE(thd < 0.02, "far: thd %.2f %% (the tip to %.3f mm)", 100.0 * thd, tip);
-        if (p > 0.0f) KNOWN_FAILURE(thd > 0.15, "close: thd %.2f %% (the tip to %.3f mm)", 100.0 * thd, tip);
+        if (p == 0) KNOWN_FAILURE(thd < 0.02, "far: thd %.2f %% (the tip to %.3f mm)", 100.0 * thd, tip);
+        if (p == 2) KNOWN_FAILURE(thd > 0.15, "close: thd %.2f %% (the tip to %.3f mm)", 100.0 * thd, tip);
     }
 }

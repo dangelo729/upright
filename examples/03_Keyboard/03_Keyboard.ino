@@ -16,14 +16,10 @@
 //   program change      a preset: 0 grand, 1 concertGrand, 2 upright,
 //                       3 spinet, 4 honkyTonk, 5 fortepiano, 6 rhodes,
 //                       7 rhodesBark, 8 wurlitzer (and on, modulo nine)
-//   cc 1 .. 8           the eight knobs from the preset's vector: scale,
-//                       hammer, strike, unison, body, generator, pickup,
-//                       damper, each 0 .. 127 as -1 .. +1
 //   cc 123              all notes off
-// a new piano (a program or a knob) is written to every voice and to every
-// note after it, and the board's plate to its body, at most a hundred times a
-// second, with the level table undone in the gain (as 01_Grand), so the
-// knobs move the piano, not the volume.
+// a new preset's shape is written whole (setShape) to every voice and to
+// every note after it, and the board's plate to its body; the voices ease
+// there under the ringing keys.
 //
 // teensy 4.1 and the audio shield (sgtl5000), and usb: the teensy is a usb
 // midi device, and a usb audio one too. its usb type must carry midi: in the
@@ -33,13 +29,14 @@
 // audio. once a second the serial monitor shows the piano, the voices
 // sounding and the cpu.
 //
-// the output gain is 0.45 before the level is undone, holding the loudest
-// preset's worst chord under full scale (the pool's sum is clamped):
-// measured on the host, eight keys struck in one block across a preset's
-// range at velocity 1 (the worst case: their onsets add) peak at 2.01 of
-// full scale for rhodesBark at a gain of 1 (its level undone), 0.50 for
-// grand, and four at 1.48; so here at most 0.90 and 0.67. a chord played by
-// hand lands over several blocks and peaks lower.
+// the output gain is 0.4, holding the loudest preset's worst chord under
+// full scale (the pool's sum is clamped): measured on the host, eight keys
+// struck in one block evenly across a preset's range at velocity 1 (the worst
+// case: their onsets add) peak at 2.27 of full scale for rhodesBark at a gain
+// of 1, 0.97 for rhodes, 0.59 for grand and 0.22 for wurlitzer; so here at
+// most 0.91. the presets differ in level (wurlitzer's chord 20 db under
+// rhodesBark's): the gain is one for all. a chord played by hand lands over
+// several blocks and peaks lower.
 //
 // make board: -DUSB_MIDI_AUDIO_SERIAL
 // ----------------------------------------------------------------------------
@@ -56,12 +53,10 @@ AudioConnection          cordUsbLeft(keyboard, 0, usb, 0);
 AudioConnection          cordUsbRight(keyboard, 0, usb, 1);
 AudioControlSGTL5000     codec;
 
-const float kGain = 0.45f;                  // the output gain before the level is undone
+const float kGain = 0.4f;                   // the pool's output gain
 
 int       preset = 0;
-up::Knobs knobs;
-bool      dirty = true;                     // a new piano to write
-uint32_t  lastWriteMs = 0, lastPrintMs = 0;
+uint32_t  lastPrintMs = 0;
 
 void onNoteOn(byte channel, byte note, byte velocity) {
     (void)channel;
@@ -79,9 +74,6 @@ void onControlChange(byte channel, byte control, byte value) {
     (void)channel;
     if (control == 64) {
         keyboard.pedal(value >= 64 ? 1.0f : 0.0f);           // the dampers held off, or let down
-    } else if (control >= 1 && control <= 8) {
-        knobs.v[control - 1] = 2.0f * (float)value / 127.0f - 1.0f;
-        dirty = true;
     } else if (control == 123) {
         keyboard.allNotesOff();
     }
@@ -90,16 +82,7 @@ void onControlChange(byte channel, byte control, byte value) {
 void onProgramChange(byte channel, byte program) {
     (void)channel;
     preset = program % up::presetCount();
-    knobs = up::presetAt(preset).knobs;
-    dirty = true;
-}
-
-// the piano to every voice, every later note and the board, its level undone in the gain
-void writePiano() {
-    keyboard.setKnobs(knobs);
-    up::Tuning t;
-    t.outputGain = kGain * powf(10.0f, -up::levelDb(knobs) / 20.0f);
-    keyboard.setTuning(t);
+    keyboard.setShape(up::presetAt(preset).shape());          // every voice, every later note and the board
 }
 
 void setup() {
@@ -109,9 +92,10 @@ void setup() {
     codec.enable();
     codec.volume(0.5f);
 
-    knobs = up::presetAt(preset).knobs;
-    writePiano();
-    dirty = false;
+    up::Tuning t;
+    t.outputGain = kGain;
+    keyboard.setTuning(t);
+    keyboard.setShape(up::presetAt(preset).shape());
 
     usbMIDI.setHandleNoteOn(onNoteOn);
     usbMIDI.setHandleNoteOff(onNoteOff);
@@ -123,20 +107,9 @@ void loop() {
     while (usbMIDI.read()) {}
 
     const uint32_t now = millis();
-    if (dirty && now - lastWriteMs >= 10u) {
-        lastWriteMs = now;
-        dirty = false;
-        writePiano();
-    }
-
     if (now - lastPrintMs >= 1000u) {
         lastPrintMs = now;
         Serial.print(up::presetAt(preset).name);
-        Serial.print("   knobs");
-        for (int k = 0; k < up::kKnobCount; ++k) {
-            Serial.print(' ');
-            Serial.print(knobs.v[k], 2);
-        }
         Serial.print("   voices ");
         Serial.print(keyboard.sounding());
         Serial.print(" of ");

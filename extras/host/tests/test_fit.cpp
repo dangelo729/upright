@@ -1,26 +1,28 @@
 // upright — tests/test_fit.cpp  (plan §15; the tests' "the fit" bullet)
 //
 // the rank's B per note against the reference grand and upright over each
-// table's notes from c1 to c7 at the vector fit finds: every note within 50
-// %, the rms ln residual under a bound; the fit on a table made from the
-// law's own B at scale +0.4 finds it; every reference table reads.
+// table's notes from c1 to c7 at the strings the fit finds: every note
+// within 50 %, the rms ln residual under a bound; the fit on a table made
+// from the law's own B at strings off grand's finds them; every reference
+// table reads.
 #include <cmath>
 #include <filesystem>
 #include <initializer_list>
 #include <string>
 
-#include "core/up_knobs.h"
+#include "core/up_presets.h"
 #include "core/up_rank.h"
 #include "up_fit.h"
+#include "up_shapes.h"
 #include "up_test.h"
 
 using namespace up;
 
 namespace {
 
-// a B table's notes from c1 (24) to c7 (96) at the fitted vector: the worst miss and its note, the rms of
+// a B table's notes from c1 (24) to c7 (96) at the fitted shape: the worst miss and its note, the rms of
 // ln(B_law / B_table) over those notes, and how many notes
-struct Miss { double worst = INFINITY, rms = INFINITY, worstMidi = 0.0; int notes = 0; Knobs at{}; };
+struct Miss { double worst = INFINITY, rms = INFINITY, worstMidi = 0.0; int notes = 0; Shape at = nanShape(); };
 Miss missOf(const char* file) {
     Miss m;
     RefTable t;
@@ -30,9 +32,9 @@ Miss missOf(const char* file) {
         return m;
     }
     if (bPoints(t).empty()) { m.worst = NAN; return m; }   // a table the sources left empty
-    const KnobFit f = fitTable(t, lawConstants(), FitSpec());
-    m.at = f.k;
-    const Shape s = shapeOf(f.k, lawConstants());
+    const ChannelFit f = fitTable(t, lawConstants());
+    m.at = f.s;
+    const Shape& s = f.s;
     double worst = 0.0, sum = 0.0;
     for (const BPoint& p : bPoints(t)) {
         if (p.midi < 24.0 || p.midi > 96.0) continue;
@@ -48,7 +50,7 @@ Miss missOf(const char* file) {
 
 }  // namespace
 
-// the grand's and the upright's measured B from c1 to c7 at the vector the
+// the grand's and the upright's measured B from c1 to c7 at the strings the
 // fit finds: the rms of ln(B_law / B_table) under 0.35 (the grand) and 0.5
 // (the upright), checks; every note within 50 % (the figure-read tables' own
 // scatter is ±20 %), the worst note printed and known, with its number,
@@ -62,20 +64,19 @@ UP_TEST(fit_b_tables) {
             printf("    %s: no data (see its header)\n", files[i]);
             continue;
         }
-        printf("    %s: %d notes from c1 to c7 at scale %+.3f: the worst %s %.1f %% off, the rms ln residual %.3f\n", files[i], m.notes,
-               m.at.v[(int)Knob::scale], noteName(m.worstMidi).c_str(), 100.0 * m.worst, m.rms);
+        printf("    %s: %d notes from c1 to c7 at length %.4f m, bass %.4f m: the worst %s %.1f %% off, the rms ln residual %.3f\n", files[i],
+               m.notes, m.at[Channel::length], m.at[Channel::bass], noteName(m.worstMidi).c_str(), 100.0 * m.worst, m.rms);
         KNOWN_FAILURE(m.worst <= 0.5, "%s: the worst note %s %.1f %% off the measured B (the gate 50 %%)", files[i], noteName(m.worstMidi).c_str(),
                       100.0 * m.worst);
         CHECK_MSG(m.rms < rmsBound[i], "%s: the rms ln residual %.3f (the gate %.2f)", files[i], m.rms, rmsBound[i]);
     }
 }
 
-// a table made from the law's own B at scale +0.4 (a0 to c8 by thirds):
-// the fit returns scale within 0.05
-UP_TEST(fit_finds_its_own_scale) {
-    Knobs k = knobAnchors()[0].k;
-    k.v[(int)Knob::scale] = 0.4f;
-    const Shape s = pianoOf(k);
+// a table made from the law's own B at strings off grand's (length 0.6191 m,
+// bass 1.8043 m; a0 to c8 by thirds): the fit returns both within 1 %
+UP_TEST(fit_finds_its_own_strings) {
+    const float length = 0.6191284f, bass = 1.8042724f;
+    const Shape s = with(grand(), {{Channel::length, length}, {Channel::bass, bass}});
     RefTable t;
     t.kind = "B";
     t.units = "midi, B";
@@ -89,9 +90,13 @@ UP_TEST(fit_finds_its_own_scale) {
         r.block = 0;
         t.rows.push_back(r);
     }
-    const KnobFit f = fitTable(t, lawConstants(), FitSpec());
-    CHECK_MSG(std::fabs(f.k.v[(int)Knob::scale] - 0.4f) <= 0.05f, "the fit found scale %+.3f", f.k.v[(int)Knob::scale]);
-    printf("    the law's own B at scale +0.4: the fit finds %+.3f (rms %.2g)\n", f.k.v[(int)Knob::scale], f.error.rms);
+    const ChannelFit f = fitTable(t, lawConstants());
+    const double dl = f.s[Channel::length] / length - 1.0, db = f.s[Channel::bass] / bass - 1.0;
+    CHECK(f.free.size() == 2 && f.free[0] == Channel::length && f.free[1] == Channel::bass);
+    CHECK_MSG(std::fabs(dl) <= 0.01 && std::fabs(db) <= 0.01, "the fit found length %.4f (%+.2f %%), bass %.4f (%+.2f %%)", f.s[Channel::length],
+              100.0 * dl, f.s[Channel::bass], 100.0 * db);
+    printf("    the law's own B at length %.4f, bass %.4f: the fit finds %.4f (%+.3f %%), %.4f (%+.3f %%), rms %.2g\n", length, bass,
+           f.s[Channel::length], 100.0 * dl, f.s[Channel::bass], 100.0 * db, f.error.rms);
 }
 
 // every reference table reads, with units, a source and a kind

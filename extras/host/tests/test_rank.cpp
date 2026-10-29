@@ -7,29 +7,22 @@
 #include <cmath>
 #include <initializer_list>
 
-#include "core/up_knobs.h"
 #include "core/up_law.h"
+#include "core/up_presets.h"
 #include "core/up_rank.h"
 #include "up_fit.h"
+#include "up_shapes.h"
 #include "up_test.h"
 
 using namespace up;
 
-namespace {
-
-const Knobs kGrand = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}};
-
-}  // namespace
-
-// L = min(length (f_c4 / f0)^rankLength, bass), at every note on three scales
+// L = min(length (f_c4 / f0)^rankLength, bass), at every note on the spinet's strings, grand's and a concert grand's
 UP_TEST(rank_length_capped_by_bass) {
     const LawConstants& c = lawConstants();
     int capped = 0, worstNote = 0;
     double worst = 0.0;
-    for (float sc : {-1.0f, 0.0f, 1.0f}) {
-        Knobs k = kGrand;
-        k.v[(int)Knob::scale] = sc;
-        const Shape s = pianoOf(k);
+    for (int sc : {0, 2, 4}) {
+        const Shape s = withStrings(grand(), sc);
         for (int m = 21; m <= 108; ++m) {
             const RankState r = rankAt(s, (float)m);
             const double scaled = s[Channel::length] * std::pow(261.6255653 / r.f0, (double)c.rankLength);
@@ -40,14 +33,14 @@ UP_TEST(rank_length_capped_by_bass) {
         }
     }
     CHECK_MSG(worst < 1e-5, "L %.3g off at midi %d", worst, worstNote);
-    const Shape g = pianoOf(kGrand);
+    const Shape& g = grand();
     CHECK(rankAt(g, 21.0f).L == g[Channel::bass] && std::fabs(rankAt(g, 60.0f).L - g[Channel::length]) < 1e-6f);
-    printf("    three scales, every note: L within %.2g of the rule; %d notes capped by the case\n", worst, capped);
+    printf("    three sets of strings, every note: L within %.2g of the rule; %d notes capped by the case\n", worst, capped);
 }
 
 // mu = T / (4 L² f0²) and Z = T / (2 L f0): the string strung to the tension
 UP_TEST(rank_mass_and_impedance) {
-    const Shape s = pianoOf(kGrand);
+    const Shape& s = grand();
     double worst = 0.0;
     for (int m = 21; m <= 108; ++m) {
         const RankState r = rankAt(s, (float)m);
@@ -61,15 +54,14 @@ UP_TEST(rank_mass_and_impedance) {
     printf("    grand's c4: mu %.3f g/m (a plain wire of %.3f mm), Z %.3f kg/s\n", c4.mu * 1e3, c4.d * 1e3, c4.Z);
 }
 
-// wrapped below the break and plain above it, on every scale; a wrapped
+// wrapped below the break and plain above it, on five sets of strings from
+// the spinet's to a concert grand's; a wrapped
 // string's core is core x (mu / muBreak)^coreGrow, at least core, and its
 // plain wire's diameter over kDmax
 UP_TEST(rank_wrapped_below_the_break) {
     const LawConstants& c = lawConstants();
-    for (float sc : {-1.0f, -0.5f, 0.0f, 0.5f, 1.0f}) {
-        Knobs k = kGrand;
-        k.v[(int)Knob::scale] = sc;
-        const Shape s = pianoOf(k);
+    for (int sc = 0; sc < 5; ++sc) {
+        const Shape s = withStrings(grand(), sc);
         bool seenPlain = false, ok = true;
         for (int m = 21; m <= 108; ++m) {
             const RankState r = rankAt(s, (float)m);
@@ -79,9 +71,9 @@ UP_TEST(rank_wrapped_below_the_break) {
                  (r.wrapped ? (r.d > c.dMax && r.dCore == c.core * std::pow(r.mu / muBreak, c.coreGrow) && r.dCore >= c.core)
                             : (r.d <= c.dMax && r.dCore == r.d));
         }
-        CHECK_MSG(ok, "scale %+.1f: a wrapped note above a plain one", sc);
+        CHECK_MSG(ok, "length %.4f, bass %.4f: a wrapped note above a plain one", kStringSizes[sc].length, kStringSizes[sc].bass);
     }
-    const Shape g = pianoOf(kGrand);
+    const Shape& g = grand();
     CHECK(rankAt(g, 21.0f).wrapped && !rankAt(g, 72.0f).wrapped);
     Shape thick = g;
     thick[Channel::gauge] = 1.2f;                          // a thicker wire is wrapped sooner
@@ -98,7 +90,7 @@ UP_TEST(rank_wrapped_below_the_break) {
 // falling up the keyboard and held at t60ScaleMax in the deep bass (a0's
 // 2.5, c3's under it and the rank's power unchanged); the bridge's pi T / L
 UP_TEST(rank_hammer_strike_decay) {
-    const Shape s = pianoOf(kGrand);
+    const Shape& s = grand();
     bool falling = true;
     RankState last = rankAt(s, 21.0f);
     for (int m = 22; m <= 108; ++m) {

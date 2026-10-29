@@ -1,9 +1,9 @@
 // upright — up_play.h  (plan §15)
 // a note rendered the way uptool play renders it, and what play reads from
-// it; the level table's reading and measurement; a vector heard as random,
-// fit and the presets' test hear it; the board's swept transfer: shared by
-// uptool (play, corpus, level, random, fit, chart --audio, board) and the
-// tests. host only.
+// it; how loud a piano sounds over an octave; a shape heard as random, fit
+// and the presets' test hear it; the board's swept transfer: shared by
+// uptool (play, corpus, random, fit, chart --audio, board) and the tests.
+// host only.
 //
 // the render: a voice (seed 1) with the tuning, the instrument (a shape's
 // instrument channels over the default's, --set's instrument channels over
@@ -38,7 +38,7 @@
 
 #include "core/up_board.h"
 #include "core/up_channels.h"
-#include "core/up_knobs.h"
+#include "core/up_presets.h"
 #include "core/up_voice.h"
 #include "up_analysis.h"
 
@@ -272,46 +272,18 @@ inline void printPlay(std::FILE* f, const PlayRender& r, const PlayReading& rd, 
     else std::fprintf(f, "  still ringing at %.2f s (every bank's energy %.3g mm²)\n", (double)r.x.size() / sp.fs, r.energyAtEnd);
 }
 
-// ---- the level table's reading ------------------------------------------------------------------------
-// how loud a piano sounds, as the level table (up_level_table.inc, levelDb)
-// reads it: struck at each of the twelve semitones c4 .. b4 (midi 60 .. 71),
-// velocity 1, each rendered 0.6 s as play renders it (the voice's pair, the
-// bridge force through a board of its own, the pickup added: the sum a
-// listener hears) at the default tuning, the rms over the first half second
-// after the strike; the octave's level is the mean of the twelve powers (one
-// note's level is the board's coincidence of partials and plate modes; an
-// octave's is the piano's). the reference is grand's octave (the eight at 0
-// but generator -1), so a gain of 10^(-levelDb / 20) lands any vector at
-// grand's octave level. the table is measured about the generator's four
-// anchors, the string (-1), the middle (-0.5), the tine (0) and the reed
-// (+1): at an anchor, the eight at 0 but the generator at the anchor's; a
-// knob's row there is that knob alone at each of eleven points from -1 to
-// +1, in db against the anchor's own level. the generator's own row is its
-// eleven points against the reference, measured once (each anchor's block
-// holds it against that anchor's level)
+// ---- the level ---------------------------------------------------------------------------------------
+// how loud a piano sounds: struck at each of the twelve semitones c4 .. b4
+// (midi 60 .. 71), velocity 1, each rendered 0.6 s as play renders it (the
+// voice's pair, the bridge force through a board of its own, the pickup
+// added: the sum a listener hears) at the default tuning, the rms over the
+// first half second after the strike; the octave's level is the mean of the
+// twelve powers (one note's level is the board's coincidence of partials and
+// plate modes; an octave's is the piano's). the reference is grand's octave
 
-constexpr int   kLevelCells = 11;                // a knob's points
-constexpr int   kLevelAnchors = 4;               // the string, the middle, the tine, the reed
 constexpr float kLevelMidi = 60.0f;              // the octave's first note, c4
 constexpr int   kLevelNotes = 12;                // its twelve semitones, c4 .. b4
 constexpr float kLevelSec = 0.6f, kLevelWindow = 0.5f;
-
-inline Knobs levelReference() { return {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}}; }
-inline float levelPoint(int i) { return -1.0f + 2.0f * (float)i / (float)(kLevelCells - 1); }
-inline float levelAnchor(int a) {
-    static const float at[kLevelAnchors] = {-1.0f, -0.5f, 0.0f, 1.0f};
-    return at[a < 0 ? 0 : (a >= kLevelAnchors ? kLevelAnchors - 1 : a)];
-}
-inline const char* levelAnchorName(int a) {
-    static const char* const name[kLevelAnchors] = {"string", "middle", "tine", "reed"};
-    return name[a < 0 ? 0 : (a >= kLevelAnchors ? kLevelAnchors - 1 : a)];
-}
-// an anchor's own vector: the eight at 0 but the generator at the anchor's
-inline Knobs levelBase(int a) {
-    Knobs k = levelReference();
-    k.v[(int)Knob::generator] = levelAnchor(a);
-    return k;
-}
 
 struct LevelReading {
     double rms = 0.0, peak = 0.0;
@@ -345,79 +317,32 @@ inline LevelReading octaveReading(const Shape& instrument, float from = kLevelMi
     return out;
 }
 
-struct LevelTable {
-    double refRms = 0.0;                                      // the reference's octave, full scale
-    double anchorDb[kLevelAnchors];                           // each anchor's own level against the reference
-    float  row[kLevelAnchors][kKnobCount][kLevelCells];       // db against the anchor's own level
-    double peak[kLevelAnchors][kKnobCount][kLevelCells];      // each cell's largest peak, full scale
-    int    octaves = 0;                                       // the octaves rendered
-};
-
-// the table measured: the reference, the generator's row once, each anchor's own and its seven other rows
-inline LevelTable measureLevelTable() {
-    LevelTable t;
-    t.refRms = octaveReading(pianoOf(levelReference())).rms;
-    t.octaves = 1;
-    double genDb[kLevelCells], genPeak[kLevelCells];
-    for (int i = 0; i < kLevelCells; ++i) {
-        Knobs v = levelReference();
-        v.v[(int)Knob::generator] = levelPoint(i);
-        const LevelReading r = octaveReading(pianoOf(v));
-        genDb[i] = 20.0 * std::log10(r.rms / t.refRms);
-        genPeak[i] = r.peak;
-        ++t.octaves;
-    }
-    for (int a = 0; a < kLevelAnchors; ++a) {
-        const double base = octaveReading(pianoOf(levelBase(a))).rms;
-        ++t.octaves;
-        t.anchorDb[a] = 20.0 * std::log10(base / t.refRms);
-        for (int k = 0; k < kKnobCount; ++k)
-            for (int i = 0; i < kLevelCells; ++i) {
-                if (k == (int)Knob::generator) {
-                    t.row[a][k][i] = (float)(genDb[i] - t.anchorDb[a]);
-                    t.peak[a][k][i] = genPeak[i];
-                    continue;
-                }
-                Knobs v = levelBase(a);
-                v.v[k] = levelPoint(i);
-                const LevelReading r = octaveReading(pianoOf(v));
-                ++t.octaves;
-                t.row[a][k][i] = (float)(20.0 * std::log10(r.rms / base));
-                t.peak[a][k][i] = r.peak;
-            }
-    }
-    return t;
-}
-
-// the reference's octave, once
+// the reference's octave, grand's, once
 inline double levelReferenceRms() {
-    static const double r = octaveReading(pianoOf(levelReference())).rms;
+    static const double r = octaveReading(grand()).rms;
     return r;
 }
 
-// a vector's octave from `from` up against the reference, and the level the table leaves (that less levelDb), db
+// a shape's octave from `from` up against the reference, db, and its largest peak
 struct OctaveHeard {
-    double level = 0.0, table = 0.0, undone = 0.0, peak = 0.0;
+    double level = 0.0, peak = 0.0;
 };
-inline OctaveHeard hearOctave(const Knobs& k, float from = kLevelMidi, const Tuning& t = Tuning()) {
+inline OctaveHeard hearOctave(const Shape& s, float from = kLevelMidi, const Tuning& t = Tuning()) {
     OctaveHeard h;
-    const LevelReading r = octaveReading(pianoOf(k, clamped(t)), from, t);
+    const LevelReading r = octaveReading(s, from, t);
     h.level = 20.0 * std::log10(r.rms / levelReferenceRms() + 1e-30);
-    h.table = levelDb(k);
-    h.undone = h.level - h.table;
     h.peak = r.peak;
     return h;
 }
 
-// ---- a vector heard -----------------------------------------------------------------------------------
-// a knob vector struck at a note (velocity 1, sec seconds as play renders
-// it, at the tuning) and read: the peak, the first half second's rms and its
-// level against the level table's reference, levelDb and the level undone
-// (the measured level less levelDb: what the table does not explain), and
+// ---- a shape heard ------------------------------------------------------------------------------------
+// a shape struck at a note (velocity 1, sec seconds as play renders it, at
+// the tuning) and read: the peak, the first half second's rms and its level
+// against the reference (grand's octave at the tuning's own gain), and
 // whether it sounds: every sample finite, the peak over kSoundPeak, the last
 // 100 ms's rms under the first 100 ms's. kSoundPeak is about a quarter of
-// the reference's octave rms (0.0897), where a vector undone lands: 33 db
-// under full scale, 17 db under grand's c4 peak at that level
+// the reference's octave rms (0.0897): 33 db under full scale, 17 db under
+// grand's c4 peak
 
 constexpr double kSoundPeak = 0.022;
 
@@ -441,35 +366,28 @@ struct Heard {
     PlayRender r;
     PlayReading rd;
     double level = 0.0;                          // the first half second's rms against the reference's, db
-    double table = 0.0;                          // levelDb of the vector
-    double undone = 0.0;                         // level - table: the level the table leaves
     Sounds sounds;
 };
 
-// a vector heard at a note: rendered with its level undone in the gain when undo (outputGain x 10^(-levelDb / 20)),
-// the level and the undone level read either way against the reference at the tuning's own gain
-inline Heard hearVector(const Knobs& k, float midi, float sec, bool undo, const Tuning& t = Tuning()) {
+// a shape heard at a note at the tuning, its level read against the reference at the tuning's own gain
+inline Heard hearShape(const Shape& s, float midi, float sec, const Tuning& t = Tuning()) {
     Heard h;
     PlaySpec sp;
-    sp.instrument = pianoOf(k, clamped(t));
+    sp.instrument = s;
     sp.tuning = t;
-    h.table = levelDb(k);
-    if (undo) sp.tuning.outputGain = clamped(t).outputGain * std::pow(10.0f, -(float)h.table / 20.0f);
     sp.midi = midi;
     sp.vel = 1.0f;
     sp.sec = sec;
     h.r = renderPlay(sp);
     h.rd = readPlay(h.r, sp);
-    const double gainDb = undo ? -h.table : 0.0;
-    h.level = 20.0 * std::log10(h.rd.rmsHalf / levelReferenceRms() + 1e-30) - gainDb;
-    h.undone = h.level - h.table;
+    h.level = 20.0 * std::log10(h.rd.rmsHalf / levelReferenceRms() + 1e-30);
     h.sounds = soundsOf(h.r.x, sp.fs);
     return h;
 }
 
 // ---- the board's swept transfer ----------------------------------------------------------------------
-// a unit-amplitude force sine (N) in at a note's bridge point, a board at a body's plate (its eased channels
-// as pianoOf writes them) and a shelf's gain, run to steady state (4 s under 100 hz, 2 s under 400, 1 s
+// a unit-amplitude force sine (N) in at a note's bridge point, a board at a body's plate (its eased channels:
+// area, loss, open) and a shelf's gain, run to steady state (4 s under 100 hz, 2 s under 400, 1 s
 // above): the output's rms over whole cycles of the last half against the force's (1 / sqrt 2), |out / F| in
 // full scale per N. the board is linear in its shelf's gain, so a run kept at the shelf 0 and at 1 gives any
 // gain's output as their blend

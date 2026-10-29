@@ -6,7 +6,7 @@
 // is no write. once per block, tick() moves every value toward its target by
 // the one law; a rate at or below zero jumps.
 //
-// the channels: the instrument's twenty-two in five groups (the strings, the
+// the channels: the instrument's twenty-four in five groups (the strings, the
 // hammer, the body, the generator, the damper; physical units but the
 // generator), then four contiguous blocks of kMaxModes (each partial's ratio
 // to f0, its t60, its gain at the strike point, its output weight), then the
@@ -43,8 +43,11 @@ enum class Channel : uint16_t {
     // closed (0) to open (1)
     boardArea, boardLoss, open,
     // the generator (§3, §7): string -1, tine 0, reed +1; the pickup's gap
-    // and the tip's offset off its axis (mm); the tonebar's weight (0 .. 1)
-    generator, gap, offset, tonebar,
+    // and the tip's offset off its axis (mm); the tonebar's weight (0 .. 1);
+    // the tine's fundamental t60 at c4 (s; the reed's decays are kReedT60
+    // times the tine's); the beam's overtone ratios (n >= 2) times this, the
+    // tuning spring's mass at the tip (1 the bare beam)
+    generator, gap, offset, tonebar, tineT60, tineLoad,
     // the damper (§9): the decay rate a released key's damper adds (1/s at
     // c4); the highest key with a damper (midi)
     dampRate, damperTop,
@@ -74,7 +77,7 @@ static_assert((int)Channel::t60_0 - (int)Channel::ratio0 == kMaxModes, "the rati
 static_assert((int)Channel::gain0 - (int)Channel::t60_0 == kMaxModes, "the t60s are contiguous");
 static_assert((int)Channel::out0 - (int)Channel::gain0 == kMaxModes, "the gains are contiguous");
 static_assert((int)Channel::midi - (int)Channel::out0 == kMaxModes, "the outs are contiguous");
-static_assert(kChannelCount == kInstrumentChannels + 4 * kMaxModes + 3, "twenty-two instrument, four blocks, three player");
+static_assert(kInstrumentChannels == 24 && kChannelCount == kInstrumentChannels + 4 * kMaxModes + 3, "twenty-four instrument, four blocks, three player");
 
 inline Channel ratioChannel(int k) { return (Channel)((int)Channel::ratio0 + k); }
 inline Channel t60Channel(int k) { return (Channel)((int)Channel::t60_0 + k); }
@@ -115,10 +118,12 @@ struct PartialTable {
 void         toShape(const PartialTable& p, Shape& s);   // the partial channels written from the table (a nan stays nan)
 PartialTable fromShape(const Shape& s);                  // the table the partial channels hold (nan where a channel is)
 
-// the shape a voice holds before anyone sets one: the grand (the eight
-// knobs at 0 but generator -1), its partials the law's at middle c, no
-// glide, the pedal up
+// the shape a voice holds before anyone sets one: grand's (up_presets.h),
+// its partials the law's at middle c, no glide, the pedal up
 Shape defaultShape(const Tuning& t = Tuning());
+
+// every channel nan, so no write: a shape to fill in by hand
+Shape nanShape();
 
 class Channels {
 public:

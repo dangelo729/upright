@@ -5,7 +5,7 @@
 // against 64 fs, the truth); the ladder at grand's c4 by the truth beside
 // kth's contacts, falling with velocity, the peak rising, inside the plan's
 // bands; the band (the force's spectrum over partials 8 .. 16 against 1 ..
-// 3) rising with velocity and with the hammer knob; the engine's step at the
+// 3) rising with velocity and with the felt's hardness; the engine's step at the
 // audio rate against the truth at c4 and c6; the step with lambda 0 the
 // explicit one bit for bit; the felt table against powf; every cell of
 // velocity x hardness x note finite and leaving through the engine's scheme,
@@ -22,24 +22,19 @@
 #include <vector>
 
 #include "core/up_hammer.h"
-#include "core/up_knobs.h"
+#include "core/up_presets.h"
 #include "core/up_voice.h"
 #include "up_contact.h"
 #include "up_fit.h"
+#include "up_shapes.h"
 #include "up_test.h"
 
 using namespace up;
 
 namespace {
 
-const Knobs kGrand = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}};
 const float kLadder[6] = {0.1f, 0.2f, 0.35f, 0.5f, 0.7f, 1.0f};
 constexpr double kTruth = 32.0;                     // the simulator's rate as the truth
-
-Knobs with(Knobs k, Knob which, float x) {
-    k.v[(int)which] = x;
-    return k;
-}
 
 // a strike through the simulator at rate x fs, the truth's step or the engine's
 struct Strike {
@@ -85,7 +80,7 @@ UP_TEST(hammer_rank_against_chaigne) {
     RefTable t;
     std::string err;
     CHECK_MSG(readTable(std::string(UP_REF_DIR) + "/hammer_params.txt", t, err), "%s", err.c_str());
-    const Shape s = pianoOf(kGrand);
+    const Shape s = grand();
     int rows = 0;
     for (const HammerPoint& h : hammerPoints(t)) {
         if (h.midi != 36.0 && h.midi != 84.0 && h.midi != 60.0) continue;
@@ -112,7 +107,7 @@ UP_TEST(hammer_rank_against_chaigne) {
 // octave a0 .. c8 (a0, a1 .. a7, c8), the contact and the peak within 1 %:
 // 32 fs is the truth the engine is held to
 UP_TEST(hammer_truth_converged) {
-    const Shape s = pianoOf(kGrand);
+    const Shape s = grand();
     const float notes[9] = {21, 33, 45, 57, 69, 81, 93, 105, 108};
     double worst = 0.0;
     for (float m : notes) {
@@ -128,7 +123,7 @@ UP_TEST(hammer_truth_converged) {
 // the peak rises; at velocity 1 the contact within 1 .. 3 ms and at 0.2
 // within 2 .. 6 ms (the plan's bands); each beside kth's at the same speed
 UP_TEST(hammer_ladder) {
-    const Shape s = pianoOf(kGrand);
+    const Shape s = grand();
     double ms[6], peak[6];
     for (int i = 0; i < 6; ++i) {
         const Strike st = strike(s, 60.0f, kLadder[i], kTruth, false);
@@ -187,8 +182,8 @@ Strike voiceStrike(const Shape& s, float midi, float vel) {
 
 // the band at grand's c4, by the truth (32 fs) and through the voice (its
 // substep forces): the medium hammer from velocity 0.3 to 1 rises 12 db and
-// more; the knob from -1 to +1 (soft to hard: the stiffness alone, kHard
-// 2.5) at velocity 0.5 by 10 db and more and at velocity 1 by 3 db and more
+// more; soft to hard (hardness 25.1 to 803 N/mm^p, the felt's loss 1e-3 to
+// 2.5e-4 s/mm) at velocity 0.5 by 10 db and more and at velocity 1 by 3 db and more
 // (checks: the plan's 12 and 6 printed beside; at a fortissimo every felt
 // is stiff, the physics' reach); both ends' contacts at both velocities and
 // the softest hammer's rise from 0.3 to 1 printed. a build under 16 slots
@@ -198,7 +193,7 @@ UP_TEST(hammer_band) {
         printf("    the band reads partials 8 .. 16: a build of %d slots has %d of them; not read\n", kMaxModes, kMaxModes - 7);
         return;
     }
-    const Shape soft = pianoOf(with(kGrand, Knob::hammer, -1.0f)), med = pianoOf(kGrand), hard = pianoOf(with(kGrand, Knob::hammer, 1.0f));
+    const Shape soft = withHammer(grand(), 0), med = grand(), hard = withHammer(grand(), 4);
     for (int by = 0; by < 2; ++by) {
         auto run = [&](const Shape& s, float vel) { return by == 0 ? strike(s, 60.0f, vel, kTruth, false) : voiceStrike(s, 60.0f, vel); };
         const char* name = by == 0 ? "the truth (32 fs)" : "the voice";
@@ -206,9 +201,9 @@ UP_TEST(hammer_band) {
         const Strike s03 = run(soft, 0.3f), s05 = run(soft, 0.5f), s1 = run(soft, 1.0f);
         const Strike h05 = run(hard, 0.5f), h1 = run(hard, 1.0f);
         CHECK_MSG(m1.band - m03.band >= 12.0, "%s: the medium hammer's band rises %.1f db from 0.3 to 1", name, m1.band - m03.band);
-        CHECK_MSG(h05.band - s05.band >= 10.0, "%s: the knob moves the band %.1f db at velocity 0.5 (%+.1f -> %+.1f; at least 10, the plan's 12)", name,
+        CHECK_MSG(h05.band - s05.band >= 10.0, "%s: soft to hard moves the band %.1f db at velocity 0.5 (%+.1f -> %+.1f; at least 10, the plan's 12)", name,
                   h05.band - s05.band, s05.band, h05.band);
-        CHECK_MSG(h1.band - s1.band >= 3.0, "%s: the knob moves the band %.1f db at velocity 1 (%+.1f -> %+.1f; at least 3, the plan's 6)", name,
+        CHECK_MSG(h1.band - s1.band >= 3.0, "%s: soft to hard moves the band %.1f db at velocity 1 (%+.1f -> %+.1f; at least 3, the plan's 6)", name,
                   h1.band - s1.band, s1.band, h1.band);
         printf("    %s at c4: medium %+.1f db at 0.3, %+.1f at 1 (%+.1f; at least 12); soft -> hard at 0.5 %+.1f -> %+.1f (%+.1f; at least 10, the "
                "plan's 12), at 1 %+.1f -> %+.1f (%+.1f; at least 3, the plan's 6); the softest from 0.3 to 1 %+.1f -> %+.1f (%+.1f)\n",
@@ -225,7 +220,7 @@ UP_TEST(hammer_band) {
 // same (known, with the number, if missed: the contact's substeps are the
 // lever)
 UP_TEST(hammer_engine_step_at_the_audio_rate) {
-    const Shape s = pianoOf(kGrand);
+    const Shape s = grand();
     for (float m : {60.0f, 84.0f}) {
         const Strike e = strike(s, m, 1.0f, 1.0, true), t = strike(s, m, 1.0f, kTruth, false);
         const double dc = e.run.contactMs() / t.run.contactMs() - 1.0, dp = e.run.peak / t.run.peak - 1.0;
@@ -310,17 +305,16 @@ UP_TEST(hammer_felt_table) {
     CHECK(std::fabs(h.forceExact(1e-3f, 0.0f) - 100.0f) < 1e-3f);   // the hardness is the force at 1 mm
 }
 
-// every cell of velocity (tenths from 0.1) x hardness (the hammer knob in
-// fifths) x note (a0, a1 .. a7, c8) through the engine's scheme: every force
+// every cell of velocity (tenths from 0.1) x the hammer (five from soft to
+// hard, up_shapes.h) x note (a0, a1 .. a7, c8) through the engine's scheme: every force
 // finite, the hammer leaving within kMaxContact; the force's integral the
 // hammer's momentum change within 1 %
 UP_TEST(hammer_every_cell) {
-    const float fifths[5] = {-1.0f, -0.5f, 0.0f, 0.5f, 1.0f};
     const float notes[9] = {21, 33, 45, 57, 69, 81, 93, 105, 108};
     int cells = 0, bad = 0, unmatched = 0;
     double peak = 0.0, worstMomentum = 0.0;
-    for (float hk : fifths) {
-        const Shape s = pianoOf(with(kGrand, Knob::hammer, hk));
+    for (int hk = 0; hk < 5; ++hk) {
+        const Shape s = withHammer(grand(), hk);
         for (float m : notes)
             for (int v = 1; v <= 10; ++v) {
                 const Strike st = strike(s, m, 0.1f * v, kContactRate, true);
@@ -328,7 +322,7 @@ UP_TEST(hammer_every_cell) {
                 ++cells;
                 const bool ok = r.finite && r.left >= 0;
                 bad += !ok;
-                if (!ok && bad <= 5) CHECK_MSG(false, "hammer %+.1f at %s velocity %.1f: finite %d, left %d", hk, noteName(m).c_str(), 0.1 * v, r.finite, r.left);
+                if (!ok && bad <= 5) CHECK_MSG(false, "hardness %.1f at %s velocity %.1f: finite %d, left %d", kHammerFelts[hk].hardness, noteName(m).c_str(), 0.1 * v, r.finite, r.left);
                 const double e = std::fabs(r.impulse / r.momentum - 1.0);
                 worstMomentum = std::fmax(worstMomentum, e);
                 unmatched += e > 0.01;
@@ -412,7 +406,7 @@ LoopGap loopGap(const Shape& s, float midi, float vel) {
 // on within 0.5 db; at every note the contact within 5 % and the peak within
 // 10 % (the bar kContactRate is chosen by); each printed
 UP_TEST(hammer_voice_against_the_truth) {
-    const Shape s = pianoOf(kGrand);
+    const Shape s = grand();
     for (float m : {36.0f, 60.0f, 84.0f, 108.0f}) {
         const LoopGap g = loopGap(s, m, 1.0f);
         const double dc = g.contactMs / g.truthMs - 1.0, dp = g.peak / g.truthPeak - 1.0;
@@ -434,7 +428,7 @@ UP_TEST(hammer_voice_against_the_truth) {
 // same speed; the contact falls and the peak rises; at velocity 1 within 1 ..
 // 3 ms and at 0.2 within 2 .. 6 ms
 UP_TEST(hammer_voice_ladder) {
-    const Shape s = pianoOf(kGrand);
+    const Shape s = grand();
     double ms[10], peak[10];
     for (int i = 0; i < 10; ++i) {
         const float vel = 0.1f * (i + 1);
@@ -465,17 +459,16 @@ UP_TEST(hammer_voice_ladder) {
     CHECK_MSG(ms[1] >= 2.0 && ms[1] <= 6.0, "the contact at velocity 0.2 %.3f ms", ms[1]);
 }
 
-// every cell of velocity (tenths from 0.1) x hardness (the hammer knob in
-// fifths) x note (a0, a1 .. a7, c8) through the voice: the pair finite, the
+// every cell of velocity (tenths from 0.1) x the hammer (five from soft to
+// hard, up_shapes.h) x note (a0, a1 .. a7, c8) through the voice: the pair finite, the
 // hammer leaving within kMaxContact
 UP_TEST(hammer_voice_every_cell) {
-    const float fifths[5] = {-1.0f, -0.5f, 0.0f, 0.5f, 1.0f};
     const float notes[9] = {21, 33, 45, 57, 69, 81, 93, 105, 108};
     int cells = 0, bad = 0;
     double peak = 0.0;
     float b[kBlock], p[kBlock];
-    for (float hk : fifths) {
-        const Shape s = pianoOf(with(kGrand, Knob::hammer, hk));
+    for (int hk = 0; hk < 5; ++hk) {
+        const Shape s = withHammer(grand(), hk);
         for (float m : notes)
             for (int vi = 1; vi <= 10; ++vi) {
                 Voice v(1);
@@ -495,7 +488,7 @@ UP_TEST(hammer_voice_every_cell) {
                 ++cells;
                 if (!(finite && left)) {
                     ++bad;
-                    if (bad <= 5) CHECK_MSG(false, "hammer %+.1f at %s velocity %.1f: finite %d, left %d", hk, noteName(m).c_str(), 0.1 * vi, finite, left);
+                    if (bad <= 5) CHECK_MSG(false, "hardness %.1f at %s velocity %.1f: finite %d, left %d", kHammerFelts[hk].hardness, noteName(m).c_str(), 0.1 * vi, finite, left);
                 }
             }
     }
@@ -506,7 +499,7 @@ UP_TEST(hammer_voice_every_cell) {
 // a re-strike at 50 ms on grand's moving c4 string: finite, and the strings'
 // energy after it above a single strike's at the same time (printed; held)
 UP_TEST(hammer_restrike_on_a_moving_string) {
-    const Shape s = pianoOf(kGrand);
+    const Shape s = grand();
     auto run = [&](bool again) {
         Voice v(1);
         v.setShape(s);

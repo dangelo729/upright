@@ -5,7 +5,7 @@
 #   all 88 markers sit within 0.02 semitone of equal-tempered positions. the jump between midi 49 and 50 is the bass/treble break.
 # units: midi = key number (a0 = 21), b dimensionless
 # kind: B
-# hold: scale=-0.5 (an upright: the constants' fit holds it at the plan's upright, scale -0.5)
+# hold: length=0.607649207 bass=1.40363431 (an upright: the constants' fit holds its strings at the plan's upright)
 # columns: midi B
 21 5.33e-4   # A0, plotted f = 27.5 hz
 22 5.51e-4   # Bb0, plotted f = 29.1 hz

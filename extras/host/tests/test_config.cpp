@@ -116,8 +116,8 @@ bool cutBody(std::string& text, const std::string& head) {
 // log2, pow, cosh, sinh, tanh and the rest, their f forms, std:: or not; sqrt
 // is allowed everywhere, a single instruction) but where a function runs once
 // per write, per note, per block, per strike or at the app's call rate: the
-// whole of up_knobs.cpp, up_law.cpp, up_rank.cpp, up_tuning.cpp and
-// up_channels.cpp, and these functions, each named: in up_config.h
+// whole of up_law.cpp, up_rank.cpp, up_tuning.cpp and up_channels.cpp, and
+// these functions, each named: in up_config.h
 // approachCoef (per block) and midiToHz (per write, per note); in
 // up_bank.cpp rotationOf (per block, where a partial moved); in up_hammer.cpp
 // set (per hammer write) and forceExact (the host's); in up_pickup.cpp
@@ -139,7 +139,7 @@ bool cutBody(std::string& text, const std::string& head) {
 // long bank's turn. and nothing in src/core on the heap:
 // no new, malloc, std::vector, std::string
 UP_TEST(config_core_guard) {
-    const std::vector<std::string> perWriteFiles = {"up_knobs.cpp", "up_law.cpp", "up_rank.cpp", "up_tuning.cpp", "up_channels.cpp"};
+    const std::vector<std::string> perWriteFiles = {"up_law.cpp", "up_rank.cpp", "up_tuning.cpp", "up_channels.cpp"};
     struct Fn { const char* file; const char* head; };
     const Fn perWrite[] = {
         {"up_config.h", "inline float approachCoef("}, {"up_config.h", "inline float midiToHz("},

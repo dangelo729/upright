@@ -1,9 +1,9 @@
 // upright — Upright.h  (plan: module layout)
 // the umbrella. everywhere it brings in the core, which compiles with nothing
-// but the c++ standard library: the channel table, the tuning, the knobs and
-// their level table, the law and the rank, the bank, the hammer and the
-// strings, the attack, the pitch axis, the pickup, the board, the
-// telemetry, the voice, the presets and the pool. on a teensy it brings in
+// but the c++ standard library: the channel table, the tuning, the law and
+// the rank, the bank, the hammer and the strings, the attack, the pitch
+// axis, the pickup, the board, the telemetry, the voice, the presets and the
+// pool. on a teensy it brings in
 // AudioSynthUpright and AudioSynthUprightPool too; on the host those headers
 // are empty.
 #pragma once
@@ -14,7 +14,6 @@
 #include "core/up_channels.h"
 #include "core/up_config.h"
 #include "core/up_hammer.h"
-#include "core/up_knobs.h"
 #include "core/up_law.h"
 #include "core/up_pickup.h"
 #include "core/up_pitch.h"

@@ -1,20 +1,20 @@
 // upright — up_fit.h  (plan §15)
 // what uptool and the tests share: the three anchors (the presets grand,
-// rhodes, wurlitzer), the line print writes and its parser, random's draw,
-// note names; the reference tables read; each
-// table's error against the law at a knob vector; the knob fit and the
-// constants' fit. host only.
+// rhodes, wurlitzer), a shape's --set lines and their parser, the span a
+// tool draws, sweeps and searches a channel over, random's draw, note names;
+// the reference tables read; each table's error against the law at a shape;
+// the channel fit and the constants' fit. host only.
 //
 // a reference table (extras/reference/*.txt, README.txt skipped) is plain
 // text: `#` comments, a `# units:`, a `# source:`, a `# kind:` (B, decay,
 // hammer, tine, cantilever, board) and one or more `# columns:` lines, each
 // naming the columns of the rows after it; a data line is `key value ...`,
 // the key a midi number, a note name (A0, C#4, Bb2), a partial number or a
-// name, a value a number or `-` (none). `# hold: KNOB=V ...` holds knobs in
-// the constants' fit (the knob fit of one table searches freely); `# midi: M`
-// names the note a tine table's partials were measured at.
+// name, a value a number or `-` (none). `# hold: CHANNEL=V ...` holds
+// channels in the constants' fit (the fit of one table searches freely); `#
+// midi: M` names the note a tine table's partials were measured at.
 //
-// a table's error, by kind, at a knob vector under constants:
+// a table's error, by kind, at a shape under constants:
 //   B        the rms of ln(B_law / B_table) over its notes
 //   decay    the rms of log2(t60_law / t60_table) over its partials; a loss
 //            block (midi b1 b3) stands for its partials 1 .. 10 at sigma =
@@ -24,10 +24,14 @@
 //            the note through the rank (hardnessScale, pAdd)
 //   tine     the rms of its partials' ratios in octaves (cents / 1200) plus a
 //            quarter of the rms log2 t60 where it has them, at its # midi:
-// the knobs a table's fit moves: B and decay the scale, hammer the hammer,
-// tine the generator; the rest at the anchor (grand, or rhodes for a tine)
-// unless locked. a grid in fifths over the free knobs, then coordinate
-// descent with the step halving from 0.25 to 0.01.
+// the channels a table's fit moves: B and decay the strings' length and
+// bass, hammer the hardness (the hammer tables measure the mass, K and p:
+// the felt's loss is not in them), tine the generator and the tine's t60;
+// the rest at the anchor (grand, or rhodes for a tine) unless held (a
+// table's holds, or a channel --set names). each channel moves along its
+// span (channelSpan) as a coordinate 0 .. 1: a grid in fifths over the free
+// channels, then coordinate descent with the step halving from 0.25 to
+// 0.001.
 #pragma once
 
 #include <algorithm>
@@ -45,102 +49,114 @@
 
 #include "core/up_channels.h"
 #include "core/up_config.h"
-#include "core/up_knobs.h"
 #include "core/up_law.h"
 #include "core/up_presets.h"
 #include "core/up_rank.h"
 
 namespace up {
 
-// ---- the knobs on the host ------------------------------------------------------------------------
-
-// a knob held as the layer holds it: a nan as 0, past the end the end
-inline float knobHeld(float x) { return x != x ? 0.0f : (x < -1.0f ? -1.0f : (x > 1.0f ? 1.0f : x)); }
+// ---- the shapes on the host -----------------------------------------------------------------------
 
 // the three anchors: the string, the tine, the reed, each the preset of its name (up_presets.h)
-struct KnobAnchor {
+struct Anchor {
     const char* name;
-    Knobs k;
+    Shape s;
 };
-inline const KnobAnchor* knobAnchors() {
-    static const KnobAnchor a[3] = {
-        {"grand", presetByName("grand")->knobs},
-        {"rhodes", presetByName("rhodes")->knobs},
-        {"wurlitzer", presetByName("wurlitzer")->knobs},
+inline const Anchor* anchors() {
+    static const Anchor a[3] = {
+        {"grand", presetByName("grand")->shape()},
+        {"rhodes", presetByName("rhodes")->shape()},
+        {"wurlitzer", presetByName("wurlitzer")->shape()},
     };
     return a;
 }
 constexpr int kAnchorCount = 3;
-inline const KnobAnchor* anchorByName(const char* name) {
+inline const Anchor* anchorByName(const char* name) {
     for (int i = 0; i < kAnchorCount; ++i)
-        if (name && std::strcmp(knobAnchors()[i].name, name) == 0) return &knobAnchors()[i];
+        if (name && std::strcmp(anchors()[i].name, name) == 0) return &anchors()[i];
     return nullptr;
 }
 
-// a float written short enough to read back to the same bits, as c++
-inline std::string knobNumber(float x) {
-    char b[48];
+// the span a tool draws, sweeps and searches a channel over: its channelRange, on a log scale where the range
+// spans a decade or more (the three that start at 0 and do, detune, felt and dampRate, from a thousandth of the
+// top); true when log
+inline bool channelSpan(Channel c, float& lo, float& hi) {
+    channelRange(c, lo, hi);
+    if (c == Channel::detune || c == Channel::felt || c == Channel::dampRate) {
+        lo = hi * 1e-3f;
+        return true;
+    }
+    return lo > 0.0f && hi >= 10.0f * lo;
+}
+// the value at a coordinate 0 .. 1 along the span, and a value's coordinate (held inside 0 .. 1)
+inline float spanAt(Channel c, float u) {
+    float lo, hi;
+    const bool lg = channelSpan(c, lo, hi);
+    u = clamp(u, 0.0f, 1.0f);
+    return lg ? lo * std::pow(hi / lo, u) : lo + (hi - lo) * u;
+}
+inline float spanOf(Channel c, float x) {
+    float lo, hi;
+    const bool lg = channelSpan(c, lo, hi);
+    const float u = lg ? std::log(x / lo) / std::log(hi / lo) : (x - lo) / (hi - lo);
+    return u == u ? clamp(u, 0.0f, 1.0f) : 0.0f;
+}
+
+// a float written short enough to read back to the same bits, without an exponent where %g can do without
+inline std::string floatText(float x) {
+    std::string first;
     for (int p = 1; p <= 9; ++p) {
+        char b[48];
         std::snprintf(b, sizeof b, "%.*g", p, (double)x);
         const float y = std::strtof(b, nullptr);
         uint32_t ux, uy;
         std::memcpy(&ux, &x, sizeof ux);
         std::memcpy(&uy, &y, sizeof uy);
-        if (ux == uy) break;
+        if (ux != uy) continue;
+        if (!std::strchr(b, 'e')) return b;
+        if (first.empty()) first = b;
     }
-    std::string s = b;
-    if (s.find_first_of(".eE") == std::string::npos) s += ".0";
-    return s + "f";
+    return first;
 }
 
-// the vector as an up_presets.cpp line: {"name", {sc, ha, st, un, bo, ge, pi, da}, lo, hi},
-// each knob held as the layer holds it
-inline std::string knobLine(const char* name, const Knobs& k, int lo, int hi) {
-    std::string s = std::string("{\"") + name + "\", {";
-    for (int i = 0; i < kKnobCount; ++i) s += (i ? ", " : "") + knobNumber(knobHeld(k.v[i]));
-    char tail[48];
-    std::snprintf(tail, sizeof tail, "}, %d, %d},", lo, hi);
-    return s + tail;
-}
-
-// the line read back: the name, the eight, the range. false on anything else
-inline bool parseKnobLine(const std::string& line, std::string& name, Knobs& k, int& lo, int& hi) {
-    size_t at = line.find('"');
-    if (at == std::string::npos) return false;
-    const size_t end = line.find('"', at + 1);
-    if (end == std::string::npos) return false;
-    name = line.substr(at + 1, end - at - 1);
-    at = line.find('{', end);
-    if (at == std::string::npos) return false;
-    const char* p = line.c_str() + at + 1;
-    for (int i = 0; i < kKnobCount; ++i) {
-        char* q = nullptr;
-        k.v[i] = std::strtof(p, &q);
-        if (q == p) return false;
-        p = q;
-        if (*p == 'f') ++p;
-        while (*p == ' ') ++p;
-        if (*p != (i + 1 < kKnobCount ? ',' : '}')) return false;
-        ++p;
+// a shape's instrument channels as --set lines, a line a group (the strings, the hammer, the body, the generator,
+// the damper), each value read back to the same bits; a nan channel left out
+inline std::string setLines(const Shape& s) {
+    const Channel first[6] = {Channel::length, Channel::hardness, Channel::boardArea, Channel::generator, Channel::dampRate,
+                              (Channel)kInstrumentChannels};
+    std::string out;
+    for (int g = 0; g < 5; ++g) {
+        std::string line;
+        for (int i = (int)first[g]; i < (int)first[g + 1]; ++i)
+            if (s.v[i] == s.v[i]) line += std::string(" ") + channelName((Channel)i) + "=" + floatText(s.v[i]);
+        if (!line.empty()) out += "--set" + line + "\n";
     }
-    char* q = nullptr;
-    while (*p == ' ' || *p == ',') ++p;
-    lo = (int)std::strtol(p, &q, 10);
-    if (q == p) return false;
-    p = q;
-    while (*p == ' ' || *p == ',') ++p;
-    hi = (int)std::strtol(p, &q, 10);
-    if (q == p) return false;
-    p = q;
-    while (*p == ' ') ++p;
-    return *p == '}';
+    return out;
 }
 
-// random's draw: each knob uniform in -1 .. 1, from a seeded xorshift32
-inline Knobs drawKnobs(Rng& r) {
-    Knobs k;
-    for (int i = 0; i < kKnobCount; ++i) k.v[i] = r.bipolar();
-    return k;
+// the lines read back: every NAME=V after a --set, by spaces, onto the shape. false on anything else
+inline bool parseSetLines(const std::string& text, Shape& s) {
+    std::istringstream ss(text);
+    std::string tok;
+    while (ss >> tok) {
+        if (tok == "--set") continue;
+        const size_t eq = tok.find('=');
+        Channel c;
+        if (eq == std::string::npos || !channelByName(tok.substr(0, eq).c_str(), c)) return false;
+        char* end = nullptr;
+        const float v = std::strtof(tok.c_str() + eq + 1, &end);
+        if (end == tok.c_str() + eq + 1 || *end != '\0') return false;
+        s[c] = v;
+    }
+    return true;
+}
+
+// random's draw: every instrument channel inside its span, log-uniform where the span is log and uniform
+// otherwise, from a seeded xorshift32; the partial and player channels nan
+inline Shape drawShape(Rng& r) {
+    Shape s = nanShape();
+    for (int i = 0; i < kInstrumentChannels; ++i) s.v[i] = spanAt((Channel)i, 0.5f * (r.bipolar() + 1.0f));
+    return s;
 }
 
 inline double centsOf(double ratio) { return 1200.0 * std::log2(ratio); }
@@ -175,14 +191,15 @@ inline bool parseNote(const std::string& s, double& midi) {
     return true;
 }
 
-// ---- a vector's instrument with channels set over it ----------------------------------------------
+// ---- a shape with channels set over it ------------------------------------------------------------
 
 typedef std::vector<std::pair<Channel, float>> Spec;
 
-// the vector's instrument under constants, --set's instrument channels over it (the partial
-// channels nan, for the law; a partial channel set lands over the law's in partialsAt)
-inline Shape shapeOf(const Knobs& k, const LawConstants& c, const Spec& sets = Spec(), const Tuning& t = Tuning()) {
-    Shape s = pianoOf(k, t, c);
+// the shape's instrument channels, --set's instrument channels over them (the partial channels nan, for the
+// law; a partial channel set lands over the law's in partialsAt)
+inline Shape withSets(const Shape& base, const Spec& sets = Spec()) {
+    Shape s = nanShape();
+    for (int i = 0; i < kInstrumentChannels; ++i) s.v[i] = base.v[i];
     for (const auto& p : sets)
         if (isInstrumentChannel(p.first)) s[p.first] = p.second;
     return s;
@@ -439,7 +456,7 @@ inline std::vector<TineDecay> tineDecays(const RefTable& t) {
     return out;
 }
 
-// ---- a table's error at a vector ------------------------------------------------------------------
+// ---- a table's error at a shape -------------------------------------------------------------------
 
 struct Residual {
     std::string label;
@@ -453,9 +470,9 @@ struct TableError {
 
 inline double tableMidi(const RefTable& t) { return t.midi == t.midi ? t.midi : 60.0; }
 
-inline TableError tableError(const RefTable& t, const Knobs& k, const LawConstants& c, const Spec& sets = Spec()) {
+inline TableError tableError(const RefTable& t, const Shape& at, const LawConstants& c, const Spec& sets = Spec()) {
     TableError e;
-    const Shape s = shapeOf(k, c, sets);
+    const Shape s = withSets(at, sets);
     double sum = 0.0;
     int n = 0;
     if (t.kind == "B") {
@@ -552,75 +569,84 @@ inline const char* residualUnit(const RefTable& t) {
     return "";
 }
 
-// ---- the knob fit ---------------------------------------------------------------------------------
+// ---- the channel fit ------------------------------------------------------------------------------
 
-struct FitSpec {
-    bool  locked[kKnobCount] = {};
-    float lockAt[kKnobCount] = {};
-};
+// a spec's value for a channel: true when it names it
+inline bool specHas(const Spec& s, Channel c, float* v = nullptr) {
+    for (const auto& p : s)
+        if (p.first == c) {
+            if (v) *v = p.second;
+            return true;
+        }
+    return false;
+}
+// a channel written into a spec, over its own entry where it has one
+inline void specSet(Spec& s, Channel c, float v) {
+    for (auto& p : s)
+        if (p.first == c) { p.second = v; return; }
+    s.push_back({c, v});
+}
 
-// the table's own holds ("# hold: KNOB=V ...", the constants' fit's) and the caller's locks over them
-inline FitSpec holdSpec(const RefTable& t, const FitSpec& over = FitSpec()) {
-    FitSpec s;
+// the table's own holds ("# hold: CHANNEL=V ...", the constants' fit's)
+inline Spec holdsOf(const RefTable& t) {
+    Spec s;
     std::istringstream ss(t.hold);
     std::string pair;
     while (ss >> pair) {
         const size_t eq = pair.find('=');
-        Knob k;
-        if (eq == std::string::npos || !knobByName(pair.substr(0, eq).c_str(), k)) continue;
-        s.locked[(int)k] = true;
-        s.lockAt[(int)k] = knobHeld((float)std::atof(pair.c_str() + eq + 1));
+        Channel c;
+        if (eq == std::string::npos || !channelByName(pair.substr(0, eq).c_str(), c)) continue;
+        specSet(s, c, std::strtof(pair.c_str() + eq + 1, nullptr));
     }
-    for (int i = 0; i < kKnobCount; ++i)
-        if (over.locked[i]) { s.locked[i] = true; s.lockAt[i] = over.lockAt[i]; }
     return s;
 }
 
-// the constants' fit's spec for a table: its holds, and the knob its kind's constants trade with held
-// at the anchor (a hammer table's hammer at 0: the medium hammer is the reference hammers' own; a tine
-// table's generator at 0: the tine's constants are the anchor's)
-inline FitSpec constantsSpec(const RefTable& t) {
-    FitSpec s = holdSpec(t);
-    if (t.kind == "hammer" && !s.locked[(int)Knob::hammer]) { s.locked[(int)Knob::hammer] = true; s.lockAt[(int)Knob::hammer] = 0.0f; }
-    if (t.kind == "tine" && !s.locked[(int)Knob::generator]) { s.locked[(int)Knob::generator] = true; s.lockAt[(int)Knob::generator] = 0.0f; }
+// the constants' fit's holds for a table: its own, and a tine table's generator at its anchor's (the tine's
+// constants are the anchor's)
+inline Spec constantsHolds(const RefTable& t) {
+    Spec s = holdsOf(t);
+    if (t.kind == "tine" && !specHas(s, Channel::generator)) specSet(s, Channel::generator, anchors()[1].s[Channel::generator]);
     return s;
 }
 
-inline bool fitsKnobs(const RefTable& t) { return t.kind == "B" || t.kind == "decay" || t.kind == "hammer" || t.kind == "tine"; }
+inline bool fitsChannels(const RefTable& t) { return t.kind == "B" || t.kind == "decay" || t.kind == "hammer" || t.kind == "tine"; }
 
-// the table's starting vector: its anchor, then its locks
-inline Knobs startOf(const RefTable& t, const FitSpec& spec) {
-    Knobs k = knobAnchors()[t.kind == "tine" ? 1 : 0].k;
-    for (int i = 0; i < kKnobCount; ++i)
-        if (spec.locked[i]) k.v[i] = spec.lockAt[i];
-    return k;
+// the channels a table's kind moves, those held or set left out
+inline std::vector<Channel> freeChannels(const RefTable& t, const Spec& held, const Spec& sets) {
+    std::vector<Channel> kind;
+    if (t.kind == "B" || t.kind == "decay") kind = {Channel::length, Channel::bass};
+    else if (t.kind == "hammer") kind = {Channel::hardness};
+    else if (t.kind == "tine") kind = {Channel::generator, Channel::tineT60};
+    std::vector<Channel> out;
+    for (Channel c : kind)
+        if (!specHas(held, c) && !specHas(sets, c)) out.push_back(c);
+    return out;
 }
 
-inline void freeKnobs(const RefTable& t, const FitSpec& spec, std::vector<int>& out) {
-    out.clear();
-    Knob k = Knob::count;
-    if (t.kind == "B" || t.kind == "decay") k = Knob::scale;
-    else if (t.kind == "hammer") k = Knob::hammer;
-    else if (t.kind == "tine") k = Knob::generator;
-    if (k != Knob::count && !spec.locked[(int)k]) out.push_back((int)k);
+// the table's starting shape: its anchor, its holds over it
+inline Shape startOf(const RefTable& t, const Spec& held) {
+    Shape s = anchors()[t.kind == "tine" ? 1 : 0].s;
+    for (const auto& p : held) s[p.first] = p.second;
+    return s;
 }
 
-// coordinate descent from k over the free knobs, the step halving from `step` to 0.01
-inline double descend(const RefTable& t, Knobs& k, const std::vector<int>& free, const LawConstants& c, const Spec& sets,
+// coordinate descent from s over the free channels, each along its span, the step halving from `step` to about
+// 0.001 of it
+inline double descend(const RefTable& t, Shape& s, const std::vector<Channel>& free, const LawConstants& c, const Spec& sets,
                       float step) {
-    double best = tableError(t, k, c, sets).value;
-    for (float s = step; s >= 0.01f - 1e-6f; s *= 0.5f) {
+    double best = tableError(t, s, c, sets).value;
+    for (float st = step; st > 0.0009f; st *= 0.5f) {
         bool moved = true;
         int rounds = 0;
         while (moved && rounds++ < 60) {
             moved = false;
-            for (int i : free) {
+            for (Channel ch : free) {
                 for (int dir = -1; dir <= 1; dir += 2) {
-                    Knobs x = k;
-                    x.v[i] = clamp(k.v[i] + dir * s, -1.0f, 1.0f);
-                    if (x.v[i] == k.v[i]) continue;
+                    Shape x = s;
+                    x[ch] = spanAt(ch, spanOf(ch, s[ch]) + dir * st);
+                    if (x[ch] == s[ch]) continue;
                     const double e = tableError(t, x, c, sets).value;
-                    if (e < best - 1e-12) { best = e; k = x; moved = true; }
+                    if (e < best - 1e-12) { best = e; s = x; moved = true; }
                 }
             }
         }
@@ -628,104 +654,117 @@ inline double descend(const RefTable& t, Knobs& k, const std::vector<int>& free,
     return best;
 }
 
-struct KnobFit {
-    Knobs k{};
-    TableError error;           // at the vector found
-    TableError atAnchor;        // at the starting vector
+struct ChannelFit {
+    Shape s = nanShape();       // the shape found
+    std::vector<Channel> free;  // the channels it moved
+    TableError error;           // at the shape found
+    TableError atAnchor;        // at the starting shape
 };
 
-// the vector nearest a table: a grid in fifths over the free knobs, then descent to 0.01
-inline KnobFit fitTable(const RefTable& t, const LawConstants& c, const FitSpec& spec, const Spec& sets = Spec()) {
-    KnobFit f;
-    std::vector<int> free;
-    freeKnobs(t, spec, free);
-    const Knobs start = startOf(t, spec);
+// the shape nearest a table: a grid in fifths over the free channels' spans, then descent to 0.001
+inline ChannelFit fitTable(const RefTable& t, const LawConstants& c, const Spec& held = Spec(), const Spec& sets = Spec()) {
+    ChannelFit f;
+    f.free = freeChannels(t, held, sets);
+    const Shape start = startOf(t, held);
     f.atAnchor = tableError(t, start, c, sets);
-    const float fifths[5] = {-1.0f, -0.5f, 0.0f, 0.5f, 1.0f};
-    Knobs best = start;
+    const float fifths[5] = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
+    Shape best = start;
     double bestE = f.atAnchor.value;
-    std::vector<int> idx(free.size(), 0);
+    std::vector<int> idx(f.free.size(), 0);
     for (;;) {
-        Knobs k = start;
-        for (size_t i = 0; i < free.size(); ++i) k.v[free[i]] = fifths[idx[i]];
-        const double e = tableError(t, k, c, sets).value;
-        if (e < bestE) { bestE = e; best = k; }
+        Shape x = start;
+        for (size_t i = 0; i < f.free.size(); ++i) x[f.free[i]] = spanAt(f.free[i], fifths[idx[i]]);
+        const double e = tableError(t, x, c, sets).value;
+        if (e < bestE) { bestE = e; best = x; }
         size_t d = 0;
-        while (d < free.size() && ++idx[d] == 5) idx[d++] = 0;
-        if (d == free.size()) break;
+        while (d < f.free.size() && ++idx[d] == 5) idx[d++] = 0;
+        if (d == f.free.size()) break;
     }
-    descend(t, best, free, c, sets, 0.25f);
-    f.k = best;
+    descend(t, best, f.free, c, sets, 0.25f);
+    f.s = best;
     f.error = tableError(t, best, c, sets);
     return f;
 }
 
 // ---- the constants' fit ---------------------------------------------------------------------------
 
+// a constant of the law, or a channel every table shares (its value written over every table's shape)
 struct ConstantSpec {
     const char* name;
-    float LawConstants::*field;
+    float LawConstants::*field; // the law's constant; null for a channel
+    Channel channel;            // the shared channel where field is null
     float lo, hi, step;         // the search's span and first step (a factor 2^step when `log`)
     bool  log;
     const char* kind;           // the table kind that moves it ("none": no table kind, so --fix and the print name it only)
 };
 inline const std::vector<ConstantSpec>& constantSpecs() {
+    constexpr Channel none = Channel::count;
     static const std::vector<ConstantSpec> s = {
-        {"kTension", &LawConstants::tension, 450.0f, 700.0f, 50.0f, false, "B"},
-        {"kRankLength", &LawConstants::rankLength, 0.85f, 1.0f, 0.04f, false, "B"},
-        {"kDmax", &LawConstants::dMax, 0.6e-3f, 1.6e-3f, 0.05e-3f, false, "B"},
-        {"kCore", &LawConstants::core, 0.5e-3f, 1.8e-3f, 0.05e-3f, false, "B"},
-        {"kCoreGrow", &LawConstants::coreGrow, 0.0f, 0.25f, 0.02f, false, "B"},
-        {"kL0", &LawConstants::l0, 0.55f, 0.7f, 0.02f, false, "B"},
-        {"kScale", &LawConstants::scale, 0.0f, 0.8f, 0.05f, false, "B"},
-        {"kBass0", &LawConstants::bass0, 0.8f, 2.4f, 0.05f, false, "B"},
-        {"kScaleBass", &LawConstants::scaleBass, 0.1f, 1.0f, 0.05f, false, "B"},
-        {"kLoss", &LawConstants::loss, 0.05f, 4.0f, 0.5f, true, "decay"},
-        {"kLossKnee", &LawConstants::lossKnee, 300.0f, 30000.0f, 0.5f, true, "decay"},
-        {"kLossSlope", &LawConstants::lossSlope, 0.5f, 4.0f, 0.1f, false, "decay"},
-        {"kRankLoss", &LawConstants::rankLoss, 0.0f, 1.5f, 0.05f, false, "decay"},
-        {"kK", &LawConstants::k, 1.0f, 2.0e6f, 1.0f, true, "hammer"},
-        {"kP", &LawConstants::p, 2.0f, 3.5f, 0.1f, false, "hammer"},
-        {"kMassC4", &LawConstants::massC4, 1.0f, 20.0f, 0.25f, false, "hammer"},
-        {"kRankMass", &LawConstants::rankMass, 0.0f, 1.0f, 0.02f, false, "hammer"},
-        {"kRankHardLo", &LawConstants::rankHardLo, 0.0f, 2.5f, 0.1f, false, "hammer"},
-        {"kRankHardHi", &LawConstants::rankHardHi, 0.0f, 2.5f, 0.1f, false, "hammer"},
-        {"kRankP", &LawConstants::rankP, 0.0f, 0.5f, 0.02f, false, "hammer"},
-        {"kTineT60", &LawConstants::tineT60, 0.5f, 60.0f, 0.5f, true, "tine"},
-        {"kTineSlope", &LawConstants::tineSlope, 0.0f, 3.0f, 0.05f, false, "tine"},
-        {"kBridgeMobility", &LawConstants::bridgeMobility, 1e-4f, 2e-3f, 0.5f, true, "none"},   // no table measures it: named, never fitted
-        {"kBridgeReactive", &LawConstants::bridgeReactive, 0.0f, 2.0f, 0.1f, false, "none"},   // the same
+        {"tension", nullptr, Channel::tension, 450.0f, 700.0f, 50.0f, false, "B"},
+        {"kRankLength", &LawConstants::rankLength, none, 0.85f, 1.0f, 0.04f, false, "B"},
+        {"kDmax", &LawConstants::dMax, none, 0.6e-3f, 1.6e-3f, 0.05e-3f, false, "B"},
+        {"kCore", &LawConstants::core, none, 0.5e-3f, 1.8e-3f, 0.05e-3f, false, "B"},
+        {"kCoreGrow", &LawConstants::coreGrow, none, 0.0f, 0.25f, 0.02f, false, "B"},
+        {"lossRate", nullptr, Channel::lossRate, 0.05f, 4.0f, 0.5f, true, "decay"},
+        {"kLossKnee", &LawConstants::lossKnee, none, 300.0f, 30000.0f, 0.5f, true, "decay"},
+        {"lossSlope", nullptr, Channel::lossSlope, 0.5f, 4.0f, 0.1f, false, "decay"},
+        {"kRankLoss", &LawConstants::rankLoss, none, 0.0f, 1.5f, 0.05f, false, "decay"},
+        {"hardness", nullptr, Channel::hardness, 1.0f, 10000.0f, 1.0f, true, "hammer"},
+        {"exponent", nullptr, Channel::exponent, 2.0f, 3.5f, 0.1f, false, "hammer"},
+        {"hammerMass", nullptr, Channel::hammerMass, 1.0f, 20.0f, 0.25f, false, "hammer"},
+        {"kRankMass", &LawConstants::rankMass, none, 0.0f, 1.0f, 0.02f, false, "hammer"},
+        {"kRankHardLo", &LawConstants::rankHardLo, none, 0.0f, 2.5f, 0.1f, false, "hammer"},
+        {"kRankHardHi", &LawConstants::rankHardHi, none, 0.0f, 2.5f, 0.1f, false, "hammer"},
+        {"kRankP", &LawConstants::rankP, none, 0.0f, 0.5f, 0.02f, false, "hammer"},
+        {"kTineSlope", &LawConstants::tineSlope, none, 0.0f, 3.0f, 0.05f, false, "tine"},
+        {"kBridgeMobility", &LawConstants::bridgeMobility, none, 1e-4f, 2e-3f, 0.5f, true, "none"},   // no table measures it: named, never fitted
+        {"kBridgeReactive", &LawConstants::bridgeReactive, none, 0.0f, 2.0f, 0.1f, false, "none"},   // the same
     };
     return s;
 }
 
+// the shared channels at the anchor's values (grand's), where the fit starts
+inline Spec sharedStart() {
+    Spec s;
+    for (const ConstantSpec& cs : constantSpecs())
+        if (!cs.field) specSet(s, cs.channel, anchors()[0].s[cs.channel]);
+    return s;
+}
+
+// a spec's value as the law's constant or the shared channel
+inline float constantOf(const ConstantSpec& cs, const LawConstants& c, const Spec& shared) {
+    float v = NAN;
+    if (cs.field) return c.*(cs.field);
+    specHas(shared, cs.channel, &v);
+    return v;
+}
+
 struct TableFitState {
     RefTable table;
-    FitSpec spec;
-    KnobFit fit;
+    Spec held;
+    ChannelFit fit;
 };
 
-// the sum of the tables' errors under constants, each table's vector descended from where it
-// stands (fine steps); the vectors are left where the descent took them
-inline double constantsError(std::vector<TableFitState>& tables, const LawConstants& c, std::vector<double>* each = nullptr) {
+// the sum of the tables' errors under constants and the shared channels, each table's shape descended from where
+// it stands (fine steps); the shapes are left where the descent took them
+inline double constantsError(std::vector<TableFitState>& tables, const LawConstants& c, const Spec& shared,
+                             std::vector<double>* each = nullptr) {
     double sum = 0.0;
     if (each) each->clear();
     for (TableFitState& t : tables) {
-        std::vector<int> free;
-        freeKnobs(t.table, t.spec, free);
-        Knobs k = t.fit.k;
-        const double e = descend(t.table, k, free, c, Spec(), 0.1f);
-        t.fit.k = k;
+        Shape s = t.fit.s;
+        const double e = descend(t.table, s, t.fit.free, c, shared, 0.05f);
+        t.fit.s = s;
         sum += e;
         if (each) each->push_back(e);
     }
     return sum;
 }
 
-// coordinate descent on the constants the tables' kinds move, the steps halving three times; then
-// every table refitted whole at the new constants and the descent run again, until nothing moves
-// (`fixed` names constants held where they are, by spaces or commas)
-inline LawConstants fitConstants(std::vector<TableFitState>& tables, const LawConstants& from, int* passesOut = nullptr,
+// coordinate descent on the constants and the shared channels the tables' kinds move, the steps halving three
+// times; then every table refitted whole at the new values and the descent run again, until nothing moves
+// (`fixed` names those held where they are, by spaces or commas). the shared channels' values come back in shared
+inline LawConstants fitConstants(std::vector<TableFitState>& tables, const LawConstants& from, Spec& shared, int* passesOut = nullptr,
                                  const std::string& fixed = std::string()) {
     LawConstants c = from;
     std::vector<const ConstantSpec*> live;
@@ -740,8 +779,8 @@ inline LawConstants fitConstants(std::vector<TableFitState>& tables, const LawCo
     int passes = 0;
     for (int round = 0; round < 4; ++round) {
         ++passes;
-        for (TableFitState& t : tables) t.fit = fitTable(t.table, c, t.spec);
-        double best = constantsError(tables, c);
+        for (TableFitState& t : tables) t.fit = fitTable(t.table, c, t.held, shared);
+        double best = constantsError(tables, c, shared);
         bool movedAny = false;
         for (int level = 0; level < 4; ++level) {
             const float scale = std::ldexp(1.0f, -level);
@@ -752,16 +791,19 @@ inline LawConstants fitConstants(std::vector<TableFitState>& tables, const LawCo
                 for (const ConstantSpec* cs : live) {
                     for (int dir = -1; dir <= 1; dir += 2) {
                         LawConstants x = c;
-                        const float v = c.*(cs->field);
+                        Spec xs = shared;
+                        const float v = constantOf(*cs, c, shared);
                         float nv = cs->log ? v * std::exp2(dir * cs->step * scale) : v + dir * cs->step * scale;
                         nv = clamp(nv, cs->lo, cs->hi);
                         if (nv == v) continue;
-                        x.*(cs->field) = nv;
+                        if (cs->field) x.*(cs->field) = nv;
+                        else specSet(xs, cs->channel, nv);
                         std::vector<TableFitState> trial = tables;
-                        const double e = constantsError(trial, x);
+                        const double e = constantsError(trial, x, xs);
                         if (e < best - 1e-9) {
                             best = e;
                             c = x;
+                            shared = xs;
                             tables = trial;
                             moved = movedAny = true;
                         }
@@ -771,7 +813,7 @@ inline LawConstants fitConstants(std::vector<TableFitState>& tables, const LawCo
         }
         if (!movedAny) break;
     }
-    for (TableFitState& t : tables) t.fit = fitTable(t.table, c, t.spec);
+    for (TableFitState& t : tables) t.fit = fitTable(t.table, c, t.held, shared);
     if (passesOut) *passesOut = passes;
     return c;
 }

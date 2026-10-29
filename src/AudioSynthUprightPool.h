@@ -15,8 +15,8 @@
 //   setters   push one command each onto a fixed queue (64), inside an
 //             interrupt mask (the caller's mask put back as it was): a note
 //             on or off, the pedal, all notes off, a channel or a rate for
-//             every voice, one partial by hand, and a shape, a knob vector, a
-//             partial table or a tuning, whose payloads wait in small rings
+//             every voice, one partial by hand, and a shape, a partial
+//             table or a tuning, whose payloads wait in small rings
 //             beside the queue (a second of the same kind straight after the
 //             first merges into it: nothing ran between them). a command
 //             carries a 16-bit index (a channel, or a partial's slot) and four
@@ -30,13 +30,12 @@
 //             below the audio library's: one above it would wait the whole
 //             kWaitUs and drop, update() unable to run
 //   update()  drains the queue into the pool in order with interrupts
-//             masked (a knob vector's pianoOf runs there, once per vector,
-//             and the board's table once per body write: kBoardModes
-//             frequencies from the mode pairs found once, no grid search;
-//             the moved modes' turns follow in the render), then renders the
-//             block unmasked, clamps the sum, scales it to int16 and sends
-//             it; when allocate() returns NULL the block is rendered all the
-//             same, so the pool keeps time
+//             masked (the board's table runs there once per body write:
+//             kBoardModes frequencies from the mode pairs found once, no grid
+//             search; the moved modes' turns follow in the render), then
+//             renders the block unmasked, clamps the sum, scales it to int16
+//             and sends it; when allocate() returns NULL the block is
+//             rendered all the same, so the pool keeps time
 //   readback  state(i), slot(i) and sounding() copy under the same mask, as
 //             of the end of the last block
 //
@@ -50,7 +49,6 @@
 #include <AudioStream.h>
 
 #include "core/up_channels.h"
-#include "core/up_knobs.h"
 #include "core/up_pool.h"
 #include "core/up_telemetry.h"
 #include "core/up_tuning.h"
@@ -73,7 +71,6 @@ public:
     bool set(up::Channel c, float target);
     bool setRate(up::Channel c, float perSec);
     bool setShape(const up::Shape& s);               // a nan entry is no write
-    bool setKnobs(const up::Knobs& k);               // pianoOf, then setShape (pianoOf runs in update())
     bool setPartial(int k, float ratio, float t60, float gain, float out);   // one partial by hand
     bool setPartials(const up::PartialTable& t);     // a measured string, whole (a nan skips)
     bool setTuning(const up::Tuning& t);
@@ -90,13 +87,13 @@ public:
     void update(void) override;
 
 private:
-    enum class Op : uint8_t { noteOn, noteOff, pedal, allOff, set, rate, partial, shape, knobs, partials, tuning };
+    enum class Op : uint8_t { noteOn, noteOff, pedal, allOff, set, rate, partial, shape, partials, tuning };
     struct Command {
         Op       op;
         uint16_t index;                              // a channel, or a partial's slot
         float    a, b, c, d;
     };
-    static constexpr int      kQueue = 64, kShapes = 2, kKnobs = 4, kTables = 2, kTunings = 2;
+    static constexpr int      kQueue = 64, kShapes = 2, kTables = 2, kTunings = 2;
     static constexpr uint32_t kWaitUs = 20000;       // a setter waits this long for room at most
 
     // interrupts off for the length of a scope, and back as the caller had them
@@ -147,7 +144,6 @@ private:
     Command     queue_[kQueue];
     int         head_ = 0, count_ = 0;
     Ring<up::Shape, kShapes>         shapes_;
-    Ring<up::Knobs, kKnobs>          knobs_;
     Ring<up::PartialTable, kTables>  tables_;
     Ring<up::Tuning, kTunings>       tunings_;
     uint32_t    dropped_ = 0;
@@ -249,22 +245,6 @@ bool AudioSynthUprightPool<M>::setShape(const up::Shape& s) {
 }
 
 template <int M>
-bool AudioSynthUprightPool<M>::setKnobs(const up::Knobs& k) {
-    return push(
-        {Op::knobs, 0, 0.0f, 0.0f, 0.0f, 0.0f},
-        [&] {
-            if (knobs_.full()) return false;
-            knobs_.put(k);
-            return true;
-        },
-        [&](bool lastIsKnobs) {
-            if (!lastIsKnobs) return false;
-            knobs_.last() = k;
-            return true;
-        });
-}
-
-template <int M>
 bool AudioSynthUprightPool<M>::setPartials(const up::PartialTable& t) {
     return push(
         {Op::partials, 0, 0.0f, 0.0f, 0.0f, 0.0f},
@@ -338,7 +318,6 @@ void AudioSynthUprightPool<M>::apply(const Command& c) {
         case Op::rate:     pool_.setRate((up::Channel)c.index, c.a); break;
         case Op::partial:  pool_.setPartial((int)c.index, c.a, c.b, c.c, c.d); break;
         case Op::shape:    pool_.setShape(shapes_.take()); break;
-        case Op::knobs:    pool_.setKnobs(knobs_.take()); break;
         case Op::partials: pool_.setPartials(tables_.take()); break;
         case Op::tuning:   pool_.setTuning(tunings_.take()); break;
     }

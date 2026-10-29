@@ -3,15 +3,15 @@
 // the plate's frequencies from the formula; doubling the area lowers every
 // mode an octave; doubling eta doubles every decay rate; a closed back
 // lowers the 60 hz radiation; the modes in frequency order with no
-// duplicate; the pairs found once are the full search's at every body, and a
+// duplicate; the pairs found once are the full search's at every board, and a
 // rebuild's cost; the bridge points inside the plate for every key. then the
 // board as a stage: two voices in are the sum of each; a mode rings at its
 // table's frequency and t60; a closed back lowers a 60 hz drive's output.
-// then the field: its impulse energy the shelf's share at every body; an
+// then the field: its impulse energy the shelf's share at every board; an
 // impulse's energy spread over milliseconds; its lines' loss the plate's
 // per-pass loss at dc and at kFieldFitHz, its t60 at 1.5 f_top and its late
 // decay printed beside the plate's; finite and falling silent after a hard
-// input at every body and rate; the board's mean power over three octaves
+// input at every board and rate; the board's mean power over three octaves
 // above the modes a flat shelf's within 3 db.
 #include <chrono>
 #include <cmath>
@@ -21,35 +21,31 @@
 
 #include "core/up_board.h"
 #include "up_analysis.h"
-#include "core/up_knobs.h"
+#include "core/up_presets.h"
 #include "core/up_voice.h"
 #include "up_fit.h"
 #include "up_play.h"
+#include "up_shapes.h"
 #include "up_test.h"
 
 using namespace up;
 
 namespace {
 
-// grand's shape at a body
-Shape bodyAt(float body) {
-    Knobs k = knobAnchors()[0].k;
-    k.v[(int)Knob::body] = body;
-    return pianoOf(k);
-}
+// the five boards' names (up_shapes.h)
+const char* const kBoardName[5] = {"the spinet's", "fortepiano's", "grand's", "a larger", "the concert grand's"};
 
-// a board at grand's plate at a body
-void plateAt(Board& b, float body, float fs = kDefaultFs) {
-    const Shape s = bodyAt(body);
+// a board at one of the five plates
+void plateAt(Board& b, int pl, float fs = kDefaultFs) {
     b.init(fs);
-    b.setPlate(s[Channel::boardArea], s[Channel::boardLoss], s[Channel::open]);
+    b.setPlate(kBoardPlates[pl].area, kBoardPlates[pl].loss, kBoardPlates[pl].open);
 }
 
-// the board's output for 1 N for one sample at c4's bridge point at a body, n samples; flat: the modes alone (the
+// the board's output for 1 N for one sample at c4's bridge point at a plate, n samples; flat: the modes alone (the
 // shelf's mobility 0) plus the force through the two highpasses x kBoardShelf, a flat shelf's
-std::vector<float> impulseAt(float body, int n, bool flat) {
+std::vector<float> impulseAt(int pl, int n, bool flat) {
     Board b;
-    plateAt(b, body);
+    plateAt(b, pl);
     b.setShelf(flat ? 0.0f : kBoardShelf);
     float w[kBoardModes];
     b.inputWeights(60.0f, w);
@@ -150,13 +146,11 @@ UP_TEST(board_open) {
            radiationEdge(0.0f), radiationEdge(1.0f));
 }
 
-// the modes in frequency order, no (m, n) twice, at the body knob's ends and middle
+// the modes in frequency order, no (m, n) twice, at the spinet's, grand's and the concert grand's boards
 UP_TEST(board_order) {
-    for (float body : {-1.0f, 0.0f, 1.0f}) {
-        Knobs k = knobAnchors()[0].k;
-        k.v[(int)Knob::body] = body;
-        const Shape s = pianoOf(k);
-        const BoardTable t = boardOf(s[Channel::boardArea], s[Channel::boardLoss], s[Channel::open]);
+    for (int pl : {0, 2, 4}) {
+        const BoardPlate& p = kBoardPlates[pl];
+        const BoardTable t = boardOf(p.area, p.loss, p.open);
         std::set<std::pair<int, int>> seen;
         bool ordered = true;
         for (int i = 0; i < kBoardModes; ++i) {
@@ -164,13 +158,13 @@ UP_TEST(board_order) {
             seen.insert({t.mode[i].m, t.mode[i].n});
         }
         CHECK(ordered && (int)seen.size() == kBoardModes);
-        printf("    body %+.0f: %.1f, %.1f, %.1f hz\n", body, t.mode[0].hz, t.mode[1].hz, t.mode[2].hz);
+        printf("    %s board: %.1f, %.1f, %.1f hz\n", kBoardName[pl], t.mode[0].hz, t.mode[1].hz, t.mode[2].hz);
     }
 }
 
 // the plate's (m, n) pairs are found once (the full search's at 1 m², on the
-// first call) and kept: at bodies -1, -0.5, 0, +0.5 and +1 boardOf's table
-// is boardSearch's, the same m and n and the same hz, t60 and radiation to
+// first call) and kept: at the five boards from the spinet's to the concert
+// grand's boardOf's table is boardSearch's, the same m and n and the same hz, t60 and radiation to
 // the bit (a check). the host time of a rebuild printed against a voice's
 // block (grand at c4, 64 partials, three strings): setPlate with every mode
 // moved (the table, the output weights, the bank's setPartial), and that
@@ -178,17 +172,14 @@ UP_TEST(board_order) {
 // less a block where nothing moved
 UP_TEST(board_pairs_found_once) {
     bool same = true;
-    for (float body : {-1.0f, -0.5f, 0.0f, 0.5f, 1.0f}) {
-        Knobs k = knobAnchors()[0].k;
-        k.v[(int)Knob::body] = body;
-        const Shape s = pianoOf(k);
-        const float area = s[Channel::boardArea], loss = s[Channel::boardLoss], open = s[Channel::open];
+    for (int pl = 0; pl < 5; ++pl) {
+        const float area = kBoardPlates[pl].area, loss = kBoardPlates[pl].loss, open = kBoardPlates[pl].open;
         const BoardTable a = boardOf(area, loss, open), b = boardSearch(area, loss, open);
         bool here = a.a == b.a && a.b == b.b;
         for (int i = 0; i < kBoardModes; ++i)
             here = here && a.mode[i].m == b.mode[i].m && a.mode[i].n == b.mode[i].n && a.mode[i].hz == b.mode[i].hz && a.mode[i].t60 == b.mode[i].t60 &&
                    a.mode[i].radiation == b.mode[i].radiation;
-        CHECK_MSG(here, "body %+.1f (%.4f m²): the pairs found once differ from the search", body, area);
+        CHECK_MSG(here, "%s board (%.4f m²): the pairs found once differ from the search", kBoardName[pl], area);
         same = same && here;
     }
     // a rebuild's host time: the plate between two areas, every mode moved
@@ -218,7 +209,7 @@ UP_TEST(board_pairs_found_once) {
     }
     const double still = std::chrono::duration<double, std::micro>(clock::now() - t0).count() / n;
     Voice v(1);
-    v.setShape(pianoOf(knobAnchors()[0].k));
+    v.setShape(grand());
     float br[kBlock], pk[kBlock];
     v.noteOn(60.0f, 1.0f);
     for (int i = 0; i < 50; ++i) v.render(br, pk, kBlock);
@@ -234,7 +225,7 @@ UP_TEST(board_pairs_found_once) {
         sink = sink + t.mode[kBoardModes - 1].hz;
     }
     const double search = std::chrono::duration<double, std::micro>(clock::now() - t0).count() / 200;
-    printf("    bodies -1, -0.5, 0, +0.5, +1: the pairs found once %s the search's; on this host a rebuild (setPlate, every mode moved) %.2f us, "
+    printf("    the five boards: the pairs found once %s the search's; on this host a rebuild (setPlate, every mode moved) %.2f us, "
            "with the board's block that turns them %.2f us against %.2f us for a block where nothing moved (the rebuild %.2f us); a voice's "
            "block %.2f us: the rebuild %.2f of a voice's block (the full search %.1f us, %.1f blocks)%s\n",
            same ? "are" : "are NOT", plate, moved, still, moved - still, voice, (moved - still) / voice, search, search / voice, sink == 1e30f ? " " : "");
@@ -355,13 +346,13 @@ UP_TEST(board_open_lowers_60hz) {
 }
 
 // the field's impulse energy (a unit impulse into the field alone, no highpass, 0.5 s) against the shelf's share,
-// (1 - kFieldDirect²) kBoardShelf²: within 1 db at body -1, 0 and +1 (kFieldGain set at body 0, the same gain at
-// every body): the field and the direct share together carry the shelf's mean power
+// (1 - kFieldDirect²) kBoardShelf²: within 1 db at the spinet's, grand's and the concert grand's boards (kFieldGain
+// set at grand's, the same gain at every board): the field and the direct share together carry the shelf's mean power
 UP_TEST(board_field_carries_the_shelf) {
     const double share = (1.0 - (double)kFieldDirect * kFieldDirect) * (double)kBoardShelf * kBoardShelf;
-    for (float body : {-1.0f, 0.0f, 1.0f}) {
+    for (int pl : {0, 2, 4}) {
         Board b;
-        plateAt(b, body);
+        plateAt(b, pl);
         double e = 0.0;
         for (int i = 0; i < (int)(0.5 * kDefaultFs); ++i) {
             const double y = b.fieldStep(i == 0 ? 1.0f : 0.0f);
@@ -369,14 +360,14 @@ UP_TEST(board_field_carries_the_shelf) {
         }
         const double db = 10.0 * std::log10(e / share);
         const BoardMode top = b.modeInfo(kBoardModes - 1);
-        CHECK_MSG(std::fabs(db) <= 1.0, "body %+.0f: the field's impulse energy %.4g, %+.2f db from the shelf's share %.4g", body, e, db, share);
-        printf("    body %+.0f (the top mode %.0f hz, its t60 %.1f ms): the field's impulse energy %.4g (um/s per N)², %+.2f db from (1 - kFieldDirect²) "
-               "kBoardShelf² %.4g\n",
-               body, top.hz, 1000.0 * top.t60, e, db, share);
+        CHECK_MSG(std::fabs(db) <= 1.0, "%s board: the field's impulse energy %.4g, %+.2f db from the shelf's share %.4g", kBoardName[pl], e, db, share);
+        printf("    %s board (the top mode %.0f hz, its t60 %.1f ms): the field's impulse energy %.4g (um/s per N)², %+.2f db from (1 - "
+               "kFieldDirect²) kBoardShelf² %.4g\n",
+               kBoardName[pl], top.hz, 1000.0 * top.t60, e, db, share);
     }
 }
 
-// 1 N for one sample at c4's bridge point at body 0: the board's output energy within the first sample under 15 % of
+// 1 N for one sample at c4's bridge point at grand's board: the board's output energy within the first sample under 15 % of
 // the first 300 ms's, within 5 ms over 60 %: the field spreads the force's arrival over milliseconds. printed beside
 // a flat shelf's: the modes alone (the shelf's mobility 0) plus the force through the two highpasses x kBoardShelf
 UP_TEST(board_field_arrives_over_milliseconds) {
@@ -385,7 +376,7 @@ UP_TEST(board_field_arrives_over_milliseconds) {
     f[0] = 1.0f;
     for (float shelf : {kBoardShelf, 0.0f}) {
         Board b;
-        plateAt(b, 0.0f);
+        plateAt(b, 2);
         b.setShelf(shelf);
         float w[kBoardModes];
         b.inputWeights(60.0f, w);
@@ -394,7 +385,7 @@ UP_TEST(board_field_arrives_over_milliseconds) {
         b.render(fp, wp, 1, (shelf > 0.0f ? board : modes).data(), n);
     }
     Board t;
-    plateAt(t, 0.0f);
+    plateAt(t, 2);
     const double a = 1.0 - std::exp(-2.0 * kPi * t.modeInfo(kBoardModes - 1).hz / kDefaultFs);
     double low1 = 0.0, low2 = 0.0;
     for (int i = 0; i < n; ++i) {
@@ -418,12 +409,12 @@ UP_TEST(board_field_arrives_over_milliseconds) {
     shares(flat, flatFirst, flatFive);
     CHECK_MSG(first < 15.0, "the first sample %.1f %% of the energy", first);
     CHECK_MSG(five > 60.0, "within 5 ms %.1f %% of the energy", five);
-    printf("    1 N for one sample at c4's bridge point, body 0: the first sample %.1f %% of the first 300 ms's energy, within 5 ms %.1f %%; a "
+    printf("    1 N for one sample at c4's bridge point, grand's board: the first sample %.1f %% of the first 300 ms's energy, within 5 ms %.1f %%; a "
            "flat shelf's %.1f %%, %.1f %%\n",
            first, five, flatFirst, flatFive);
 }
 
-// the field's loss as designed, at body -1, 0 and +1, every line's one-pole H_i = g_i (1 - a_i) / (1 - a_i z^-1) from
+// the field's loss as designed, at the spinet's, grand's and the concert grand's boards, every line's one-pole H_i = g_i (1 - a_i) / (1 - a_i z^-1) from
 // fieldLine against the plate's per-pass loss 10^(-3 L_i / (t60 fs)), t60 = 6.907755 / (pi f eta) (f_top the
 // plate's top mode, eta the shape's boardLoss): its gain at dc, g_i, the pass at the top mode's t60, and |H_i| at
 // kFieldFitHz the pass at the plate's t60 there, each within 1e-4 relative. printed: the one-pole's t60 at f_top and
@@ -432,10 +423,10 @@ UP_TEST(board_field_arrives_over_milliseconds) {
 // impulse response (the field alone, 1 s) over the octave about it, 0.25 ms frames, by schroeder's backward
 // integration from 10 ms (after the first pass)
 UP_TEST(board_field_decays_as_the_plate) {
-    for (float body : {-1.0f, 0.0f, 1.0f}) {
+    for (int pl : {0, 2, 4}) {
         Board b;
-        plateAt(b, body);
-        const double eta = bodyAt(body)[Channel::boardLoss], top = b.modeInfo(kBoardModes - 1).hz;
+        plateAt(b, pl);
+        const double eta = kBoardPlates[pl].loss, top = b.modeInfo(kBoardModes - 1).hz;
         const double fs = kDefaultFs, plateTop = 6.907755 / (kPi * top * eta), plateFit = 6.907755 / (kPi * kFieldFitHz * eta);
         // a line's |H_i| at f
         auto mag = [&](int i, double f) {
@@ -454,10 +445,10 @@ UP_TEST(board_field_decays_as_the_plate) {
         for (int i = 0; i < kFieldLines; ++i) {
             const double dc = mag(i, 0.0), fit = mag(i, kFieldFitHz);
             const double wantDc = std::pow(10.0, -3.0 * kFieldLengths[i] / (plateTop * fs)), wantFit = std::pow(10.0, -3.0 * kFieldLengths[i] / (plateFit * fs));
-            CHECK_MSG(std::fabs(dc / wantDc - 1.0) <= 1e-4, "body %+.0f, line %d: its gain at dc %.6f against the pass at the top mode's t60 %.6f", body,
-                      kFieldLengths[i], dc, wantDc);
-            CHECK_MSG(std::fabs(fit / wantFit - 1.0) <= 1e-4, "body %+.0f, line %d: |H| at %.0f hz %.6f against the pass at the plate's t60 there %.6f",
-                      body, kFieldLengths[i], (double)kFieldFitHz, fit, wantFit);
+            CHECK_MSG(std::fabs(dc / wantDc - 1.0) <= 1e-4, "%s board, line %d: its gain at dc %.6f against the pass at the top mode's t60 %.6f",
+                      kBoardName[pl], kFieldLengths[i], dc, wantDc);
+            CHECK_MSG(std::fabs(fit / wantFit - 1.0) <= 1e-4, "%s board, line %d: |H| at %.0f hz %.6f against the pass at the plate's t60 there %.6f",
+                      kBoardName[pl], kFieldLengths[i], (double)kFieldFitHz, fit, wantFit);
             worstDc = std::fmax(worstDc, std::fabs(dc / wantDc - 1.0));
             worstFit = std::fmax(worstFit, std::fabs(fit / wantFit - 1.0));
         }
@@ -466,24 +457,25 @@ UP_TEST(board_field_decays_as_the_plate) {
         std::vector<float> y((size_t)n);
         for (int i = 0; i < n; ++i) y[(size_t)i] = b.fieldStep(i == 0 ? 1.0f : 0.0f);
         const double late = schroederT60(BandAnalyser(y.data(), y.size(), fs).envelope(1.5 * top / std::sqrt(2.0), 1.5 * top * std::sqrt(2.0), 0.00025), 0.01);
-        printf("    body %+.0f (the top mode %.0f hz, eta %.4f): the lines' loss off the plate's per-pass loss by %.1e at dc, %.1e at %.0f hz; the one-pole's "
+        printf("    %s board (the top mode %.0f hz, eta %.4f): the lines' loss off the plate's per-pass loss by %.1e at dc, %.1e at %.0f hz; the one-pole's "
                "t60 at the top mode %.1f ms against the plate's %.1f (x %.2f), at 1.5 f_top (%.0f hz) %.1f against %.1f (x %.2f); the late decay "
                "there from 10 ms %.1f ms (x %.2f of the one-pole's, x %.2f of the plate's)\n",
-               body, top, eta, worstDc, worstFit, (double)kFieldFitHz, 1000.0 * atTop, 1000.0 * plateTop, atTop / plateTop, 1.5 * top, 1000.0 * at15,
+               kBoardName[pl], top, eta, worstDc, worstFit, (double)kFieldFitHz, 1000.0 * atTop, 1000.0 * plateTop, atTop / plateTop, 1.5 * top, 1000.0 * at15,
                1000.0 * plate15, at15 / plate15, 1000.0 * late, late / at15, late / plate15);
     }
 }
 
 // white noise at 100 N rms for half a second into the board, the modes' weights 0 (the direct share and the field
-// alone: the modes' own ring is board_mode_rings_true's), at body -1, 0 and +1 and at 22.05, 44.1 and 96 khz: every
+// alone: the modes' own ring is board_mode_rings_true's), at the spinet's, grand's and the concert grand's boards and
+// at 22.05, 44.1 and 96 khz: every
 // sample finite, and after the input stops the output falls under -100 dbfs within 1 s
 UP_TEST(board_field_is_stable) {
     bool finite = true;
     double latest = 0.0, loudest = 0.0;
     for (float fs : {22050.0f, 44100.0f, 96000.0f})
-        for (float body : {-1.0f, 0.0f, 1.0f}) {
+        for (int pl : {0, 2, 4}) {
             Board b;
-            plateAt(b, body, fs);
+            plateAt(b, pl, fs);
             const int drive = (int)(0.5 * fs), n = (int)(2.0 * fs);
             std::vector<float> f((size_t)n, 0.0f), out((size_t)n);
             Rng r;
@@ -499,31 +491,32 @@ UP_TEST(board_field_is_stable) {
                 if (i >= drive && std::fabs(out[(size_t)i]) >= 1e-5f) last = i;
             }
             const double after = (double)(last - drive) / fs, peak = peakAbs(out.data(), (size_t)drive);
-            CHECK_MSG(after < 1.0, "%.0f hz, body %+.0f: over -100 dbfs %.3f s after the input stops", fs, body, after);
+            CHECK_MSG(after < 1.0, "%.0f hz, %s board: over -100 dbfs %.3f s after the input stops", fs, kBoardName[pl], after);
             latest = std::fmax(latest, after);
             loudest = std::fmax(loudest, peak);
         }
     CHECK(finite);
-    printf("    100 N rms of white noise, three bodies at 22.05, 44.1 and 96 khz: every sample %s; the loudest peak %.3f (%+.1f dbfs), under -100 "
+    printf("    100 N rms of white noise, three boards at 22.05, 44.1 and 96 khz: every sample %s; the loudest peak %.3f (%+.1f dbfs), under -100 "
            "dbfs %.3f s after the input stops at the latest\n",
            finite ? "finite" : "NOT finite", loudest, dbfs(loudest), latest);
 }
 
-// the board's impulse response at c4's bridge point (1 N for one sample, 16384 samples) at body -1, 0 and +1: the
+// the board's impulse response at c4's bridge point (1 N for one sample, 16384 samples) at the spinet's, grand's and the
+// concert grand's boards: the
 // power mean of |H(f)|² over f_top .. 2 f_top, 2 .. 4 f_top and 4 .. 8 f_top (each under the ceiling) within 3 db of
 // a flat shelf's there (impulseAt's flat: the modes and kBoardShelf through the two highpasses): the field and the
-// direct share carry the shelf's power in band. a known row at body +1, where the field's power follows its t60 (253
+// direct share carry the shelf's power in band. a known row at the concert grand's, where the field's power follows its t60 (253
 // ms at the top mode, 30 at 4 khz) over the lower bands: the tilt. the power mean, the mean of the db and its
 // standard deviation (the grain) printed per band
 UP_TEST(board_field_mean_power_is_the_shelfs) {
     const int n = 16384;
-    for (float body : {-1.0f, 0.0f, 1.0f}) {
-        const std::vector<float> board = impulseAt(body, n, false), flat = impulseAt(body, n, true);
+    for (int pl : {0, 2, 4}) {
+        const std::vector<float> board = impulseAt(pl, n, false), flat = impulseAt(pl, n, true);
         std::vector<double> br(board.begin(), board.end()), bi((size_t)n, 0.0), fr(flat.begin(), flat.end()), fi((size_t)n, 0.0);
         fft(br, bi);
         fft(fr, fi);
         Board t;
-        plateAt(t, body);
+        plateAt(t, pl);
         const double top = t.modeInfo(kBoardModes - 1).hz, binHz = kDefaultFs / n;
         double lo[3], hi[3], power[3], shelf[3], mean[3], sd[3];
         for (int j = 0; j < 3; ++j) {
@@ -544,14 +537,14 @@ UP_TEST(board_field_mean_power_is_the_shelfs) {
             shelf[j] = 10.0 * std::log10(q / count);
             mean[j] = d / count;
             sd[j] = std::sqrt(std::fmax(0.0, dd / count - mean[j] * mean[j]));
-            if (body < 1.0f)
-                CHECK_MSG(std::fabs(power[j] - shelf[j]) <= 3.0, "body %+.0f, %.0f .. %.0f hz: the power mean %+.2f db, a flat shelf's %+.2f", body, lo[j],
-                          hi[j], power[j], shelf[j]);
+            if (pl < 4)
+                CHECK_MSG(std::fabs(power[j] - shelf[j]) <= 3.0, "%s board, %.0f .. %.0f hz: the power mean %+.2f db, a flat shelf's %+.2f",
+                          kBoardName[pl], lo[j], hi[j], power[j], shelf[j]);
             else
-                KNOWN_FAILURE(std::fabs(power[j] - shelf[j]) <= 3.0, "body %+.0f, %.0f .. %.0f hz: the power mean %+.2f db, a flat shelf's %+.2f (the "
-                              "tilt)", body, lo[j], hi[j], power[j], shelf[j]);
+                KNOWN_FAILURE(std::fabs(power[j] - shelf[j]) <= 3.0, "%s board, %.0f .. %.0f hz: the power mean %+.2f db, a flat shelf's %+.2f (the "
+                              "tilt)", kBoardName[pl], lo[j], hi[j], power[j], shelf[j]);
         }
-        printf("    body %+.0f (the top mode %.0f hz):", body, top);
+        printf("    %s board (the top mode %.0f hz):", kBoardName[pl], top);
         for (int j = 0; j < 3; ++j)
             printf("%s %.0f .. %.0f hz the power mean %+.2f db against a flat shelf's %+.2f (%+.2f), the mean of the db %+.2f, sd %.2f", j ? ";" : "",
                    lo[j], hi[j], power[j], shelf[j], power[j] - shelf[j], mean[j], sd[j]);

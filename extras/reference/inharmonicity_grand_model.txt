@@ -5,7 +5,7 @@
 #   the source tuned the scale so the inharmonicity curve is smooth (its fig. 5i); the table covers c1..b7 only (84 keys, no a0-b0, no c8).
 # units: midi = key number, b dimensionless
 # kind: B
-# hold: scale=1 (a steinway d model: the constants' fit holds it at the scale knob's +1 end)
+# hold: length=0.626901448 bass=2.13304901 (a steinway d model: the constants' fit holds its strings there, the concert grand's)
 # columns: midi B
 24 6.77e-5   # C1, l=2.007 m d=1.48 mm t0=1722.0 n
 25 7.04e-5   # Cd1, l=1.997 m d=1.505 mm t0=1788.0 n

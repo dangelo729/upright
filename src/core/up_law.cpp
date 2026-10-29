@@ -14,8 +14,8 @@ namespace {
 // each with what sets it: the plan's figure, a source, or the fit (uptool fit --constants,
 // plans/upright-engine/out0/fit)
 constexpr LawConstants kLaw = {
-    553.0f,     // tension: the design tension, about the same the keyboard over (the measured b tables' fit with kScale
-                //   held at 0.03, plans/upright-engine/out1/planner/scale_fit_003.txt)
+    553.0f,     // tension: the design tension, about the same the keyboard over (the measured b tables' fit,
+                //   plans/upright-engine/out1/planner/scale_fit_003.txt)
     0.915f,     // rankLength: the length goes as (f_c4 / f0)^0.915 until the case stops it (the same fit)
     1.08875e-3f,  // dMax: the thickest plain wire (the same fit)
     1.0e-3f,    // core: a wound string's steel core at the bass break (the same fit)
@@ -29,15 +29,8 @@ constexpr LawConstants kLaw = {
     0.03f,      // rankStrike: the share falls 0.12 to 0.115 over the keyboard (chabassier & durufle's steinway d holds
                 //   0.120 from c1 to c6; chaigne 2016's eight strings 0.105 .. 0.125)
     0.614f,     // l0: a grand's c4 speaking length (a steinway d's 0.657; the same fit)
-    0.03f,      // scale: 2^±0.03 on c4's length: a concert grand's and an upright's c4 measure the same b (3.16e-4,
-                //   3.41e-4); the size lives in the bass, which scaleBass carries
-    1.61375f,   // bass0: the longest string, 1.22 m at -1 and 2.13 at +1 ...
-    0.4025f,    // scaleBass: ... a spinet's and a concert grand's a0 (the same fit)
-    2.97f,      // massC4: g, chaigne & askenfelt's c4 hammer (measured with its k and p)
-    142.0f,     // k: N/mm^p (the force at 1 mm), chaigne & askenfelt's c4: 4.5e9 N/m^2.5
-    2.5f,       // p: chaigne & askenfelt's c4 (the knob leaves it; rankP moves it along the keyboard)
-    10.4f,      // tineT60: s at c4, the fit against shear's q for a 1974 mark i (eb2 26.8 s .. eb6 3.1 s at the rank's
-                //   t60 slope)
+    1.61375f,   // bass0: a grand's longest string (the same fit)
+    2.97f,      // massC4: g, chaigne & askenfelt's c4 hammer (measured with its stiffness and power)
     1.2f,       // tineSlope: the overtones' ping (an estimate)
     0.75f,      // rankHardLo: the felt's stiffness below c4 (chaigne & askenfelt's k at 1 mm: 50 at c2 against 142 at c4)
     1.41f,      // rankHardHi: the felt's stiffness from c4 up (their 1000 at c6): their three points bend at c4
@@ -97,10 +90,10 @@ float beamBeta(int n) {
     return n <= 6 ? (float)kBeta[n - 1] : (float)((2.0 * n - 1.0) * 3.14159265358979323846 * 0.5);
 }
 
-float tineRatio(int n, const LawConstants&) {
+float tineRatio(int n, float load) {
     const double b = n <= 6 ? kBeta[(n < 1 ? 1 : n) - 1] : (2.0 * n - 1.0) * 3.14159265358979323846 * 0.5;
-    const double load = n >= 2 ? (double)kTineLoad : 1.0;
-    return (float)((b / kBeta[0]) * (b / kBeta[0]) * load);
+    const double l = n >= 2 ? (double)load : 1.0;
+    return (float)((b / kBeta[0]) * (b / kBeta[0]) * l);
 }
 
 // phi(x) = cosh x - cos x - s (sinh x - sin x), x = beta xi, s = (sinh b - sin b) / (cosh b + cos b),
@@ -155,7 +148,8 @@ PartialTable partialsOf(const Shape& s, const RankState& r, const Tuning& t, con
     const float share = finiteOr(r.strikeShare, 0.12f);
     const float f0 = finiteOr(r.f0, midiToHz(kScaleMidi));
     const float ceilingHz = clamp(finiteOr(t.ceiling, kCeiling), 0.01f, 0.5f) * kDefaultFs;
-    const float tineT60 = c.tineT60 > 1e-3f ? c.tineT60 : 1e-3f;
+    const float tineT60 = s[Channel::tineT60] > 1e-3f ? s[Channel::tineT60] : 1e-3f;      // a nan too
+    const float load = s[Channel::tineLoad] > 0.0f ? s[Channel::tineLoad] : 1.0f;          // a nan: the bare beam
     const float fade = clamp(-g, 0.0f, 1.0f);                  // the string's slots over the tine's
     PartialTable p;
     for (int k = 0; k < kMaxModes; ++k) {
@@ -165,7 +159,7 @@ PartialTable partialsOf(const Shape& s, const RankState& r, const Tuning& t, con
         const float st = stringT60(n, sr, f0, s, c, r.t60Scale);
         const float sg = strikeGain(n, share), so = bridgeOut(n);
         // the beam, its shapes over the tip's 2
-        const float br = tineRatio(n, c);
+        const float br = tineRatio(n, load);
         const float bt = tineT60 * std::pow(br, -c.tineSlope);
         const bool beamOn = n <= kTineModes;
         const float bg = beamOn ? 0.5f * beamShape(n, share) : 0.0f;

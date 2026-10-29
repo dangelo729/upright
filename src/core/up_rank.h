@@ -19,8 +19,8 @@
 //                 ^rankHardHi from c4 up, and its power + rankP
 //                 log2(f0 / f_c4) (the treble's hammers are harder); the
 //                 strike share strikeShare (f_c4 / f0)^rankStrike, falling up
-//                 the keyboard (it may pass 0.5 at the top on the strike
-//                 knob's +1 end: the string is symmetric, the tine longer)
+//                 the keyboard (it may pass 0.5 at the top from a share
+//                 near 0.5: the string is symmetric, the tine longer)
 //   decays        every t60 scales by (f_c4 / f0)^rankLoss, held under
 //                 t60ScaleMax
 //   the bridge    pi tension / L: the bridge force's scale on the law's
@@ -38,8 +38,8 @@
 // what the fixed tension implies: at a fixed pitch and tension the plain
 // wire's mass goes as 1 / L², its diameter's fourth power as 1 / L⁴, and B
 // as 1 / L⁶; on a wound string the core goes as mu^coreGrow, so B goes as
-// 1 / L^(2 + 8 coreGrow). the scale
-// knob moves B by those powers, and moves the bass break (where the plain
+// 1 / L^(2 + 8 coreGrow). the length and bass
+// channels move B by those powers, and move the bass break (where the plain
 // wire passes dMax) with it. on the electric side the rank computes the same
 // numbers: the beam's ratios are the law's business, its t60s scale as the
 // string's.

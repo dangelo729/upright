@@ -14,11 +14,11 @@ via:` where an open secondary source quotes a paywalled primary), a `#
 kind:` (B, decay, hammer, tine, cantilever, board) and one or more `#
 columns:` lines, each naming the columns of the data lines after it; a data
 line is `key value ...`, the key a midi number, a partial number or a name,
-a value a number or `-`. `# hold: KNOB=V` holds a knob in the constants'
-fit; `# midi:` names a tine table's note. Each file's header says how its
-numbers were obtained: printed in a table, recovered from a figure's vector
-marker coordinates, read by pixel from a figure image, read by eye, or
-computed from printed numbers. The full provenance (file, page, table or
+a value a number or `-`. `# hold: CHANNEL=V` holds a channel in the
+constants' fit; `# midi:` names a tine table's note. Each file's header
+says how its numbers were obtained: printed in a table, recovered from a
+figure's vector marker coordinates, read by pixel from a figure image, read
+by eye, or computed from printed numbers. The full provenance (file, page, table or
 figure, a verbatim quote for each number) is in the stage's notes,
 plans/upright-engine/out0/reftables/NOTES.md, outside the repository.
 

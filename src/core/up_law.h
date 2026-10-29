@@ -21,10 +21,13 @@
 //   the tine (generator 0)     the clamped-free beam: ratios (beta_n /
 //                      beta_1)², the first kTineModes slots on and the rest
 //                      off (the beam's series continued so the table stays
-//                      ordered), the overtones (n >= 2) x kTineLoad, the
-//                      tuning spring's load; decays tineT60 ratio^-tineSlope; gains the
-//                      beam's shape at the strike share and outs its shape at
-//                      the tip, both over the tip's 2 (the tip at ±1)
+//                      ordered), the overtones (n >= 2) x the tineLoad
+//                      channel, the tuning spring's load (a nan or a load at
+//                      or under 0 the bare beam's 1); decays the tineT60
+//                      channel x ratio^-tineSlope (held over 1 ms, a nan
+//                      too); gains the beam's shape at the strike share and
+//                      outs its shape at the tip, both over the tip's 2 (the
+//                      tip at ±1)
 //   the reed (generator +1)    the tine's ratios and shapes, the overtones'
 //                      gains at kReedOvertone of the beam's, decays kReedT60
 //                      times the tine's
@@ -38,8 +41,7 @@
 //                      the note gets gain 0 and out 0 (off)
 //
 // the fitted constants are a LawConstants, so the tool varies them without a
-// rebuild; lawConstants() is the block of up_law.cpp the engine runs on. the
-// knob recipes read the ones the fit may move from it too.
+// rebuild; lawConstants() is the block of up_law.cpp the engine runs on.
 #pragma once
 
 #include <cstdint>
@@ -64,32 +66,24 @@ constexpr float kUnisonGain   = 0.5f;      // the tine side's: the tonebar heard
                                            //   lerp(1, kUnisonGain, clamp(1 + g, 0, 1)): equal strings on the string side)
 constexpr float kTipHard      = 2.0f;      // the tine's tip: hardness x 2^(kTipHard (1 - |g|)) at the generator (§4)
 constexpr float kTipLoss      = 1.0f;      //   and felt x 2^(-kTipLoss (1 - |g|)): harder and less lossy than felt
-constexpr float kTineLoad     = 1.18f;     // the beam's overtone ratios (n >= 2) x this at the tine and the reed: the tuning
-                                           //   spring's mass at the tip (shear 2011, fig. 2.2: the 2nd partial at 7.4, the
-                                           //   bare beam's 6.27)
 constexpr float kExponentLo   = 1.5f;      // the felt's power at a note is held inside these (the rank's pAdd on the channel's)
 constexpr float kExponentHi   = 4.0f;
 
 // the constants a fit may move (uptool fit --constants), each with its default in up_law.cpp
 struct LawConstants {
-    float tension;      // N: the design tension the knobs write
+    float tension;      // N: the design tension where a shape's tension channel is nan
     float rankLength;   // the length goes as (f_c4 / f0)^rankLength down the keyboard
     float dMax;         // m: the thickest plain wire; past it the string is wrapped
     float core;         // m: a wrapped string's steel core
-    float loss;         // 1/s at c4: the string's own loss the knobs write (lossRate)
+    float loss;         // 1/s at c4: the string's own loss where a shape's lossRate is nan
     float lossKnee;     // hz: the loss doubles here at slope 1
-    float lossSlope;    // the loss's power in frequency the knobs write (lossSlope)
+    float lossSlope;    // the loss's power in frequency where a shape's lossSlope is nan
     float rankLoss;     // every t60 goes as (f_c4 / f0)^rankLoss
     float rankMass;     // the hammer's mass goes as (f_c4 / f0)^rankMass
     float rankStrike;   // the strike share goes as (f_c4 / f0)^rankStrike
-    float l0;           // m: the speaking length at c4 at scale 0
-    float scale;        // length = l0 2^(s scale)
-    float bass0;        // m: the longest string at scale 0
-    float scaleBass;    // bass = bass0 2^(s scaleBass)
-    float massC4;       // g: the hammer's mass at c4
-    float k;            // N/mm^p: the medium hammer's felt stiffness at c4 (the force at 1 mm)
-    float p;            // the medium hammer's power
-    float tineT60;      // s: the tine's fundamental t60 at c4
+    float l0;           // m: the speaking length at c4 where a shape's length is nan
+    float bass0;        // m: the longest string where a shape's bass is nan
+    float massC4;       // g: the hammer's mass at c4 where a shape's hammerMass is nan
     float tineSlope;    // the tine's t60 goes as ratio^-tineSlope
     float rankHardLo;   // the felt's stiffness goes as (f0 / f_c4)^rankHardLo below c4 ...
     float rankHardHi;   // ... and as (f0 / f_c4)^rankHardHi from c4 up
@@ -126,7 +120,7 @@ float stringT60(int n, float ratio, float f0, const Shape& s, const LawConstants
                 float t60Scale);                                                  // the table's t60 at f_n = ratio f0 (the header's form)
 float strikeGain(int n, float share);                                             // sin(n pi share), signed
 float bridgeOut(int n);                                                           // n (-1)^(n+1)
-float tineRatio(int n, const LawConstants& c);                                    // (beta_n / beta_1)², x kTineLoad for n >= 2
+float tineRatio(int n, float load);                                               // (beta_n / beta_1)², x load for n >= 2
 float beamBeta(int n);                                                            // the clamped-free beam's beta_n L
 float beamShape(int n, float share);                                              // the beam's shape at a share of its length, tip = ±2
 float stringsOf(const Shape& s);                                                  // the strings channel capped on the electric side

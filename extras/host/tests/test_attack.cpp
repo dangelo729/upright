@@ -32,7 +32,7 @@
 //                            clank's band from velocity 0.5 to 1 at least 1.7
 //                            x the strongest partial's move
 //   the bottom notes         every acoustic preset's bottom note at velocity
-//                            1, its level undone, peaks under 1.0
+//                            1 peaks under 1.0
 //   the tine side            rhodes at e4 and wurlitzer at a3: the same bytes
 //                            at attack 0 and 1
 //   the pool                 a chord of four at attack 1: finite and under the
@@ -55,15 +55,14 @@ using namespace up;
 namespace {
 
 constexpr float kFs = 44100.0f;
-const Knobs kGrand = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}};
 
 double db(double x) { return 20.0 * std::log10(x + 1e-30); }
 
 constexpr double kOwnC4 = -9.99;   // db: grand's c4, velocity 1, the attack's own over 0 .. 10 ms against the string's, as measured
 
-PlaySpec specAt(float midi, float vel, float attack, float sec = 1.0f, const Knobs& k = kGrand) {
+PlaySpec specAt(float midi, float vel, float attack, float sec = 1.0f, const Shape& s = grand()) {
     PlaySpec sp;
-    sp.instrument = pianoOf(k);
+    sp.instrument = s;
     sp.midi = midi;
     sp.vel = vel;
     sp.sec = sec;
@@ -76,7 +75,7 @@ double rmsOver(const std::vector<float>& x, double t0, double t1) { return rms(x
 
 // a force through a board of its own at grand's plate and the note's bridge point
 std::vector<float> throughBoard(const std::vector<float>& f, float midi) {
-    const Shape s = pianoOf(kGrand);
+    const Shape& s = grand();
     Board b;
     b.init(kFs);
     b.setPlate(s[Channel::boardArea], s[Channel::boardLoss], s[Channel::open]);
@@ -112,7 +111,7 @@ Pair pairAt(float midi, float vel, float sec = 1.0f) {
         p.ownForce[i] = p.one.bridge[i] - p.zero.bridge[i];
     }
     Voice v(1);
-    v.setShape(pianoOf(kGrand));
+    v.setShape(grand());
     v.noteOn(midi, vel);
     p.blow.resize(n);
     p.thud.resize(n);
@@ -186,8 +185,8 @@ UP_TEST(attack_zero_runs_nothing) {
     t0.attack = 0.0f;
     a.setTuning(t1);
     z.setTuning(t0);
-    a.setShape(pianoOf(kGrand));
-    z.setShape(pianoOf(kGrand));
+    a.setShape(grand());
+    z.setShape(grand());
     a.noteOn(60.0f, 1.0f);
     z.noteOn(60.0f, 1.0f);
     const int blocks = (int)(0.5f * kFs) / kBlock;
@@ -277,7 +276,7 @@ UP_TEST(attack_clank_pitch) {
                noteName(midi).c_str(), fl, pk.hz, 100.0 * off, pk.db);
     }
     Voice v(1);
-    v.setShape(pianoOf(kGrand));
+    v.setShape(grand());
     v.noteOn(96.0f, 1.0f);
     bool off = true;
     float b[kBlock];
@@ -314,25 +313,24 @@ UP_TEST(attack_clank_level) {
     }
 }
 
-// every acoustic preset's bottom note at velocity 1, its level undone, 2 s as play renders it: the peak under 1.0
+// every acoustic preset's bottom note at velocity 1, 2 s as play renders it: the peak under 1.0
 UP_TEST(attack_bottom_notes) {
     for (const char* name : {"grand", "concertGrand", "upright", "spinet", "honkyTonk", "fortepiano"}) {
         const PresetInfo* p = presetByName(name);
         double peak[2];
         for (int a = 0; a < 2; ++a) {
-            PlaySpec sp = specAt((float)p->lo, 1.0f, a ? 0.0f : 1.0f, 2.0f, p->knobs);
-            sp.tuning.outputGain = std::pow(10.0f, -levelDb(p->knobs) / 20.0f);
-            const PlayRender r = renderPlay(sp);
+            const PlayRender r = renderPlay(specAt((float)p->lo, 1.0f, a ? 0.0f : 1.0f, 2.0f, p->shape()));
             peak[a] = peakAbs(r.x.data(), r.x.size());
         }
-        CHECK_MSG(peak[0] < 1.0, "%s at %s undone peaks %.3f", name, noteName(p->lo).c_str(), peak[0]);
-        printf("    %-13s at %s, velocity 1, undone: the peak %.3f at attack 1, %.3f at 0\n", name, noteName(p->lo).c_str(), peak[0], peak[1]);
+        CHECK_MSG(peak[0] < 1.0, "%s at %s peaks %.3f", name, noteName(p->lo).c_str(), peak[0]);
+        printf("    %-13s at %s, velocity 1: the peak %.3f at attack 1, %.3f at 0\n", name, noteName(p->lo).c_str(), peak[0], peak[1]);
     }
 }
 
 // the tine side is untouched: rhodes at e4 and wurlitzer at a3, velocity 1, 2 s: the same bytes at attack 0 and 1
 UP_TEST(attack_tine_side_untouched) {
-    const Knobs rhodes = knobAnchors()[1].k, wurli = knobAnchors()[2].k;
+    const Shape& rhodes = anchors()[1].s;
+    const Shape& wurli = anchors()[2].s;
     for (int i = 0; i < 2; ++i) {
         const float midi = i ? 57.0f : 64.0f;
         const PlayRender a = renderPlay(specAt(midi, 1.0f, 1.0f, 2.0f, i ? wurli : rhodes)), z = renderPlay(specAt(midi, 1.0f, 0.0f, 2.0f, i ? wurli : rhodes));
@@ -353,7 +351,7 @@ UP_TEST(attack_pool_chord) {
         Tuning t;
         t.attack = i ? 0.0f : 1.0f;
         pool.setTuning(t);
-        pool.setKnobs(kGrand);
+        pool.setShape(grand());
         for (float key : {48.0f, 52.0f, 55.0f, 60.0f}) pool.noteOn(key, 1.0f);
         std::vector<float> x(at(3.0));
         pool.render(x.data(), (int)x.size());
@@ -378,7 +376,7 @@ UP_TEST(attack_cost) {
             Tuning t;
             t.attack = attack;
             v.setTuning(t);
-            v.setShape(pianoOf(kGrand));
+            v.setShape(grand());
             v.noteOn(60.0f, 1.0f);
             float b[kBlock];
             for (int k = 0; k < 8; ++k) v.render(b, nullptr, kBlock);
@@ -393,7 +391,7 @@ UP_TEST(attack_cost) {
         return best;
     };
     const double on = voiceUs(1.0f), off = voiceUs(0.0f);
-    const RankState r = rankAt(pianoOf(kGrand), 60.0f);
+    const RankState r = rankAt(grand(), 60.0f);
     Attack a;
     a.init(kFs);
     const int n = 20000;
