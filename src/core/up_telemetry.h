@@ -1,4 +1,4 @@
-// upright — up_telemetry.h  (plan §10)
+// upright — up_telemetry.h
 // nothing is measured from the signal: the banks are the telemetry. per
 // block the voice publishes a State: the eased channels, f0, the rank at the
 // note, every partial's amplitude |z_k| (the main string's and the

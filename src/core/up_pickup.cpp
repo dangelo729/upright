@@ -1,4 +1,4 @@
-// upright — up_pickup.cpp  (plan §7)
+// upright — up_pickup.cpp
 // the curves run per sample and call no libm; AmpPole::set() runs once per
 // tuning write: cosf and sqrtf are fine there; Pickup::setBlock once per
 // block (a division).

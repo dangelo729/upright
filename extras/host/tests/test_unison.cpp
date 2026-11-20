@@ -1,4 +1,4 @@
-// upright — tests/test_unison.cpp  (plan §5; the tests' "the unison" bullet)
+// upright — tests/test_unison.cpp
 //
 // the coupled unison (up_string.h: weinreich's strings on one bridge whose
 // admittance has a resistive part and a reactive one), on the voice's pair

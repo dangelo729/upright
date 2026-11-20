@@ -27,25 +27,14 @@ UP_TEST(config_approach) {
     CHECK(approachCoef(0.0f, 0.1f) == 1.0f);
 }
 
-// the ramp walks linearly and lands on its target after one block; the arc
-// lands on its end through its middle
-UP_TEST(config_ramp_and_arc) {
+// the ramp walks linearly and lands on its target after one block
+UP_TEST(config_ramp) {
     Ramp r;
     r.snap(1.0f);
     r.to(2.0f);
     float v = 0.0f;
     for (int i = 0; i < kBlock; ++i) v = r.next();
     CHECK(std::fabs(v - 2.0f) < 1e-5f);
-    Arc a;
-    a.snap(0.0f);
-    a.aim(1.0f, 0.75f);
-    float mid = 0.0f, end = 0.0f;
-    for (int i = 1; i <= kBlock; ++i) {
-        const float y = a.next();
-        if (i == kBlock / 2) mid = y;
-        end = y;
-    }
-    CHECK_MSG(std::fabs(end - 1.0f) < 1e-4f && std::fabs(mid - 0.75f) < 0.02f, "arc mid %.4f end %.5f", mid, end);
 }
 
 // xorshift32: the same seed, the same sequence; bipolar in [-1, 1)

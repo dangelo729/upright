@@ -59,8 +59,8 @@ struct Register {
     } while (0)
 
 // a row that does not pass after honest effort: kept in the file with what
-// it measured, printed as KNOWN and counted apart, not as a failure (the
-// readme's known limits say why)
+// it measured, printed as KNOWN and counted apart, not as a failure
+// (extras/docs/limits.md says why)
 #define KNOWN_FAILURE(cond, ...)                                           \
     do {                                                                   \
         ++uptest::checks();                                                \

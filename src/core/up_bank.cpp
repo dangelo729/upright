@@ -1,4 +1,4 @@
-// upright — up_bank.cpp  (plan: module layout, §4)
+// upright — up_bank.cpp
 // the bank's one libm function: a partial's turn, per block and only where
 // its hz or its decay moved. the turn itself, the readback, the injection
 // and the sums are the header's, multiplies and adds.

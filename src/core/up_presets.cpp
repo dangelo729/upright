@@ -1,4 +1,4 @@
-// upright — up_presets.cpp  (plan §12)
+// upright — up_presets.cpp
 // each preset's shape is built once, on first use, from its table.
 #include "up_presets.h"
 
@@ -14,7 +14,7 @@ typedef float Table[kInstrumentChannels];
 // the reference. the strings: a grand's c4 speaking length and its longest string, at the design tension (the measured
 // b tables' fit); three strings tuned inside half a cent (under
 // the lock's critical detune at every note); the strike at 0.12 of the length, a little under an eighth (fletcher &
-// rossing, by memory); the c4 fundamental's t60 14.4 s, one string, the loss's power 2 (estimates). the hammer:
+// rossing, by memory); the c4 fundamental's t60 13.9 s, one string, the loss's power 2 (estimates). the hammer:
 // chaigne & askenfelt's c4 (4.5e9 N/m^2.5, 2.97 g), the felt's hunt & crossley loss 0.5 s/m (an estimate). the body: a
 // 1 m² spruce board, its loss 0.03 (by memory), half open. the string (generator -1); the pickup's gap falaize &
 // helie's 1.5 mm, its offset 0.9 mm, and the tine's t60 and load rhodes's, all inert on the string. the damper 20 /s at

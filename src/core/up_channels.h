@@ -1,4 +1,4 @@
-// upright — up_channels.h  (plan §1; calls: the slots are the partials in order)
+// upright — up_channels.h
 // the channel table: every number of the piano, each a target, an eased
 // value, a rate and a sequence. a write carries a sequence number; between
 // two tables (a writer's pending one and the audio side's) the newer write
@@ -27,31 +27,31 @@
 
 namespace up {
 
-// every channel of the plan. units: metres, newtons, seconds, cents, hz,
+// every channel of the piano. units: metres, newtons, seconds, cents, hz,
 // shares; the hammer's in its channel units (N/mm^p, s/mm, grams)
 enum class Channel : uint16_t {
-    // the strings (§1, §6): the speaking length at c4 (m), the longest string
+    // the strings: the speaking length at c4 (m), the longest string
     // the case holds (m), the design tension (N), the wire's gauge (1 as
     // designed), how many strings a note has (1 .. 3), the unison's spread
     // (cents), where the hammer lands at c4 (a share of the length), the
     // string's own loss (1/s at c4) and its power in frequency
     length, bass, tension, gauge, strings, detune, strikeShare, lossRate, lossSlope,
-    // the hammer (§4): the felt's stiffness at c4 (N/mm^p), its power, its
+    // the hammer: the felt's stiffness at c4 (N/mm^p), its power, its
     // velocity loss (s/mm), the hammer's mass at c4 (g)
     hardness, exponent, felt, hammerMass,
-    // the body (§8): the soundboard's area (m²), its loss factor, the back
+    // the body: the soundboard's area (m²), its loss factor, the back
     // closed (0) to open (1)
     boardArea, boardLoss, open,
-    // the generator (§3, §7): string -1, tine 0, reed +1; the pickup's gap
+    // the generator: string -1, tine 0, reed +1; the pickup's gap
     // and the tip's offset off its axis (mm); the tonebar's weight (0 .. 1);
     // the tine's fundamental t60 at c4 (s; the reed's decays are kReedT60
     // times the tine's); the beam's overtone ratios (n >= 2) times this, the
     // tuning spring's mass at the tip (1 the bare beam)
     generator, gap, offset, tonebar, tineT60, tineLoad,
-    // the damper (§9): the decay rate a released key's damper adds (1/s at
+    // the damper: the decay rate a released key's damper adds (1/s at
     // c4); the highest key with a damper (midi)
     dampRate, damperTop,
-    // the partials (§3): four contiguous blocks of kMaxModes, ratioChannel(k) ..
+    // the partials: four contiguous blocks of kMaxModes, ratioChannel(k) ..
 #define UP_MODE(k) ratio##k,
 #include "up_modes.inc"
 #undef UP_MODE
@@ -64,7 +64,7 @@ enum class Channel : uint16_t {
 #define UP_MODE(k) out##k,
 #include "up_modes.inc"
 #undef UP_MODE
-    // the player (§1, §9): the note, the glide's rate per second (0 a jump),
+    // the player: the note, the glide's rate per second (0 a jump),
     // the sustain pedal (0 .. 1)
     midi, glide, pedal,
     count

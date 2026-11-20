@@ -1,4 +1,4 @@
-// upright — up_voice.cpp  (plan §11, the one idea)
+// upright — up_voice.cpp
 // libm runs in block (the law and the rank through their own modules, the
 // tine's tip and the strike's speed, each per block or per strike and only
 // where its inputs moved; the attack's cosines through its own) and in

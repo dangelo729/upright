@@ -1,4 +1,4 @@
-// upright — up_rank.cpp  (plan §6)
+// upright — up_rank.cpp
 // the rank runs once per note and once per instrument write, never per
 // sample: powf and sqrtf are fine here.
 #include "up_rank.h"

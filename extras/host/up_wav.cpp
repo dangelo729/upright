@@ -1,4 +1,4 @@
-// upright — up_wav.cpp  (plan §15)
+// upright — up_wav.cpp
 #include "up_wav.h"
 
 #include <cstdint>

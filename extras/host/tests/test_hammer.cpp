@@ -1,9 +1,9 @@
-// upright — tests/test_hammer.cpp  (plan §4; the tests' "the hammer" bullet)
+// upright — tests/test_hammer.cpp
 //
 // the rank's felt against chaigne & askenfelt's three hammers (k and p at c2
 // and c6, the c6 contact at 6 m/s); the simulator against itself (32 fs
 // against 64 fs, the truth); the ladder at grand's c4 by the truth beside
-// kth's contacts, falling with velocity, the peak rising, inside the plan's
+// kth's contacts, falling with velocity, the peak rising, inside their
 // bands; the band (the force's spectrum over partials 8 .. 16 against 1 ..
 // 3) rising with velocity and with the felt's hardness; the engine's step at the
 // audio rate against the truth at c4 and c6; the step with lambda 0 the
@@ -121,7 +121,7 @@ UP_TEST(hammer_truth_converged) {
 
 // the ladder at grand's c4 by the truth: the contact falls with velocity and
 // the peak rises; at velocity 1 the contact within 1 .. 3 ms and at 0.2
-// within 2 .. 6 ms (the plan's bands); each beside kth's at the same speed
+// within 2 .. 6 ms; each beside kth's at the same speed
 UP_TEST(hammer_ladder) {
     const Shape s = grand();
     double ms[6], peak[6];
@@ -184,7 +184,7 @@ Strike voiceStrike(const Shape& s, float midi, float vel) {
 // substep forces): the medium hammer from velocity 0.3 to 1 rises 12 db and
 // more; soft to hard (hardness 25.1 to 803 N/mm^p, the felt's loss 1e-3 to
 // 2.5e-4 s/mm) at velocity 0.5 by 10 db and more and at velocity 1 by 3 db and more
-// (checks: the plan's 12 and 6 printed beside; at a fortissimo every felt
+// (checks: the goals 12 and 6 printed beside; at a fortissimo every felt
 // is stiff, the physics' reach); both ends' contacts at both velocities and
 // the softest hammer's rise from 0.3 to 1 printed. a build under 16 slots
 // cannot read the band
@@ -201,12 +201,12 @@ UP_TEST(hammer_band) {
         const Strike s03 = run(soft, 0.3f), s05 = run(soft, 0.5f), s1 = run(soft, 1.0f);
         const Strike h05 = run(hard, 0.5f), h1 = run(hard, 1.0f);
         CHECK_MSG(m1.band - m03.band >= 12.0, "%s: the medium hammer's band rises %.1f db from 0.3 to 1", name, m1.band - m03.band);
-        CHECK_MSG(h05.band - s05.band >= 10.0, "%s: soft to hard moves the band %.1f db at velocity 0.5 (%+.1f -> %+.1f; at least 10, the plan's 12)", name,
+        CHECK_MSG(h05.band - s05.band >= 10.0, "%s: soft to hard moves the band %.1f db at velocity 0.5 (%+.1f -> %+.1f; at least 10, the goal 12)", name,
                   h05.band - s05.band, s05.band, h05.band);
-        CHECK_MSG(h1.band - s1.band >= 3.0, "%s: soft to hard moves the band %.1f db at velocity 1 (%+.1f -> %+.1f; at least 3, the plan's 6)", name,
+        CHECK_MSG(h1.band - s1.band >= 3.0, "%s: soft to hard moves the band %.1f db at velocity 1 (%+.1f -> %+.1f; at least 3, the goal 6)", name,
                   h1.band - s1.band, s1.band, h1.band);
         printf("    %s at c4: medium %+.1f db at 0.3, %+.1f at 1 (%+.1f; at least 12); soft -> hard at 0.5 %+.1f -> %+.1f (%+.1f; at least 10, the "
-               "plan's 12), at 1 %+.1f -> %+.1f (%+.1f; at least 3, the plan's 6); the softest from 0.3 to 1 %+.1f -> %+.1f (%+.1f)\n",
+               "goal 12), at 1 %+.1f -> %+.1f (%+.1f; at least 3, the goal 6); the softest from 0.3 to 1 %+.1f -> %+.1f (%+.1f)\n",
                name, m03.band, m1.band, m1.band - m03.band, s05.band, h05.band, h05.band - s05.band, s1.band, h1.band, h1.band - s1.band, s03.band,
                s1.band, s1.band - s03.band);
         printf("      the contacts: soft %.3f ms at 0.5, %.3f at 1; hard %.3f ms at 0.5, %.3f at 1\n", s05.run.contactMs(), s1.run.contactMs(),

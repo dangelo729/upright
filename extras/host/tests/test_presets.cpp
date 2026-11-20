@@ -1,4 +1,4 @@
-// upright — tests/test_presets.cpp  (plan §12 presets; the tests' "presets" bullet; stage 2)
+// upright — tests/test_presets.cpp
 //
 // the nine presets: each found by name, its shape its table of the
 // twenty-four instrument channels to the bit (the pianos as measured and

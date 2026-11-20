@@ -1,4 +1,4 @@
-// upright — up_hammer.cpp  (plan §4)
+// upright — up_hammer.cpp
 // set() runs once per hammer write and forceExact() on the host only: powf
 // is fine in them. the step calls no libm: the felt's power comes from the
 // table and sqrtf.

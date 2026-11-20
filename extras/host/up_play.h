@@ -1,4 +1,4 @@
-// upright — up_play.h  (plan §15)
+// upright — up_play.h
 // a note rendered the way uptool play renders it, and what play reads from
 // it; how loud a piano sounds over an octave; a shape heard as random, fit
 // and the presets' test hear it; the board's swept transfer: shared by

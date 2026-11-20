@@ -1,4 +1,4 @@
-// upright — up_channels.cpp  (plan §1)
+// upright — up_channels.cpp
 // runs per write and per block (tick), never per sample; defaultShape runs
 // the law once.
 #include "up_channels.h"

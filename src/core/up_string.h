@@ -1,4 +1,4 @@
-// upright — up_string.h  (plan §5, §4)
+// upright — up_string.h
 // one note's strings: the main string, a bank of kMaxModes in the hammer's
 // loop, and two secondary strings, banks of kUnisonModes on the main's first
 // slots, driven by the same hammer force and coupled to it through the

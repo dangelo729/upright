@@ -1,4 +1,4 @@
-// upright — up_presets.h  (plan §12)
+// upright — up_presets.h
 // the named pianos, each a table of the twenty-four instrument channels (in
 // the enum's order, up_channels.h) and a playing range in midi notes. a
 // preset's shape is its table, built once on first use: the instrument

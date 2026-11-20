@@ -1,4 +1,4 @@
-// upright — Upright.h  (plan: module layout)
+// upright — Upright.h
 // the umbrella. everywhere it brings in the core, which compiles with nothing
 // but the c++ standard library: the channel table, the tuning, the law and
 // the rank, the bank, the hammer and the strings, the attack, the pitch

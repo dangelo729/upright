@@ -1,4 +1,4 @@
-// upright — up_pitch.cpp  (plan §6)
+// upright — up_pitch.cpp
 // once per block: the glide's coefficient when its rate moved, the note's
 // frequency when the note moved.
 #include "up_pitch.h"

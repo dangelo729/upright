@@ -1,4 +1,4 @@
-// upright — up_bank.h  (plan: module layout, §4, §5, §8)
+// upright — up_bank.h
 // the bank: N damped rotation oscillators, not filters (N a template
 // parameter: the main string's kMaxModes, a secondary's kUnisonModes, the
 // board's kBoardModes). each partial is a phasor z = (re, im) turned by r
@@ -30,8 +30,8 @@
 // a string retuned up at its old millimetres would read w_new / w_old louder
 // on a velocity output, and one retuned down at its old velocity would push
 // the bridge hz_old / hz_new harder. no piano gets louder when a string is
-// retuned. a partial coming on from off starts from rest, as before; the
-// board's modes under a body write take the same rule.
+// retuned. a partial coming on from off starts from rest; the board's
+// modes under a body write take the same rule.
 //
 // the per-sample path, multiplies and adds on what the block set up, no
 // branch per partial but the live list, no libm:

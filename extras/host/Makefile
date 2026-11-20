@@ -1,4 +1,4 @@
-# upright — extras/host/Makefile  (plan §15)
+# upright — extras/host/Makefile
 # the host rig: everything compiles here with clang and nothing else.
 #
 #   make test     build and run every test in tests/
@@ -49,7 +49,7 @@ $(BUILD)/core_%.o: ../../src/core/%.cpp
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
 
-# the teensy wrappers (stage 3): empty translation units off the board
+# the teensy wrappers: empty translation units off the board
 $(BUILD)/wrap_%.o: ../../src/%.cpp
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@

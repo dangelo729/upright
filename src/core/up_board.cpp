@@ -1,4 +1,4 @@
-// upright — up_board.cpp  (plan §8)
+// upright — up_board.cpp
 // the plate's table and the field's loss run once per body write and once
 // per note (the input weights), never per sample: sqrtf, exp2f, sinf, powf
 // and cosf are fine there; the board's render and the field's step are

@@ -1,4 +1,4 @@
-// upright — tests/test_pickup.cpp  (plan §7; the tests' "the pickup" bullet)
+// upright — tests/test_pickup.cpp
 //
 // a synthetic sine through the voltage, in double: at offset 0 the
 // fundamental under -30 db of the second harmonic; rhodes's far and close

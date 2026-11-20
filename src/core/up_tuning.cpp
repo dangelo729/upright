@@ -1,4 +1,4 @@
-// upright — up_tuning.cpp  (plan §11, module layout)
+// upright — up_tuning.cpp
 // runs once per tuning write, never per sample.
 #include "up_tuning.h"
 

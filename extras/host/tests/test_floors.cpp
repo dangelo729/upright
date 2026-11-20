@@ -1,4 +1,4 @@
-// upright — tests/test_floors.cpp  (plan: tests, "audibility floors"; stage 2)
+// upright — tests/test_floors.cpp
 //
 // each group of channels from one end of its reach to the other alone at
 // grand (rhodes for the pickup), the rest at the preset's, measured in a
@@ -6,17 +6,17 @@
 // 4 s, as play renders it) with the partials tracked at the law's
 // frequencies (up_analysis.h's tracker: each partial's measured frequency
 // and its level as the strike leaves it, the first 50 ms of its band's
-// envelope), each held with the plan's floor beside what it reads:
+// envelope), each held at a floor, its goal printed beside what it reads:
 //
 //   strings    length and bass from the spinet's (0.601, 1.22 m) to a
 //              concert grand's (0.627, 2.13 m): the 10th partial of c2 moves
-//              15 cents (its measured hz against 10 f0; the plan's 30
+//              15 cents (its measured hz against 10 f0; the goal 30
 //              printed: the tenor's span is the data's, ±2 %, and c2 is
 //              wound on every one)
 //   hammer     hardness and felt from soft (25.1 N/mm^p, 1e-3 s/mm) to hard
 //              (803, 2.5e-4): the force's band (partials 8 .. 16 against 1
 //              .. 3, from the render's partial levels) moves 3 db at
-//              velocity 1 and 10 db at velocity 0.5 (the plan's 6 and 12
+//              velocity 1 and 10 db at velocity 0.5 (the goals 6 and 12
 //              printed beside), read at tuning.attack 0:
 //              the string's own partials, without the attack's force in the
 //              tracker's first frame (the moves at attack 1 printed)
@@ -46,14 +46,14 @@
 //   pickup     gap and offset from far (3, 1.5 mm) to close (0.75, 0.3 mm)
 //              at rhodes's e3: the second harmonic (against the first, over
 //              the 100 ms after the hammer leaves) moves 20 db, and the thd
-//              from under 5 % (the plan's 3 printed: the tine and its
+//              from under 5 % (the goal 3 printed: the tine and its
 //              tonebar swing the tip into the curve) to over 15 %
 //   generator  from grand to rhodes at e3 the partials on (the telemetry's
 //              modesOn) from over 30 to 6
 //
 // a floor the measure cannot read past (the strings' at c2, the wide
 // unison's aftersound, the damper's on three strings, the pickup's far end)
-// holds what the measure reads, the plan's number printed beside.
+// holds what the measure reads, the goal printed beside.
 #include <cmath>
 #include <cstdio>
 #include <initializer_list>
@@ -161,7 +161,7 @@ UP_TEST(floors_strings) {
     }
     CHECK_MSG(std::fabs(c[1] - c[0]) >= 15.0, "the strings: the 10th partial of c2 moves %.1f cents (%+.1f -> %+.1f; the floor 15)",
               std::fabs(c[1] - c[0]), c[0], c[1]);
-    printf("    the strings: the 10th partial of c2 %+.1f cents at the spinet's, %+.1f at a concert grand's: %.1f cents (the floor 15, the plan's "
+    printf("    the strings: the 10th partial of c2 %+.1f cents at the spinet's, %+.1f at a concert grand's: %.1f cents (the floor 15, the goal "
            "30)\n",
            c[0], c[1], std::fabs(c[1] - c[0]));
 }
@@ -180,8 +180,8 @@ UP_TEST(floors_hammer) {
     const double a1 = band(4, 1.0f, 1.0f) - band(0, 1.0f, 1.0f), a05 = band(4, 0.5f, 1.0f) - band(0, 0.5f, 1.0f);
     CHECK_MSG(h1 - s1 >= 3.0, "hammer at velocity 1: the band moves %.1f db (%+.1f -> %+.1f; the floor 3)", h1 - s1, s1, h1);
     CHECK_MSG(h05 - s05 >= 10.0, "hammer at velocity 0.5: the band moves %.1f db (%+.1f -> %+.1f; the floor 10)", h05 - s05, s05, h05);
-    printf("    hammer: the band from the render at velocity 1 %+.1f -> %+.1f db (%.1f; the floor 3, the plan's 6), at 0.5 %+.1f -> %+.1f (%.1f; the "
-           "floor 10, the plan's 12); grand's from 0.3 to 1 %+.1f -> %+.1f (%.1f); at attack 1 the moves %.1f and %.1f\n",
+    printf("    hammer: the band from the render at velocity 1 %+.1f -> %+.1f db (%.1f; the floor 3, the goal 6), at 0.5 %+.1f -> %+.1f (%.1f; the "
+           "floor 10, the goal 12); grand's from 0.3 to 1 %+.1f -> %+.1f (%.1f); at attack 1 the moves %.1f and %.1f\n",
            s1, h1, h1 - s1, s05, h05, h05 - s05, m03, m1, m1 - m03, a1, a05);
 }
 
@@ -266,7 +266,7 @@ UP_TEST(floors_pickup) {
     CHECK_MSG(thd[1] > 0.15, "pickup: the thd %.2f %% close", 100.0 * thd[1]);
     CHECK_MSG(thd[0] < 0.05, "pickup: the thd %.2f %% far (under 5)", 100.0 * thd[0]);
     printf("    pickup at rhodes's e3: the second harmonic %+.1f -> %+.1f db re the first (%.1f; the floor 20); the thd %.2f %% -> %.2f %% (the floors "
-           "under 5, the plan's 3, and over 15)\n",
+           "under 5, the goal 3, and over 15)\n",
            h2[0], h2[1], h2[1] - h2[0], 100.0 * thd[0], 100.0 * thd[1]);
 }
 

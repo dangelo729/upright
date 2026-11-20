@@ -1,4 +1,4 @@
-// upright — uptool.cpp  (plan §15)
+// upright — uptool.cpp
 // the one cli.
 //
 //   uptool partials [--preset NAME] [--set CHANNEL=VALUE ...] [--midi M] [--tune NAME=VALUE]
@@ -1257,7 +1257,7 @@ int cmdChart(const Args& a) {
         };
         const double relHeavy = releaseT60(with(grandS, {{Channel::dampRate, 60.6286621f}}));
         const double relLight = releaseT60(with(grandS, {{Channel::dampRate, 6.59753895f}}));
-        // pickup: thd far against close at velocity 1 on rhodes, at e3 (the plan's) and c4
+        // pickup: thd far against close at velocity 1 on rhodes, at e3 (the floor's note) and c4
         const Shape far = with(rhodesS, {{Channel::gap, 3.0f}, {Channel::offset, 1.5f}});
         const Shape close = with(rhodesS, {{Channel::gap, rhodesBark()[Channel::gap]}, {Channel::offset, rhodesBark()[Channel::offset]}});
         const double farE3 = strikeAt(far, 52.0f, 1.0f).thd, closeE3 = strikeAt(close, 52.0f, 1.0f).thd;
@@ -1283,10 +1283,10 @@ int cmdChart(const Args& a) {
             row("hardness, felt", what, "12 db (a check)", b, x.med1 - x.med03 >= 12.0 ? "met" : "NOT MET");
             std::snprintf(b, sizeof b, "%.1f db (%+.1f -> %+.1f)", x.hard1 - x.soft1, x.soft1, x.hard1);
             std::snprintf(what, sizeof what, "the band, soft -> hard, velocity 1%s", by);
-            row("hardness, felt", what, "3 db (the plan's 6)", b, x.hard1 - x.soft1 >= 3.0 ? "met" : "NOT MET");
+            row("hardness, felt", what, "3 db (the goal 6)", b, x.hard1 - x.soft1 >= 3.0 ? "met" : "NOT MET");
             std::snprintf(b, sizeof b, "%.1f db (%+.1f -> %+.1f)", x.hard05 - x.soft05, x.soft05, x.hard05);
             std::snprintf(what, sizeof what, "the band, soft -> hard, velocity 0.5%s", by);
-            row("hardness, felt", what, "10 db (the plan's 12)", b, x.hard05 - x.soft05 >= 10.0 ? "met" : "NOT MET");
+            row("hardness, felt", what, "10 db (the goal 12)", b, x.hard05 - x.soft05 >= 10.0 ? "met" : "NOT MET");
             std::snprintf(b, sizeof b, "%.1f db (%+.1f -> %+.1f)", x.soft1 - x.soft03, x.soft03, x.soft1);
             std::snprintf(what, sizeof what, "the band, soft, velocity 0.3 -> 1%s", by);
             row("hardness, felt", what, "printed", b, "");
@@ -1295,7 +1295,7 @@ int cmdChart(const Args& a) {
         row("strikeShare", "the 8th partial's gain end to end, db (a node at 0.5)", "20 db", b, std::fabs(g8lo - std::fmax(g8hi, -120.0)) >= 20.0 ? "met" : "NOT MET");
         std::snprintf(b, sizeof b, "strings %.0f -> %.0f, detune %.1f -> %.1f c", uLo[Channel::strings], uHi[Channel::strings], uLo[Channel::detune],
                       uHi[Channel::detune]);
-        row("strings, detune", "the strings and the detune end to end", "beat 6 db, after 2 (render)", b, "stage 1 renders it");
+        row("strings, detune", "the strings and the detune end to end", "beat 6 db, after 2 (render)", b, "floors_unison renders it");
         std::snprintf(b, sizeof b, "%.2f octaves (%.1f -> %.1f hz)", std::log2(f1lo / f1hi), f1lo, f1hi);
         row("boardArea, boardLoss, open", "the board's first mode end to end", "an octave", b, std::log2(f1lo / f1hi) >= 1.0 ? "met" : "NOT MET");
         std::snprintf(b, sizeof b, "%.1f x (%.3f -> %.3f s)", relLight / relHeavy, relHeavy, relLight);

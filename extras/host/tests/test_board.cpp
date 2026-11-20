@@ -1,4 +1,4 @@
-// upright — tests/test_board.cpp  (plan §8; the tests' "the board" bullet)
+// upright — tests/test_board.cpp
 //
 // the plate's frequencies from the formula; doubling the area lowers every
 // mode an octave; doubling eta doubles every decay rate; a closed back

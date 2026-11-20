@@ -1,4 +1,4 @@
-// upright — up_fit.h  (plan §15)
+// upright — up_fit.h
 // what uptool and the tests share: the three anchors (the presets grand,
 // rhodes, wurlitzer), a shape's --set lines and their parser, the span a
 // tool draws, sweeps and searches a channel over, random's draw, note names;

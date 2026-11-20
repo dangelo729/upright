@@ -1,4 +1,4 @@
-// upright — up_law.cpp  (plan §3, §4 the tip, §9 the damper's rate)
+// upright — up_law.cpp
 // the law runs once per instrument write and once per note, never per
 // sample: exp2f, logf, powf, sinf, coshf are fine here.
 #include "up_law.h"
@@ -11,19 +11,19 @@ namespace up {
 namespace {
 
 // ---- the constants ---------------------------------------------------------------------------------
-// each with what sets it: the plan's figure, a source, or the fit (uptool fit --constants)
+// each with what sets it: an estimate, a source, or the fit (uptool fit --constants)
 constexpr LawConstants kLaw = {
     553.0f,     // tension: the design tension, about the same the keyboard over (the measured b tables' fit)
     0.915f,     // rankLength: the length goes as (f_c4 / f0)^0.915 until the case stops it (the same fit)
     1.08875e-3f,  // dMax: the thickest plain wire (the same fit)
     1.0e-3f,    // core: a wound string's steel core at the bass break (the same fit)
-    0.45f,      // loss: the c4 fundamental's t60 14.4 s, one string (an estimate)
+    0.45f,      // loss: the c4 fundamental's t60 13.9 s, one string (an estimate)
     800.0f,     // lossKnee: hz, where the wire's own loss (not scaled by the rank) equals lossRate. against chaigne 2016's
                 //   measured strings (decay_grand.txt block 1: d#1 8.3 s, c4 4.84 s, e6 1.38 s at 1 khz or the fundamental)
                 //   it reads 7.8, 6.0, 2.4 s; c4's 8th partial 1.9 s, c8's fundamental 0.42 s
     2.0f,       // lossSlope (an estimate)
     0.8f,       // rankLoss: the bass rings tens of seconds, the top under two (an estimate)
-    0.25f,      // rankMass: chaigne & askenfelt's hammers, 4.9 g at c2, 2.97 at c4, 2.2 at c6
+    0.25f,      // rankMass: 4.2 g at c2, 2.97 at c4, 2.1 at c6 (chaigne & askenfelt's hammers: 4.9, 2.97, 2.2)
     0.03f,      // rankStrike: the share falls 0.12 to 0.115 over the keyboard (chabassier & durufle's steinway d holds
                 //   0.120 from c1 to c6; chaigne 2016's eight strings 0.105 .. 0.125)
     0.614f,     // l0: a grand's c4 speaking length (a steinway d's 0.657; the same fit)
@@ -38,7 +38,7 @@ constexpr LawConstants kLaw = {
     2.5f,       // t60ScaleMax: a0's fundamental 37 s, not 93 (the rank's power alone)
     3.5e-4f,    // bridgeMobility: m/s per N, the bridge's driving-point mobility; giordano's soundboard impedance 1 .. 3 x 10³
                 //   kg/s puts it 3e-4 .. 1e-3, the bridge stiffer than the board; an estimate: grand's c4 string loses 0.315 /s
-                //   into it, the plan's 0.45 floor minus its internal loss
+                //   into it, the 0.45 /s floor (loss, above) minus its internal loss
     0.5f,       // bridgeReactive: an estimate: enough that the prompt sound and the aftersound have turned 1.3 rad against
                 //   each other where they cross at c4, so no null; a 45 degree bridge would be 1
 };

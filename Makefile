@@ -3,8 +3,8 @@
 # `make tool` and `make corpus` work from the repository root. the arduino
 # build ignores this file.
 #
-#   make board    every example compiled for teensy41 by platformio (plan:
-#                 the acceptance gate, hardware). nothing is flashed.
+#   make board    every example compiled for teensy41 by platformio. nothing
+#                 is flashed.
 #
 # make board, how:
 #   - `pio ci` builds one sketch against a library with no project file. it

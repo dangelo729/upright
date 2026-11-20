@@ -1,4 +1,4 @@
-// upright — up_board.h  (plan §8)
+// upright — up_board.h
 // the soundboard's law: a simply supported orthotropic rectangular plate's
 // modes, the lowest kBoardModes of the (m, n) grid in frequency order,
 //

@@ -1,4 +1,4 @@
-// upright — up_png.cpp  (plan §15)
+// upright — up_png.cpp
 #include "up_png.h"
 
 #include <algorithm>

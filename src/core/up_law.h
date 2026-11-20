@@ -1,4 +1,4 @@
-// upright — up_law.h  (plan §3, §4 the tip, §9 the damper's rate)
+// upright — up_law.h
 // the law: from the instrument's channels, at the note the rank gives
 // (up_rank.h), every partial's ratio to f0, its t60, its gain at the strike
 // point and its output weight. pure, no state but the writer's sequence,
@@ -59,12 +59,12 @@ constexpr float kRho          = 7850.0f;   // kg/m³: steel
 constexpr int   kTineModes    = 6;         // the beam's slots on at the tine and the reed
 constexpr float kReedOvertone = 0.05f;     // the reed's overtones' gains over the beam's (pfeifle: no significant higher modes)
 constexpr float kReedT60      = 0.6f;      // the reed's decays over the tine's (an estimate)
-constexpr float kDampKnee     = 2000.0f;   // hz: the damper's added rate doubles here (§9, an estimate)
+constexpr float kDampKnee     = 2000.0f;   // hz: the damper's added rate doubles here (an estimate)
 constexpr float kAftersound   = 2.5f;      // the tine side's: the tonebar rings this much longer than the tine (the secondaries'
                                            //   decays over kAftersound^clamp(1 + g, 0, 1): 1 on the string side, up_string.h)
 constexpr float kUnisonGain   = 0.5f;      // the tine side's: the tonebar heard at this of the tine (the secondaries' outs x
                                            //   lerp(1, kUnisonGain, clamp(1 + g, 0, 1)): equal strings on the string side)
-constexpr float kTipHard      = 2.0f;      // the tine's tip: hardness x 2^(kTipHard (1 - |g|)) at the generator (§4)
+constexpr float kTipHard      = 2.0f;      // the tine's tip: hardness x 2^(kTipHard (1 - |g|)) at the generator
 constexpr float kTipLoss      = 1.0f;      //   and felt x 2^(-kTipLoss (1 - |g|)): harder and less lossy than felt
 constexpr float kExponentLo   = 1.5f;      // the felt's power at a note is held inside these (the rank's pAdd on the channel's)
 constexpr float kExponentHi   = 4.0f;
@@ -124,9 +124,9 @@ float tineRatio(int n, float load);                                             
 float beamBeta(int n);                                                            // the clamped-free beam's beta_n L
 float beamShape(int n, float share);                                              // the beam's shape at a share of its length, tip = ±2
 float stringsOf(const Shape& s);                                                  // the strings channel capped on the electric side
-float dampRateOf(float hz, const Shape& s, float pedal, const LawConstants& c);   // §9: a released damper's added rate at hz
-float hammerHardnessAt(float hardness, float generator);                          // the felt's stiffness with the tine's tip (§4)
-float hammerFeltAt(float felt, float generator);                                  // the felt's loss with the tine's tip (§4)
+float dampRateOf(float hz, const Shape& s, float pedal, const LawConstants& c);   // a released damper's added rate at hz
+float hammerHardnessAt(float hardness, float generator);                          // the felt's stiffness with the tine's tip
+float hammerFeltAt(float felt, float generator);                                  // the felt's loss with the tine's tip
 float hammerExponentAt(float exponent, float pAdd);                               // the felt's power at a note, held kExponentLo .. Hi
 inline bool partialOn(const PartialTable& p, int k) { return p.gain[k] != 0.0f || p.out[k] != 0.0f; }
 

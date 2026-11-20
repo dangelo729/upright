@@ -1,4 +1,4 @@
-// upright — tests/test_voice.cpp  (plan §11; the tests' "the voice" bullet)
+// upright — tests/test_voice.cpp
 //
 // 30 s of channel thrash under a strike every 100 ms is finite through a board,
 // its pickup under 1.5 and its board under 1; a key jump on a ringing voice,
@@ -528,7 +528,7 @@ UP_TEST(voice_generator_sweep) {
 // the generator's middle sounds: grand at c4, velocity 1, 1 s, at the
 // generator -1, -0.5 and 0; at -0.5 the fundamental's level (the tracker at
 // the law's frequency) on the pickup within 10 db of the 0 render's, and on
-// the bridge within 12 db of the -1 render's (the plan's 10 printed beside:
+// the bridge within 12 db of the -1 render's (the goal 10 printed beside:
 // the bridge's weight is half there, -6 db by design, and the fundamental's
 // gain at the strike point half way to the tine's, which is struck near its
 // clamp where its first mode barely moves)
@@ -547,7 +547,7 @@ UP_TEST(voice_generator_middle_sounds) {
     CHECK_MSG(std::fabs(bridge[1] - bridge[0]) <= 12.0, "the bridge's fundamental at -0.5 %+.1f db, at -1 %+.1f (%+.1f)", bridge[1], bridge[0],
               bridge[1] - bridge[0]);
     CHECK_MSG(std::fabs(pickup[1] - pickup[2]) <= 10.0, "the pickup's fundamental at -0.5 %+.1f db, at 0 %+.1f", pickup[1], pickup[2]);
-    printf("    grand at c4, the fundamental: the bridge %+.1f db at -1, %+.1f at -0.5 (%+.1f; within 12, the plan's 10); the pickup %+.1f at -0.5, "
+    printf("    grand at c4, the fundamental: the bridge %+.1f db at -1, %+.1f at -0.5 (%+.1f; within 12, the goal 10); the pickup %+.1f at -0.5, "
            "%+.1f at 0 (%+.1f)\n",
            bridge[0], bridge[1], bridge[1] - bridge[0], pickup[1], pickup[2], pickup[1] - pickup[2]);
 }

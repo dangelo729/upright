@@ -1,4 +1,4 @@
-// upright — up_wav.h  (plan §15)
+// upright — up_wav.h
 // a mono float buffer as a 16-bit pcm wav. host only.
 #pragma once
 

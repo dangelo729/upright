@@ -1,4 +1,4 @@
-// upright — up_string.cpp  (plan §5, §4)
+// upright — up_string.cpp
 // per block and per strike: the slots handed over, the secondaries derived
 // from them (exp2 for the detune and pow for the tonebar's aftersound, per
 // block), the coupling's rate and its slots, the felt's table (per hammer

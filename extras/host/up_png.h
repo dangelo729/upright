@@ -1,4 +1,4 @@
-// upright — up_png.h  (plan §15)
+// upright — up_png.h
 // a spectrogram as a png with nothing but the standard library: 8-bit rgb
 // rows in a zlib stream of stored (uncompressed) deflate blocks. host only.
 #pragma once

@@ -1,4 +1,4 @@
-// upright — tests/test_rank.cpp  (plan §6)
+// upright — tests/test_rank.cpp
 //
 // the length by pure scaling until the case's longest string caps it; the
 // mass and the impedance from f0 and the tension; wrapped below the break and

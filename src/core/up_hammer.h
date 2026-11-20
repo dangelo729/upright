@@ -1,4 +1,4 @@
-// upright — up_hammer.h  (plan §4)
+// upright — up_hammer.h
 // the hammer: a mass on a nonlinear felt spring that meets the string at a
 // point. with c the felt's compression (the hammer's height over the
 // string's under it, positive while they touch), the hunt & crossley force
@@ -47,7 +47,7 @@ namespace up {
 constexpr float kCmax       = 4e-3f;    // m: the felt table's reach (4 mm)
 constexpr int   kFeltPoints = 64;       // the felt table's points
 constexpr float kMaxContact = 0.02f;    // s: a strike ends here whatever happens
-constexpr float kForceCap   = 2000.0f;  // N: the force in one step is held here: five times the converged chart's largest peak
+constexpr float kForceCap   = 2000.0f;  // N: the force in one step is held here, above the converged chart's largest peak
 
 struct Hammer {
     // the felt and the mass in the channels' units; builds the table (per write)

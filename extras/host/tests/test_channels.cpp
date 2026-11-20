@@ -1,4 +1,4 @@
-// upright — tests/test_channels.cpp  (plan §1; the tests' "config and channels" bullet)
+// upright — tests/test_channels.cpp
 //
 // the last writer wins by sequence; latch; a nan is no write; tick eases and
 // says what moves; a write under an older sequence loses; the four partial

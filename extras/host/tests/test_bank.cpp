@@ -1,4 +1,4 @@
-// upright — tests/test_bank.cpp  (plan: the tests' "the bank" bullet)
+// upright — tests/test_bank.cpp
 //
 // one partial driven by one sample rings at its frequency (zero crossings
 // over the first second: within 0.1 cent at 440 hz and 15 khz, 0.5 at 27.5

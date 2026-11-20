@@ -1,4 +1,4 @@
-// upright — tests/test_law.cpp  (plan §3; the tests' "the string law" bullet, with the rank's own powers)
+// upright — tests/test_law.cpp
 //
 // the string's ratios n sqrt(1 + B n²) exact; B at grand's c4 the formula's at
 // the rank's own L, core and tension, and where measured grands sit; B
@@ -83,7 +83,7 @@ UP_TEST(law_b_at_grand_c4) {
 // over the part of the way where c4's wire stays plain (end to end where it
 // does) and at a0 (wound) end to end, against the rank's own -6 and -(2 + 8
 // coreGrow) within 0.05 (the core grows as mu^coreGrow, mu as 1 / L²); c4's
-// end-to-end figure printed beside (the plan's L⁴ is not the fixed-tension
+// end-to-end figure printed beside (an L⁴ law is not the fixed-tension
 // rank's law)
 UP_TEST(law_b_against_l) {
     auto at = [](float u, float midi) { return rankAt(stringsAlong(u), midi); };

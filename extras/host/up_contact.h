@@ -1,4 +1,4 @@
-// upright — up_contact.h  (plan §4, §7)
+// upright — up_contact.h
 // the offline contact simulator: the engine's ground truth for the hammer,
 // host-side, in double precision. a modal string of the law's partials at a
 // note: each partial a damped oscillator at hz_n = ratio_n f0, decaying at

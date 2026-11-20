@@ -1,4 +1,4 @@
-// upright — up_rank.h  (plan §6)
+// upright — up_rank.h
 // the rank: a keyboard of strings is a scale design, so the instrument's
 // channels describe the string at c4 and the note chooses one. pure, once
 // per note and once per instrument write, never per sample.

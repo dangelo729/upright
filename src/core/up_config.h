@@ -1,6 +1,6 @@
-// upright — up_config.h  (plan: module layout, §1)
+// upright — up_config.h
 // the build's sizes and the small helpers every module shares: clamp, the
-// one smoothing law, the per-sample ramp and arc, xorshift32, and the note's
+// one smoothing law, the per-sample ramp, xorshift32, and the note's
 // frequency.
 //
 // the sizes: kMaxModes partial slots on a note's main string (-D UP_MAX_MODES,
@@ -36,10 +36,10 @@ namespace up {
 constexpr float kDefaultFs   = 44100.0f;
 constexpr int   kBlock       = 128;                 // control block, samples (2.9 ms)
 constexpr float kInvBlock    = 1.0f / (float)kBlock;
-constexpr int   kMaxModes    = UP_MAX_MODES;        // the main string's partial slots: four channels each (§1)
-constexpr int   kUnisonModes = UP_UNISON_MODES;     // the partials a secondary string carries (§5)
-constexpr int   kBoardModes  = UP_BOARD_MODES;      // the plate's modes (§8)
-constexpr int   kContactRate = UP_CONTACT_RATE;     // the strings' turns a sample while the hammer touches (§4): 2, the
+constexpr int   kMaxModes    = UP_MAX_MODES;        // the main string's partial slots: four channels each
+constexpr int   kUnisonModes = UP_UNISON_MODES;     // the partials a secondary string carries
+constexpr int   kBoardModes  = UP_BOARD_MODES;      // the plate's modes
+constexpr int   kContactRate = UP_CONTACT_RATE;     // the strings' turns a sample while the hammer touches: 2, the
                                                     //   fewest within 5 % on the contact and 10 % on the peak of the
                                                     //   hammer's truth at every octave a0 .. c8 over the velocity ladder
 constexpr int   kLongModes   = 4;                   // the string's free longitudinal modes in the attack (up_attack.h)
@@ -52,7 +52,7 @@ static_assert(kContactRate >= 1 && kContactRate <= 16, "UP_CONTACT_RATE must be 
 
 // ---- the guards ----------------------------------------------------------------
 constexpr float kPi      = 3.14159265358979f;
-constexpr float kCeiling = 0.45f;                   // a partial over this share of fs is off (rings' rule)
+constexpr float kCeiling = 0.45f;                   // a partial over this share of fs is off
 
 // ---- helpers ----------------------------------------------------------------------
 inline float clamp(float x, float lo, float hi) { return x < lo ? lo : (x > hi ? hi : x); }
@@ -75,20 +75,6 @@ struct Ramp {
     void to(float target) { dv = (target - v) * kInvBlock; }
     void snap(float target) { v = target; dv = 0.0f; }
     inline float next() { v += dv; return v; }
-};
-
-// a value that follows a parabola across one block, two adds per sample (v +=
-// dv; dv += ddv). aim() bends it from where it stands to `end` at the
-// block's end through `mid` at its middle; snap() puts it at a value, flat
-struct Arc {
-    float v = 0.0f, dv = 0.0f, ddv = 0.0f;
-    void snap(float target) { v = target; dv = ddv = 0.0f; }
-    void aim(float end, float mid) {
-        constexpr float n = (float)kBlock;
-        ddv = 4.0f * (v - 2.0f * mid + end) / (n * n);
-        dv = (end - v) / n - 0.5f * ddv * (n - 1.0f);
-    }
-    inline float next() { v += dv; dv += ddv; return v; }
 };
 
 // one seeded xorshift32 per voice: the same calls give the same samples

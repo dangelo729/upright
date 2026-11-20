@@ -1,9 +1,7 @@
-// upright — up_telemetry.cpp  (plan §10)
+// upright — up_telemetry.cpp
 // the string's shape for the picture: a sin a partial (and the beam's shape
 // on the electric side) a point, at the app's call rate, never per sample.
 #include "up_telemetry.h"
-
-#include <cmath>
 
 #include "up_law.h"
 

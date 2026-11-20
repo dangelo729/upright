@@ -1,4 +1,4 @@
-// upright — up_pitch.h  (plan §6)
+// upright — up_pitch.h
 // the pitch axis, once per block: the midi channel's eased value eased again
 // at the glide channel's rate, in semitones, by the one smoothing law; a
 // glide at or under zero jumps, and so does the first note after a wake

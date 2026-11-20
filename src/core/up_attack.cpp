@@ -1,4 +1,4 @@
-// upright — up_attack.cpp  (plan: the later list; the attack)
+// upright — up_attack.cpp
 // libm runs in init (the thud's turn, per rate) and in setBlock (a cos a
 // mode, per block); the per-sample path is the header's.
 #include "up_attack.h"

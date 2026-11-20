@@ -1,4 +1,4 @@
-// upright — tests/test_telemetry.cpp  (plan §10; the tests' "telemetry" bullet)
+// upright — tests/test_telemetry.cpp
 //
 // after a strike each main partial's amplitude is its drive times the
 // force's spectrum at its frequency (the force read at every substep), the

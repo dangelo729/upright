@@ -1,4 +1,4 @@
-// upright — up_attack.h  (plan: the later list; the attack)
+// upright — up_attack.h
 // the hammer's attack: the sounds a strike makes that are not the string's
 // partials. each is a force in newtons added to the voice's bridge force on
 // the string side (x clamp(-g, 0, 1), as the bridge's weight is), so it

@@ -1,4 +1,4 @@
-// upright — up_voice.h  (plan §11, the one idea)
+// upright — up_voice.h
 // one voice: one key's strings, the whole public surface. every call writes
 // channel targets (or the tuning, or a strike, or the key's state) and lands
 // at the top of the next block; the last writer wins, per channel, in the

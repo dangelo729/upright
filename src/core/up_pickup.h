@@ -1,4 +1,4 @@
-// upright — up_pickup.h  (plan §7)
+// upright — up_pickup.h
 // the electric side's output: a curve of the tip's position differentiated
 // in time. the tip's displacement x and its velocity x' come from the bank's
 // two sums; the voltage is v = C'(x) x' (faraday's law for the magnet, the

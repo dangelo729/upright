@@ -1,4 +1,4 @@
-// upright — up_analysis.h  (plan §15)
+// upright — up_analysis.h
 // the rig's instruments, shared by uptool and the tests. host only.
 //
 //   fft            radix-2, in place, double, forward (e^-i)

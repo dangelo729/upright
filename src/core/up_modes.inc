@@ -1,4 +1,4 @@
-// upright — up_modes.inc  (plan §1)
+// upright — up_modes.inc
 // the partial slots as an x-list: UP_MODE(k) for k = 0 .. UP_MAX_MODES - 1, so
 // the four blocks of partial channels and their names follow the build's
 // size. an includer defines UP_MODE, includes this, and undefines it.

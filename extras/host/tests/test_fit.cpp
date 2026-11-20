@@ -1,4 +1,4 @@
-// upright — tests/test_fit.cpp  (plan §15; the tests' "the fit" bullet)
+// upright — tests/test_fit.cpp
 //
 // the rank's B per note against the reference grand and upright over each
 // table's notes from c1 to c7 at the strings the fit finds: every note
