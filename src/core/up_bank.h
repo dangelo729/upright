@@ -2,7 +2,7 @@
 // the bank: N damped rotation oscillators, not filters (N a template
 // parameter: the main string's kMaxModes, a secondary's kUnisonModes, the
 // board's kBoardModes). each partial is a phasor z = (re, im) turned by r
-// e^(-i w dt), r = exp(-decay dt), in belfry's increment form: z += z (ca -
+// e^(-i w dt), r = exp(-decay dt), in increment form: z += z (ca -
 // i cb), ca = r cos(w dt) - 1 from expm1 and sin²(w dt / 2), cb = r sin(w
 // dt), so the decay and the pitch hold to the float's precision where w dt
 // is small and r near 1. it turns clockwise, so a drive into im pushes re

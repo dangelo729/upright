@@ -106,14 +106,13 @@ of them is compiled into the library.
     unitary feedback matrix in its Householder form (Jot's): the board's
     field above its modes (up_board.h) (cited; the form written out, the
     paper not transcribed).
-  - Mutable Instruments, Rings, resonator.cc, through belfry. The ceiling on
-    the partials (0.45 of the sample rate); read, not copied.
-  - The author's belfry, windstrument and monk_mouth libraries (MIT). The
-    channel table and its sequence, the law as a derived-channel writer, the
-    pool with its note table and its fade, the two Teensy wrappers and their
-    handoff (the pending table under an interrupt mask, the command queue
-    with its payload rings), the host rig and its tests follow their shape,
-    written again here for a piano.
+  - Mutable Instruments, Rings, resonator.cc. The ceiling on the partials
+    (0.45 of the sample rate); read, not copied.
+  - The author's earlier libraries. The channel table and its sequence, the
+    law as a derived-channel writer, the pool with its note table and its
+    fade, the two Teensy wrappers and their handoff (the pending table under
+    an interrupt mask, the command queue with its payload rings), the host
+    rig and its tests follow their shape, written again here for a piano.
   - PJRC, the Teensy Audio Library (MIT). The wrappers implement its
     AudioStream (update, allocate, transmit, release) and the examples use
     its objects; nothing of it is copied or shipped here.

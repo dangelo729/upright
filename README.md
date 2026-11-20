@@ -380,7 +380,7 @@ it is heard as their velocity, µm/s.
 
 **The bank** (`up_bank.h`): N damped rotation oscillators (a template:
 the main string's kMaxModes, a secondary's kUnisonModes, the board's
-kBoardModes), belfry's increment form z += z (ca − i cb), ca = r cos ω − 1
+kBoardModes), in the increment form z += z (ca − i cb), ca = r cos ω − 1
 from expm1 and sin²(ω/2), cb = r sin ω, turning clockwise so a drive into
 im pushes re positive; a second coefficient pair per partial at dt /
 kContactRate for the hammer's substeps; no doublets. Per sample: the
@@ -1391,7 +1391,7 @@ upright's soundboard modes.
     is nearer the hammer**: a re-strike on a string displaced toward the
     hammer never starts inside the felt.
 37. **The law runs at the midi channel's target**, before the tick and
-    before the wake's snap (belfry's order), from the targets; the rank for
+    before the wake's snap, from the targets; the rank for
     the block's coefficients is the eased note's. A glide's partial
     targets are the destination's from its first block, eased at
     rateModes.
@@ -1524,7 +1524,7 @@ upright's soundboard modes.
     0.59 across 28 .. 100 at velocity 1. `kPickupGain` stands (rhodes at E4
     peaks 0.288).
 54. *Withdrawn (stage 7): what it recorded is gone from the library.*
-55. **The presets**: belfry's `PresetInfo` and accessors; the two fitted
+55. **The presets**: a `PresetInfo` and accessors; the two fitted
     presets keep the descent's strings (concertGrand's length 0.6265 m and
     bass 2.1145, upright's 0.6082 and 1.4221: the fit then moved the two
     together along one line); `fortepiano` holds the gauge at 1 (The
@@ -1558,8 +1558,8 @@ upright's soundboard modes.
     in `index.txt` their rhodes and wurlitzer source lines now name the
     presets' ranges (28 .. 100, 33 .. 96).
 60. **Stage 2's listening WAVs carry 3 dB of common headroom** (outputGain
-    0.7071 over the gain that then levelled each piano to grand's octave),
-    as belfry's 60; none passes full scale (the loudest 0.52).
+    0.7071 over the gain that then levelled each piano to grand's octave);
+    none passes full scale (the loudest 0.52).
 61. **`chart --audio`** reads the table's measures at the rendered note
     (E3 on the electric anchors, where the brief puts the render) beside
     the render's: the tracker's 10th partial and fundamental's T60, the
@@ -1636,13 +1636,13 @@ upright's soundboard modes.
     fresh strike's: −1.21), its energies printed (15.9 after the first,
     9.5 before the second, 17.7 after), as the brief asks; a strike on a
     moving string is not the sum of two.
-75. **The key's own voice is the one whose slot is held or released**
-    (belfry's rule): a voice asleep whose slot is not yet freed (between its
+75. **The key's own voice is the one whose slot is held or released**:
+    a voice asleep whose slot is not yet freed (between its
     last block and the next block's top) is struck the same way and wakes
     whole, as a landing note does.
 76. **The pool's readback adds `PoolBase::seedOf(seed, i)`** and
     `board()`; the tests' window `PoolTestAccess` (`tests/up_pool_access.h`,
-    a friend, belfry's) renders one voice's bridge force and pickup at its
+    a friend) renders one voice's bridge force and pickup at its
     level beside the output. The fade's step a block is 1 −
     `approachCoef(stealRate, dt)`: no libm in `up_pool.cpp`.
 77. **The voice wrapper rebuilds the plate's table as the eased body
@@ -1664,8 +1664,8 @@ upright's soundboard modes.
     at a gain of 1), 03_Keyboard at 0.2 (eight keys of rhodesBark struck in
     one block, each levelled to grand's octave, 4.54 at 1;
     grand's 1.11), 99_Benchmark at 0.15 a voice and the mixer halving each
-    pool. The tuning's `outputGain` lands at the next block unramped. 03_Keyboard's CC 123 is all notes off,
-    as belfry's 03_Carillon. Stage 3b measures them again at the new
+    pool. The tuning's `outputGain` lands at the next block unramped. 03_Keyboard's CC 123 is all notes off.
+    Stage 3b measures them again at the new
     reference (93).
 81. **`99_Benchmark` runs four phases** (the pool of eight at grand, the
     same pool at rhodes, the pool of four at grand, the four ringing out:
@@ -1683,7 +1683,7 @@ upright's soundboard modes.
     in the index); the 160 renders before them are the same bytes as the
     base after section 0 (`plans/upright-engine/out3/corpus0`). `uptool
     size` prints `Pool<4>` and `Pool<8>`.
-83. **The README follows belfry's** in its sections and their order.
+83. **The README's sections and their order are the house's.**
 84. **A partial that moves keeps its velocity** (stage 3b, report-3's
     decision 1, correcting report-2's decision 1 by report-3's finding 1):
     in `Bank::setPartial` a partial ringing since the last block (the
@@ -1724,8 +1724,8 @@ upright's soundboard modes.
     no float tie can swap them. The table is two function-local static
     arrays and a flag, zero-initialised (no constructor, no guard): 256
     bytes of RAM1. No rendered byte moved.
-89. **The README has no "Memory and time budget" section** (belfry's shape
-    has none): the rebuild's cost is in the Status's hardware bullet, "On a
+89. **The README has no "Memory and time budget" section** (the house's
+    shape has none): the rebuild's cost is in the Status's hardware bullet, "On a
     Teensy" under How it works, the pool's handoff paragraph and the
     wrappers' header comments.
 90. **kBoardOut 1.883e-6** (from 4.259e-6, × 0.442, −7.09 dB; report-3's
@@ -2421,7 +2421,7 @@ ceiling), read, not copied; Jot and Chaigne ("Digital delay networks for
 designing artificial reverberators", AES Convention, 1991: the feedback
 delay network and its loss in each line) and Jot (the Householder feedback
 matrix), the field's; a modal board below and a delay network above it is
-this library's own joining of the two. The house: the author's belfry, windstrument
-and monk_mouth (MIT), whose rotation form, channel table, pool and
-wrappers this follows; and PJRC's Teensy Audio Library,
-whose `AudioStream` the wrappers implement.
+this library's own joining of the two. The house: the author's earlier
+libraries, whose rotation form, channel table, pool and wrappers this
+follows; and PJRC's Teensy Audio Library, whose `AudioStream` the wrappers
+implement.
