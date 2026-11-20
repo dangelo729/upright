@@ -16,8 +16,8 @@
 //   hammer     hardness and felt from soft (25.1 N/mm^p, 1e-3 s/mm) to hard
 //              (803, 2.5e-4): the force's band (partials 8 .. 16 against 1
 //              .. 3, from the render's partial levels) moves 3 db at
-//              velocity 1 and 10 db at velocity 0.5 (report-1's decision 3;
-//              the plan's 6 and 12 printed beside), read at tuning.attack 0:
+//              velocity 1 and 10 db at velocity 0.5 (the plan's 6 and 12
+//              printed beside), read at tuning.attack 0:
 //              the string's own partials, without the attack's force in the
 //              tracker's first frame (the moves at attack 1 printed)
 //   strike     strikeShare from 0.04 to 0.5 (the middle): the 8th partial

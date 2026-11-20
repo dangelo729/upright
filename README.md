@@ -59,13 +59,13 @@ Library `Upright`, namespace `up`, file prefix `up_`, classes
 |---|---|---|
 | 0 — the laws and the chart | the channels, the knobs, the string, tine and reed laws, the rank, the hammer's contact simulated offline, the pickup's curves, the plate's table; `uptool` partials, string, hammer, pickup, board, print, random, fit, chart; the reference tables; the tests | **done** |
 | 1 — the engine | stage 0's decisions in the laws; the bank, the hammer's loop, the strings and the unison, the pitch axis, the dampers and the pedal, the pickup and the board as stages, the telemetry, the voice; `uptool` play, corpus, size; the WAV, the spectrogram, the analysis | **done** |
-| 2 — the instrument | report-1's eight decisions (the rank's felt split at C4, the hammer knob the stiffness alone, kScale 0.03, the outs' polarity, the asymmetric unison, the board's velocity and shelf, the bounded electrostatic curve); the level table; the audibility floors held in renders; the nine presets; `uptool` level, chart --audio, random's and fit's hearing, --preset, play --undo-level, board --sweep; the corpus grown; the listening WAVs | **done** |
-| 3 — the pool, the wrappers, the board, the docs | report-2's decisions (the tip's weight held to ±1, the level table by four anchors over an octave, the tests re-read where the measure missed); `up_pool` with its shared board; `AudioSynthUpright`, `AudioSynthUprightPool<M>`; the four examples; `make board`; the corpus baseline | **done** |
-| 3b — three fixes | report-3's decisions: a partial that moves grows in neither output (up, its velocity kept; down, its displacement); the plate's mode pairs found once; kBoardOut set so grand's octave reads 0.0897 rms, the level table written again, the examples' gains measured again; the corpus baseline and `make board` again | **done** |
+| 2 — the instrument | eight decisions (the rank's felt split at C4, the hammer knob the stiffness alone, kScale 0.03, the outs' polarity, the asymmetric unison, the board's velocity and shelf, the bounded electrostatic curve); the level table; the audibility floors held in renders; the nine presets; `uptool` level, chart --audio, random's and fit's hearing, --preset, play --undo-level, board --sweep; the corpus grown; the listening WAVs | **done** |
+| 3 — the pool, the wrappers, the board, the docs | decisions (the tip's weight held to ±1, the level table by four anchors over an octave, the tests re-read where the measure missed); `up_pool` with its shared board; `AudioSynthUpright`, `AudioSynthUprightPool<M>`; the four examples; `make board`; the corpus baseline | **done** |
+| 3b — three fixes | a partial that moves grows in neither output (up, its velocity kept; down, its displacement); the plate's mode pairs found once; kBoardOut set so grand's octave reads 0.0897 rms, the level table written again, the examples' gains measured again; the corpus baseline and `make board` again | **done** |
 | 4 — the coupled unison | the unison's strings coupled through one resistive bridge (Weinreich: the rank's bridge loss, the strings equal on the string side, the tonebar's gain and aftersound the tine side's only); the tuned detune 0.5 cents; the loss knee at 1 kHz; kBoardOut set again, the level table written again, the examples' gains measured again; the unison's tests rewritten; the corpus baseline and `make board` again | **done** |
-| 4b — the bridge's reactive part, the loss law's form | report-4's answers: a reactive part on the bridge's admittance (no null between the prompt sound and the aftersound); the loss law's frequency term no longer scaled by the rank, the knee at 800 Hz (C8 rings 0.41 s); a secondary struck by its presence; rhodes's and rhodesBark's tonebar back at 1.5 cents; kBoardOut and the level table again; the corpus baseline and `make board` again | **done** |
+| 4b — the bridge's reactive part, the loss law's form | a reactive part on the bridge's admittance (no null between the prompt sound and the aftersound); the loss law's frequency term no longer scaled by the rank, the knee at 800 Hz (C8 rings 0.41 s); a secondary struck by its presence; rhodes's and rhodesBark's tonebar back at 1.5 cents; kBoardOut and the level table again; the corpus baseline and `make board` again | **done** |
 | 5 — the attack | the owner's "plucked, not struck": the hammer's attack (`up_attack.h`), forces on the bridge on the string side: the knock of the impact, the key's thud on its bed and the string's free longitudinal modes (the clank, driven by the force squared, kLongOut set at grand's C2); `Tuning.attack` scales the three (0: stage 4b's bytes); the rank's longitudinal fundamental; the level table again; the corpus baseline and `make board` again | **done** |
-| 5b — the attack made audible | report-5's findings answered: the knock is the blow's share of the hammer's force and the action's noise from the voice's rng, calibrated at grand's C4 (10 and 8 dB under the string over the first 10 ms); the thud calibrated on the band under 150 Hz; the clank's per-note physics (E A_core, μ, c_L in, E A_core / L and the bearing angle out, kLongShare set at grand's A0); `Tuning.attack` 0 .. 2; kBoardOut and the level table again; the corpus baseline and `make board` again | **done** |
+| 5b — the attack made audible | the knock is the blow's share of the hammer's force and the action's noise from the voice's rng, calibrated at grand's C4 (10 and 8 dB under the string over the first 10 ms); the thud calibrated on the band under 150 Hz; the clank's per-note physics (E A_core, μ, c_L in, E A_core / L and the bearing angle out, kLongShare set at grand's A0); `Tuning.attack` 0 .. 2; kBoardOut and the level table again; the corpus baseline and `make board` again | **done** |
 | 6 — the knock without its noise, the board's field | the owner heard the attack as clicky and plucky, not struck: the action's noise removed, the knock the blow's share alone (the voice's rng kept, drawn by nothing); the field above the plate's modes, a feedback delay network of sixteen fixed lines beside a direct share of the shelf's mobility, its loss the plate's decay law (a one-pole a line, met at the top mode's t60 and at 4 kHz), its level the shelf's power; kLongShare and kBoardOut set again; the level table and the corpus baseline again; `make board` again | **done** |
 | 7 — the channels | the owner's: the eight knobs and their level table removed (`up_knobs`, `pianoOf`, `knobsOf`, `levelDb`, `setKnobs`, `uptool level`), the twenty-four instrument channels the API and the presets tables of them, bit for bit the shapes they were; two channels for the tine, `tineT60` and `tineLoad`, read by the law in place of its constants; `nanShape()`; the tool's fit, random, print and chart over the channels; `02_Channels`; the examples' gains measured again; the corpus baseline and `make board` again | **done** |
 
@@ -118,11 +118,10 @@ Library `Upright`, namespace `up`, file prefix `up_`, classes
   now runs once, at the first board's init). The voice wrapper rebuilds
   every block while its eased body moves after a write; the pool wrapper
   once per body write, inside its drain's mask.
-- **By-ear passes: not yet done.** The listening WAVs of stages 1 and 2 are
-  under `plans/upright-engine/out1/listen/` and `out2/listen/`, stage 4's
-  before and after the coupling under `out4/listen/`, stage 5's grand at
-  C2, C4 and C6 with and without the attack under `out5/listen/` (stage
-  5's) and `out5b/listen/` (stage 5b's, and C4 at attack 2); stage 6's are
+- **By-ear passes: not yet done.** The listening WAVs of stages 1 and 2,
+  stage 4's before and after the coupling and stage 5's grand at C2, C4
+  and C6 with and without the attack (stage 5's and stage 5b's, and C4 at
+  attack 2) are outside the repository; stage 6's are
   the corpus's grand at 36, 60 and 84 at velocity 0.5 and 1
   (`extras/host/build/corpus`), and the owner heard the prototype of its two
   changes as scratch renders (C3, C4 and C5, outside the repository) and
@@ -929,9 +928,9 @@ the note and `setShape` leaves the note, the glide and the pedal alone),
 its accessor's (`grand()` ..) the same object. `grand` is the reference
 and every voice's start (`defaultShape`). The two fitted tables' strings
 come from `uptool fit --table` against the measured B tables (the
-descent's own values kept); the rest is set by hand, rendered and heard
-(`plans/upright-engine/out2/listen`). Every preset carries the tine's
-`tineT60` 10.4 s and `tineLoad` 1.18, inert on the string. Every preset
+descent's own values kept); the rest is set by hand, rendered and heard.
+Every preset carries the tine's `tineT60` 10.4 s and `tineLoad` 1.18,
+inert on the string. Every preset
 sounds at every semitone of its range (2 s at velocity 1, at the gain that
 brings its octave from C4 to grand's, since at the plain gain wurlitzer's
 low notes sit under the floor: every sample finite and the peak over
@@ -1217,14 +1216,12 @@ upright's soundboard modes.
    and its gate (B falling as L⁴ from the shortest strings to the longest
    within 1 %) are a fixed-gauge string's. The test measures −6.000 at c4
    over the part of the strings' span where c4 stays plain and −2.000 at a0
-   end to end; c4 end to end reads −3.73, wound at the short end. The brief
-   named it.
+   end to end; c4 end to end reads −3.73, wound at the short end.
 2. **The strike share falls up the keyboard**: share = strikeShare (f_c4 /
    f0)^rankStrike. The plan's (f0 / f_c4)^0.12 rises, against its own words
    ("the treble's hammers land at a smaller share") and the rank test.
 3. **The 8th partial at the strike share 0.12 is −18 db**, sin(8 pi 0.12), held under
-   −15; the plan's −30 belongs to a share of 0.125 exactly. The brief named
-   it.
+   −15; the plan's −30 belongs to a share of 0.125 exactly.
 4. **The beam's gains and outs are its shape over the tip's 2** (the tip at
    ±1). The clamped-free shape reaches about 1.43 inside the beam and 2 at
    the tip, and a gain must stay inside −1 .. 1; the drive and the tip's
@@ -1244,7 +1241,7 @@ upright's soundboard modes.
    order 0.1 .. 1 s/m.
 9. **kK was 169 N/mm^p**, the fit's; the plan's 5e5 N/mm^p is a
    conversion slip (500 kN at 1 mm). Stage 1 sets Chaigne & Askenfelt's
-   c4 hammer whole: k 142, p 2.5, 2.97 g (report-0's decision 1).
+   c4 hammer whole: k 142, p 2.5, 2.97 g.
 10. **The contact ends when the felt is free and the hammer itself moves
     back** (its velocity under 0), or at kMaxContact. With "moving away in
     the string's frame" a string that runs ahead of a hammer still coming
@@ -1256,8 +1253,7 @@ upright's soundboard modes.
     point (27) and runs the contact at substeps (28); the explicit form
     stays as `stepExact`, the simulator's truth at 32 fs.
 12. **kForceCap was 40 kN** against the unstable step's peaks; stage 1
-    holds it at 2000 N (report-0's decision 7), six times the chart's
-    largest (348 N).
+    holds it at 2000 N, six times the chart's largest (348 N).
 13. **The tine's tip lives in the law** (`hammerHardnessAt`,
     `hammerFeltAt`, kTipHard 2, kTipLoss 1), applied where the hammer is
     set, so the channels hold the felt's own figures.
@@ -1269,7 +1265,7 @@ upright's soundboard modes.
     ceiling at the note (at kDefaultFs: the law knows the note, not the
     rate) and the tool prints the plain wire's diameter.
 16. **`dampRateOf` reads the note from the shape's midi channel** (c4 when
-    nan), keeping the brief's signature.
+    nan), keeping its signature.
 17. **The law's grid in tenths runs over the strings, the strike and the
     generator** at a0, c4 and c7, and each channel the law's table does not
     read (the unison's, the hammer's, the body's, the pickup's, the tonebar,
@@ -1293,7 +1289,7 @@ upright's soundboard modes.
     is grand's, or the named preset's.
 23. **The reference tables carry a `# kind:` line and may have several `#
     columns:` blocks**; `# hold:` holds a channel in the constants' fit only.
-    Three tables more than the brief's (a Steinway-D model's B and hammers,
+    Three tables more than asked (a Steinway-D model's B and hammers,
     an upright's soundboard).
 24. **The constants' fit holds** the concert grand's B tables at a concert
     grand's strings (length 0.6269, bass 2.1330 m), the upright's at the
@@ -1314,23 +1310,22 @@ upright's soundboard modes.
 26. **The Tuning's clamps**: hammerScale held over 0.001 m/s and ampHz over
     1 Hz.
 27. **The felt's loss reads the string point's own velocity, and solves by
-    the trapezoid.** Report-0's decision 2 reads ydot from the last two
+    the trapezoid.** An earlier decision reads ydot from the last two
     readbacks and puts the string's velocity a whole step ahead, F = a (1 +
     lambda u) / (1 + lambda a dt / m_point). It is stable but first order:
     the felt's damper on the light string point has a time constant near
     1 µs, under a substep, and at 8 substeps the worst cell of A0 .. C8 over
-    the ladder is 15× decision 3's bar (5 % contact, 10 % peak), at 16 still
+    the ladder is 15× the bar (5 % contact, 10 % peak), at 16 still
     4×: no rate inside 1 .. 16 met it. The bank holds the point's velocity
     for free (Σ gain ω im, the pickup's quadrature), and the trapezoid
     (the velocity across the step on the mean, ydot + F dt / (2 m_point))
     is second order: F = a (1 + lambda u) / (1 + lambda a dt / (2
     m_point)), u = v_hammer − the point's velocity. The worst cell falls to
     0.97 of the bar at 2 substeps, 0.40 at 4, 0.13 at 8. One division, no
-    libm; with lambda 0 the explicit force bit for bit (a test). The five
-    forms are in `plans/upright-engine/out1/scripts/loss_probe.txt`.
-28. **kContactRate is 2**, decision 3's rule: the fewest substeps within 5
-    % on the contact and 10 % on the peak of the truth at every octave A0 ..
-    C8 over the velocity ladder, through the voice (the worst 3.95 % and
+    libm; with lambda 0 the explicit force bit for bit (a test).
+28. **kContactRate is 2**, the fewest substeps within 5 % on the contact
+    and 10 % on the peak of the truth at every octave A0 .. C8 over the
+    velocity ladder, through the voice (the worst 3.95 % and
     2.27 %, both at C8). The loop test compares the force records each
     substep against the truth's at the same instant (the truth's 32 fs a
     whole multiple); a per-sample mean of two substeps against one of 32
@@ -1347,7 +1342,7 @@ upright's soundboard modes.
     1.12 mm, core 1.0 mm, coreGrow 0.18, l0 0.614 m, bass0 1.62 m,
     scaleBass 0.415 (the grand's rms ln 0.48 → 0.37, the upright's 0.23 →
     0.24; at kScale 0 they would read 0.19 and 0.16). Every move is inside
-    the brief's spans, which the fit's search now holds for tension,
+    the spans asked, which the fit's search now holds for tension,
     rankLength, coreGrow and l0. `fit --constants` gains `--kind KIND`.
     Stage 2 sets kScale 0.03 and the planner's block at it (49).
 30. **The rank's felt at C2 and C6 misses Chaigne & Askenfelt's K**: one
@@ -1383,7 +1378,7 @@ upright's soundboard modes.
     side, over kAftersound^u toward the tine).
 35. **The pickup hears every bank's first six slots**: on the electric side
     the second string is the tonebar, and the pickup sums it with the tine
-    (decision 11 confines the tip to slots 0 .. 5; the simulator has no
+    (the tip is confined to slots 0 .. 5; the simulator has no
     secondaries). The second string's weight × the tonebar from the
     generator 0 up (the `tonebar` channel; the tests sweep it as 1 − |g|
     beside the generator, continuous).
@@ -1408,7 +1403,7 @@ upright's soundboard modes.
     velocity 1) peaks 0.3: the levels until stage 2's table. The board's
     modes are in micrometres; `Board::render` writes its output. Stage 2
     re-measures kBoardOut for the board's velocity and shelf (52).
-40. **The board is the modal sum the brief gives.** The plan's "above the
+40. **The board is the modal sum.** The plan's "above the
     plate's modes the response is the radiation shelf alone" is not built:
     the 32 modes reach 764 Hz at body 0, so through the board the string's
     partials above about 1 kHz ring only in the modes' tails (C6 at
@@ -1426,7 +1421,7 @@ upright's soundboard modes.
     bounded curve brings the pickup's peak to 4.0 (53).
 43. **Float's own floors in the bank's tests**: kContactRate substeps land
     on one sample's turn within 4e-6 plus the frequency's rounding over a
-    block (2e-6 at 27.5 Hz, 1.5e-5 at 19 kHz; the brief's 1e-6 is under
+    block (2e-6 at 27.5 Hz, 1.5e-5 at 19 kHz; the 1e-6 asked is under
     the rounding of 256 turns against 128); the velocity readback is held
     to the phasors' own rate, not to a finite difference; the board's two
     voices sum within 1e-6 of full scale.
@@ -1434,8 +1429,8 @@ upright's soundboard modes.
     instrument before a table (an instrument write after a table rewrites
     its partials); a render over full scale is written at the gain that
     brings it to 0.99, said in the index; the corpus is 4 s a render, the
-    three anchors at 36, 60, 84 at velocities 0.5 and 1 and the brief's
-    eight more (26).
+    three anchors at 36, 60, 84 at velocities 0.5 and 1 and the eight more
+    asked (26).
 45. **The tests' readings**: the unison's three-string slopes run at
     detune 0 (the beat leaves the slopes alone; 1.5 cents printed); the
     beat reader takes one trough a dip under a moving mean, and no beat
@@ -1448,7 +1443,7 @@ upright's soundboard modes.
     index is sqrtf, a single instruction; everything else per sample is
     multiplies, adds and the pickup's and the hammer's divisions.
 
-47. **The rank's felt splits at C4** (report-1's decision 2):
+47. **The rank's felt splits at C4**:
     `rankHardLo` 0.75 below C4 and `rankHardHi` 1.41 from C4 up, both
     fit-movable (kind hammer, 0 .. 2.5). K 50.2 at C2 and 1003 at C6
     against Chaigne & Askenfelt's 50.4 and 1000 (checks). C6's contact at 6
@@ -1457,7 +1452,7 @@ upright's soundboard modes.
     ms, so the felt is not what misses; the string's tension (553 N, the B
     tables') and strike share set it (700 N reads 0.97 ms, a share of 0.08
     at C4 0.79).
-48. **The hammer's span is the stiffness alone** (decision 3): `kPspan`
+48. **The hammer's span is the stiffness alone**: `kPspan`
     gone, the power held at 2.5, the hardness 25 .. 803 N/mm^p at C4
     (Chaigne & Askenfelt's C2 hammer's stiffness to their C6's) with the
     felt's loss 1e-3 .. 2.5e-4 s/mm beside it. The band soft to hard by the
@@ -1465,7 +1460,7 @@ upright's soundboard modes.
     and 11.8 dB at velocity 0.5 (at least 10, the plan's 12), 3.8 and 3.7
     at velocity 1 (at least 3, the plan's 6); the contacts soft 2.78 and
     2.40 ms, hard 2.22 and 2.09 ms at 0.5 and 1.
-49. **kScale 0.03 and the planner's B block** (decision 4): tension 553 N,
+49. **kScale 0.03 and the planner's B block**: tension 553 N,
     rankLength 0.915, dMax 1.08875 mm, core 1.0 mm, coreGrow 0.1725, l0
     0.614 m, bass0 1.61375 m, and the strings' span across the pianos 2^±0.03
     on c4's length and 2^±0.4025 on the longest string (scaleBass): the
@@ -1477,17 +1472,17 @@ upright's soundboard modes.
     notes known (B4 70.7 %, B6 123.4 %); since stage 7 the fit moves length
     and bass apart and reads 0.177 and 0.182 from C1 to C7 (B4 68.1 %, B6
     71.0 %).
-50. **The string's outs are n (−1)^(n+1)** (decision 5): no gain or out of
+50. **The string's outs are n (−1)^(n+1)**: no gain or out of
     the first six crosses zero along the generator from −1 to 0 (320
     readings at a0, c4, c7). At −0.5 grand's C4 fundamental reads 6.0 dB
     under the tine's on the pickup (a check) and 10.4 dB under the string's
     on the bridge (10 asked: known): the bridge's weight is half there (6
     dB) and the fundamental's gain is half way to the tine's, which is
     struck near its clamp where its first mode barely moves.
-51. **The unison is asymmetric** (decision 6): `kThirdDetune` 0.7 and
-    `kThirdGain` 0.5, in `up_string.h` beside `kUnisonFloor` (the brief
-    names that file; `kAftersound` and `kUnisonGain` stay in `up_law.h`;
-    `kThirdGain` gone and the strings equal on the string side since 95).
+51. **The unison is asymmetric**: `kThirdDetune` 0.7 and
+    `kThirdGain` 0.5, in `up_string.h` beside `kUnisonFloor` (`kAftersound`
+    and `kUnisonGain` stay in `up_law.h`; `kThirdGain` gone and the strings
+    equal on the string side since 95).
     Grand's C4 fundamental's ripple over 2 .. 6 s reads 14.9 dB by the beat
     reader's measure (12.9 less its straight line; 46 before; 12 asked:
     known). The planner's probe ran the main string at 15.2 / 2.5 s and the
@@ -1496,9 +1491,9 @@ upright's soundboard modes.
     difference, where three uncoupled phasors cancel deepest. Two strings
     at 2 cents still beat at the detune's rate within 1 % (−0.26 %); three
     at detune 0 read early / late 1.57.
-52. **The board's output is velocity and gains the shelf** (decision 7).
-    The bank's `step` gains a third flag, `kVelocity` (the simpler of the
-    brief's two ways: the board calls `step<true, false, true>`; with it
+52. **The board's output is velocity and gains the shelf**.
+    The bank's `step` gains a third flag, `kVelocity` (the simpler of two
+    ways: the board calls `step<true, false, true>`; with it
     off the strings' sums are the same expressions as before). The shelf is
     two one-pole highpasses (the force less its one-pole lowpass, twice:
     two floats of state) at the top mode's frequency, the coefficient 1 −
@@ -1509,9 +1504,9 @@ upright's soundboard modes.
     peaking 0.300; 1.883e-6 from stage 3b, 90; 1.304e-6 from stage 4,
     104; 1.311e-6 from stage 4b, 116) scales both.
     `Board::setShelf(gain)` lets the tool's sweep vary the shelf.
-53. **The electrostatic curve is the Lorentzian centred at the gap**
-    (decision 8, report-1's finding 9): `electroC(x, gap)` = 1 / (1 + ((x −
-    gap) / gap)²); the stage runs one Lorentzian whose centre,
+53. **The electrostatic curve is the Lorentzian centred at the gap**:
+    `electroC(x, gap)` = 1 / (1 + ((x − gap) / gap)²); the stage runs one
+    Lorentzian whose centre,
     `pickupOffset(g, gap, offset)` = offset + clamp(g, 0, 1) (gap − offset),
     is set per block: one division a sample, the hold and the second
     denominator gone. |C'| ≤ 0.6495 / gap over x −3 .. 3 mm, gap 0.5 .. 4,
@@ -1535,8 +1530,8 @@ upright's soundboard modes.
     levels (the tracker's first frame); the strike's 8th partial as its
     band's power over 0.1 .. 1 s, since at a node the first 50 ms frame
     holds the onset's leakage from the loud odd neighbours (−8.6 dB there,
-    20 .. 30 dB under them); the unison at one string and three wide as the
-    brief has it, the tuned three printed; the body's 100 Hz band as the octave 71 ..
+    20 .. 30 dB under them); the unison at one string and three wide, the
+    tuned three printed; the body's 100 Hz band as the octave 71 ..
     141 Hz through the board, read at A0 where three partials fall in it
     (11.4 dB; C1 11.3, C2 15.6, G2 7.4); the damper with one string printed
     (8.74×); the pickup's second harmonic against the first; the
@@ -1561,7 +1556,7 @@ upright's soundboard modes.
     0.7071 over the gain that then levelled each piano to grand's octave);
     none passes full scale (the loudest 0.52).
 61. **`chart --audio`** reads the table's measures at the rendered note
-    (E3 on the electric anchors, where the brief puts the render) beside
+    (E3 on the electric anchors) beside
     the render's: the tracker's 10th partial and fundamental's T60, the
     telemetry's contact and peak, `play`'s thd; `audio_CHANNEL.txt` each and
     `audio_summary.txt`.
@@ -1572,7 +1567,7 @@ upright's soundboard modes.
     board is linear in it); `--sweep --out FILE` writes the table at body
     −1, 0 and +1.
 
-63. **The tip's weight is the out held to ±1** (report-2's decision 1):
+63. **The tip's weight is the out held to ±1**:
     each bank's first kTineModes slots carry a second output weight, `tip =
     clamp(out, −1, 1)`, ramped across the block beside the out; the tip's
     two sums read it, the bridge's the out; nothing else in the signal path
@@ -1589,7 +1584,7 @@ upright's soundboard modes.
     `kPickupGain`'s reference (rhodes at E4) peaks 0.288. The thrash's raw
     pickup peak did not move (4.02): it is the thrash's key jumps on one
     ringing voice, not the weights (Known limits).
-64. **A piano's level is an octave's** (decision 2): the mean power of the
+64. **A piano's level is an octave's**: the mean power of the
     twelve notes C4 .. B4, each at velocity 1, against the reference,
     `grand`'s octave. One note's level is the board's coincidence of
     partials, plate modes and the field's grain; an octave's mean is the
@@ -1598,7 +1593,7 @@ upright's soundboard modes.
     + 11), as the reference's is from C4.
 66. *Withdrawn (stage 7): what it recorded is gone from the library.*
 67. *Withdrawn (stage 7): what it recorded is gone from the library.*
-68. **The tests re-read where the measure missed** (decision 3), each a
+68. **The tests re-read where the measure missed**, each a
     check: the C4 ripple under 16 dB (14.90); the generator's middle on the
     bridge within 12 dB (10.4); the strings at C2 at least 15 cents (16.9);
     the aftersound's ratio from one string to the tuned three at least 2×
@@ -1610,7 +1605,7 @@ upright's soundboard modes.
     known row at one note: concertGrand's B1, whose lively board rings up
     7.5 dB over its first 0.4 s and falls back under its first 100 ms only
     at 1.95 s (the board +0.2 dB at 1.9 .. 2.0 s; the strings −7.5 dB, the
-    strings' check held). Report-2 had the bloom over by 1 s; at that note
+    strings' check held). The bloom was expected over by 1 s; at that note
     it is not. The suite runs about 35 s.
 70. **`random` hears the octave** beside the note (`hearOctave`, the
     octave from the note up against the reference); `fit`'s heard line
@@ -1634,7 +1629,7 @@ upright's soundboard modes.
     a board of its own.
 74. **The same key struck twice is held by its onset** (within 2 dB of a
     fresh strike's: −1.21), its energies printed (15.9 after the first,
-    9.5 before the second, 17.7 after), as the brief asks; a strike on a
+    9.5 before the second, 17.7 after); a strike on a
     moving string is not the sum of two.
 75. **The key's own voice is the one whose slot is held or released**:
     a voice asleep whose slot is not yet freed (between its
@@ -1646,7 +1641,7 @@ upright's soundboard modes.
     level beside the output. The fade's step a block is 1 −
     `approachCoef(stealRate, dt)`: no libm in `up_pool.cpp`.
 77. **The voice wrapper rebuilds the plate's table as the eased body
-    moves** (the brief's), and `boardOf` is about 7 voice-blocks of work
+    moves**, and `boardOf` is about 7 voice-blocks of work
     (56 µs on the host against a voice's block at 7.6), every block while
     the body eases after a write; the pool wrapper rebuilds it once per body
     write, under the drain's mask. Stage 3b finds the mode pairs once (88):
@@ -1659,7 +1654,7 @@ upright's soundboard modes.
     built into the test binary and `test_pool.cpp` includes `Upright.h`, so
     a broken guard fails the host build; a slip inside the guard shows only
     on `make board`.
-80. **The examples' gains are measured on the host** (`plans/upright-engine/out3/probes`):
+80. **The examples' gains are measured on the host**:
     01_Grand at 2 (eleven hammers, C3 and C5 at 0.8, the largest peak 0.215
     at a gain of 1), 03_Keyboard at 0.2 (eight keys of rhodesBark struck in
     one block, each levelled to grand's octave, 4.54 at 1;
@@ -1681,18 +1676,16 @@ upright's soundboard modes.
     the quietest; 6 s each, `grand` on a `Pool<4>`), each written as `play`
     writes (a sum over full scale at the gain that brings it to 0.99, said
     in the index); the 160 renders before them are the same bytes as the
-    base after section 0 (`plans/upright-engine/out3/corpus0`). `uptool
-    size` prints `Pool<4>` and `Pool<8>`.
+    base after section 0. `uptool size` prints `Pool<4>` and `Pool<8>`.
 83. **The README's sections and their order are the house's.**
-84. **A partial that moves keeps its velocity** (stage 3b, report-3's
-    decision 1, correcting report-2's decision 1 by report-3's finding 1):
+84. **A partial that moves keeps its velocity** (stage 3b, correcting 63):
     in `Bank::setPartial` a partial ringing since the last block (the
     bank's own flag that it was live, so a partial coming on from off
     starts from rest as before) whose hz moved has its phasor scaled by
     hz_old / hz_new, re and im, one division; the strings, the secondaries
     and the board's modes all take it (bounded both ways since 94). The
     thrash's row that levelled each block by its shape is removed
-    (report-3's finding 2: levelling under a moving shape lifts the ring of
+    (levelling under a moving shape lifts the ring of
     the shape before, the app's doing, not the engine's); its raw pickup peak is held under 1.5 (1.35
     as first built, 1.08 since 94; it was 4.02), the raw peaks printed.
 85. **The key jump is read over four periods of C3's fundamental** each
@@ -1714,9 +1707,9 @@ upright's soundboard modes.
     the corpus's glide render (grand C4 to G4 from 1 s over 2 s), its click
     measure from 0.25 s, 0.683 against the bound 4.18 for its top partial at
     G4 (0.687 without the rule, by a probe). No test held it before.
-88. **The plate's mode pairs are found once, at 1 m²** (report-3's
-    decision 2), not at the first caller's area, so the table does not
-    depend on who calls first; `boardSearch` (the full 40 × 40 search) is
+88. **The plate's mode pairs are found once, at 1 m²**, not at the first
+    caller's area, so the table does not depend on who calls first;
+    `boardSearch` (the full 40 × 40 search) is
     public for the test that holds boardOf to it, to the bit, at five
     bodies. A probe over 20,001
     areas from 0.05 to 10 m² found the 1 m² order everywhere: the nearest
@@ -1728,8 +1721,8 @@ upright's soundboard modes.
     shape has none): the rebuild's cost is in the Status's hardware bullet, "On a
     Teensy" under How it works, the pool's handoff paragraph and the
     wrappers' header comments.
-90. **kBoardOut 1.883e-6** (from 4.259e-6, × 0.442, −7.09 dB; report-3's
-    decision 3): grand's octave reads 0.08970 rms, −20.94 dB full scale;
+90. **kBoardOut 1.883e-6** (from 4.259e-6, × 0.442, −7.09 dB): grand's
+    octave reads 0.08970 rms, −20.94 dB full scale;
     grand's C4 alone 0.0397 rms, peaking 0.133. kPickupGain is kept, so the tine's and the
     reed's own levels against the reference rise 7.08 and 7.09 dB.
     1.304e-6 since 104, 1.311e-6 since 116.
@@ -1743,7 +1736,7 @@ upright's soundboard modes.
     random pianos' peaks were rendered at C4 from silence, 2 s, as `play`
     renders, each levelled to grand's octave: the median 0.43, the worst
     0.90 (0.5 and 1.2 asked, held).
-93. **The examples' gains measured again** (`plans/upright-engine/out3b/probes/gains_probe`):
+93. **The examples' gains measured again** (a probe on the host):
     01_Grand at 4.5 (the largest peak 0.095 at 1: 0.43), 03_Keyboard at 0.45 (rhodesBark's eight keys 2.01 at 1: 0.90; grand's
     0.49), 99_Benchmark at 0.35 (the probe now plays its phases: the pool of
     eight 0.55 at grand and 0.54 at rhodes, the four 0.44, at 1; the
@@ -1789,7 +1782,7 @@ upright's soundboard modes.
     the bridge in opposite phase to the fast one, −(u² + q²) / (2 r) of the
     strike's 2 (q = ε / σ_b, r = sqrt(1 − q²), u = 1 − r), so the sum
     crosses zero at ln(o_f / |o_s|) / (2 s): 5.09 s for two strings at 0.3
-    cents at C4, read at 5.09 s, 85 dB down. The brief's ripple under 1 dB
+    cents at C4, read at 5.09 s, 85 dB down. The ripple under 1 dB
     over 0.5 .. 6 s and late slope from 2 s could not hold; the test holds
     the null at the formula's time (within 10 %), no ripple past it (0.38
     dB against a 1.5 s mean), the fast decay over the first second (−7.05
@@ -1797,7 +1790,7 @@ upright's soundboard modes.
     −1.73), on 16 s. Since 108 the bridge has a reactive part and there is
     no null (109).
 97. **The tuned three are held at C4 on 16 s, C6 printed.** Grand's three
-    at C4 cross through their null at 2.7 s, so the brief's ripple over 2
+    at C4 cross through their null at 2.7 s, so the ripple over 2
     .. 6 s reads the null (16.1 dB) and an 8 s render's late slope its
     recovery (−3.27 dB/s against σ_i's −1.44). Held instead: the prompt
     sound's ripple (0.09 dB from 0.2 s to 20 dB down, against a 0.5 s
@@ -1817,14 +1810,14 @@ upright's soundboard modes.
     6.9, 5.3, 3.7 s; 74, 22, 26, 22, 25, 21, 21 before) and their ripples
     (10.9 .. 16.4 dB; 9.5 .. 26.5 before).
 100. **A fractional string holds more energy than either neighbour.** The
-    third at presence 0.5 is struck whole (the drive unchanged, as the
-    brief has it), heard and coupled at half, so it loses less into the
-    bridge and keeps its strike: every bank's energy at 1 s 8.82 mm²
-    against 5.44 for two strings and 4.90 for three. Held: finite, the
-    energy never rising from block to block once the hammer has left, and
-    falling from 1 to 2 s; the bridge force's rms within 1 dB of the span
-    the two and the three make (at 1 s 7.46 against 6.81 .. 6.92, 0.65 dB
-    over it; at 2 s 2.07, between). Closed by 113: the drive by presence.
+    third at presence 0.5 is struck whole (the drive unchanged), heard and
+    coupled at half, so it loses less into the bridge and keeps its strike:
+    every bank's energy at 1 s 8.82 mm² against 5.44 for two strings and
+    4.90 for three. Held: finite, the energy never rising from block to
+    block once the hammer has left, and falling from 1 to 2 s; the bridge
+    force's rms within 1 dB of the span the two and the three make (at 1 s
+    7.46 against 6.81 .. 6.92, 0.65 dB over it; at 2 s 2.07, between).
+    Closed by 113: the drive by presence.
 101. **The tine side is read at 6 cents.** At 3 cents rhodes's tonebar
     reads 1.18 % over the free rate on three troughs, and so does the
     build before the coupling, to the digit: the reader's bias as the tine
@@ -1852,8 +1845,7 @@ upright's soundboard modes.
     the reed's −17.83 unchanged (no tonebar), the generator's middle's
     +4.15; the unison's span 8.0 dB from one string to three wide (4.6
     before: one string under three coupled). The examples' gains measured
-    again (stage 3b's probe built on this core,
-    `plans/upright-engine/out4/probes/gains_probe`): 01_Grand 4 (the
+    again (stage 3b's probe built on this core): 01_Grand 4 (the
     largest peak 0.106 at 1: 0.42), 03_Keyboard 0.5
     (rhodesBark's eight keys 1.83 at 1: 0.92; grand's 0.27), 99_Benchmark
     0.35 kept (the pool of eight 0.50 at grand and 0.53 at rhodes, the four
@@ -1871,7 +1863,7 @@ upright's soundboard modes.
     follows the model block (840 rows against 3).
 107. **The README keeps no list of tests**: the unison's numbers sit in How
     it works' unison paragraph; `test_unison.cpp`'s four tests became ten.
-108. **The bridge has a reactive part** (stage 4b, brief-4b's decision 1):
+108. **The bridge has a reactive part** (stage 4b):
     `LawConstants::bridgeReactive` 0.5; the voice hands the strings δ = σ_b
     × bridgeReactive (σ_b already × clamp(−g, 0, 1)) through
     `setCoupling(σ_b, δ)`; the coupling sums the displacements beside the
@@ -1881,7 +1873,7 @@ upright's soundboard modes.
     the aftersound (3 δ / 2π: 0.50), two at 0.3 cents 0.30 (2 δ: 0.33). A
     lone string's pitch falls by δ too (0.17 cents at C4). The coupling now
     costs 1.5 µs a voice's block on the host (19 %; 1.1 µs in stage 4).
-109. **The lock is held by "no dip"** (brief-4b's test): each 10 ms frame
+109. **The lock is held by "no dip"**: each 10 ms frame
     against the lower of the frames 1 s either side, the largest over 0.5
     .. 15 s under 6 dB. Two at 0.3 cents read −0.67 dB (the null read 85);
     grand's three at C4 read 5.96 dB at 7.65 s, the aftersound's own two
@@ -1891,7 +1883,7 @@ upright's soundboard modes.
     −6.84 and −1.89 from 10 s against −1.81 (the reactive part moves Re
     sqrt from 0.281 to 0.289); the three −10.48 against −9.80 and −1.54
     against σ_i's −1.59. `bridgeReactive` swept by a probe: the three's
-    dip 4.3, 6.0, 7.4, 6.2 dB at 0.3, 0.5, 0.7, 1.0; the brief's 0.5 kept.
+    dip 4.3, 6.0, 7.4, 6.2 dB at 0.3, 0.5, 0.7, 1.0; 0.5 kept.
     The floors' unison depth at 0 reads 4.2 dB (16.1 with the null). The
     glide's tail (2.9 .. 3 s) sits 23 dB under 0.9 .. 1 s (24 in stage 4,
     9.5 in stage 3b): the coupled prompt sound's own faster decay, not the
@@ -1905,25 +1897,25 @@ upright's soundboard modes.
     / π: two at 2 cents at C6 beat 1.1747 Hz against 1.1725 (+0.18 %; a
     resistive bridge's 1.1576, the free 1.2113); C4's 4th partial on two
     strings 0.2919 against 0.2909 (+0.33 %).
-112. **The loss law's form** (decision 2): `stringT60` takes the rank's
+112. **The loss law's form**: `stringT60` takes the rank's
     t60Scale (its call in `up_fit.h` too) and the knee moves to 800 Hz:
     σ_n = lossRate / t60Scale + lossRate (f_n / 800)². `law_decays` pins
     the fundamental at C2 37.7 s, C4 13.9, C6 3.23, C7 1.26, C8 0.413 and
     C4's 8th and 16th partials 1.92 and 0.498, each within 1 %; key 127
-    reads 52 ms (the brief's 57). The decay table (`uptool partials --table
+    reads 52 ms (57 expected). The decay table (`uptool partials --table
     decay_grand.txt`): Chaigne's three −0.08, +0.31, +1.09 log2 at the
-    tool's literal 1 kHz (rms 0.66; with E6 at its fundamental, as the
-    brief reads it, 0.50), Chabassier & Durufle's model block rms 2.44 (2.97
-    in stage 4). C8's known-limit row goes (0.41 s, over 0.3). F#6 (no
-    damper) is 60 dB down at 1.99 s on its own.
-113. **A secondary is struck by its presence** (decision 3, closing 100):
+    tool's literal 1 kHz (rms 0.66; with E6 at its fundamental, 0.50),
+    Chabassier & Durufle's model block rms 2.44 (2.97 in stage 4). C8's
+    known-limit row goes (0.41 s, over 0.3). F#6 (no damper) is 60 dB down
+    at 1.99 s on its own.
+113. **A secondary is struck by its presence** (closing 100):
     its drive × w_j beside its out and its coupling; strings 2.5's energy
     at 1 s reads 5.16 between 4.66 (three) and 5.20 (two), a check, and
     never rises from block to block.
-114. **rhodes's and rhodesBark's detune 1.51 cents** (decision 4:
-    1.513688), the tonebar's beat stage 2 heard at 1.5; the strings capped
-    at 2 as before. Rhodes's octave from C4 read −5.00 dB against grand's
-    (−4.19 at stage 4's 0.5 cents).
+114. **rhodes's and rhodesBark's detune 1.51 cents** (1.513688), the
+    tonebar's beat stage 2 heard at 1.5; the strings capped at 2 as before.
+    Rhodes's octave from C4 read −5.00 dB against grand's (−4.19 at stage
+    4's 0.5 cents).
 115. **The tine side's beat is the two strings' frequency difference**: the
     tonebar's peak (the pair less the tine alone) less the tine's (strings
     1), each over 0.2 .. 8 s: 0.28832 Hz against the free 0.28833. The beat
@@ -1932,8 +1924,7 @@ upright's soundboard modes.
     dying under the tonebar), printed.
 116. **kBoardOut 1.311e-6** (+0.05 dB): grand's octave 0.08971 rms; the
     generator's middle's own octave +4.12 dB, the tine's −4.19, the reed's
-    −17.83. The examples' gains measured again
-    (`plans/upright-engine/out4b/probes/gains_probe`): 01_Grand 4 (0.105 at
+    −17.83. The examples' gains measured again: 01_Grand 4 (0.105 at
     1: 0.42), 03_Keyboard back
     to 0.45 (rhodesBark's eight keys 2.01 at 1, its tonebar's level back:
     0.90), 99_Benchmark 0.35 (0.50, 0.54, 0.33 at 1).
@@ -1952,18 +1943,18 @@ upright's soundboard modes.
     compiles the attack out off the string side and at attack 0.
 119. **The clank's drive carries dtSub / ω_k**, as every bank's does (the
     string's and the board's): re is the mode's displacement, and the
-    clank's level holds at another rate or substep count. The brief's
+    clank's level holds at another rate or substep count. The form
     inject(F² k cos(k π β)) is the force's projection on the mode; put into
     im as it stands it would move with the substeps and give a mode k times
     its own displacement.
 120. **The attack's weight is its own ramp**, clamp(−g, 0, 1) × outputGain
     beside the bridge's, not its newtons put into the bridge's sum at 1000
-    / the bridge scale ahead of the bridge's weight (the brief's "inside
-    emit before bridgeW_"): across a block where the note moved, the
+    / the bridge scale ahead of the bridge's weight (inside emit before
+    bridgeW_): across a block where the note moved, the
     bridge's weight ramps between two notes' bridge scales and carried the
     attack with it, so a key jump from the treble to the bass on one voice
     (the thrash) put 871 N on the bridge and 3.1 on the board. The
-    generator's fade and outputGain apply once, as the brief asks.
+    generator's fade and outputGain apply once.
 121. **kLongOut 3.353e5**, read on the attack's own force (the bridge force
     at attack 1 less at attack 0: the attack feeds nothing back, the
     strings the same bits either way) in f_L,1 ± 2 % over the first 50
@@ -1981,7 +1972,7 @@ upright's soundboard modes.
     strongest partial, the thrash's raw board peak at 0.59 (0.10 at stage
     4b; its row, under 1.0, holds), `honkyTonk` levelled at 1.07 at A#0 and
     `spinet`'s eight keys at 1.16 at a gain of 1 (03_Keyboard's 0.45 holds
-    them at 0.52). Not limited: the calibration point is the brief's.
+    them at 0.52). Not limited: the calibration point is the one asked.
 123. **The knock and the clank are read on the attack's own force.** At C4
     the string's own force reaches the bridge before 1.5 ms (0.13 N over 0
     .. 0.5 ms, the modal sum; 0.83 over 0.5 .. 1 and 4.85 over 1 .. 1.5,
@@ -2000,11 +1991,11 @@ upright's soundboard modes.
     output's band under 150 Hz over 5 .. 40 ms reads −0.01 dB against
     attack 0 (6 asked), the string's first arrival ringing the plate's low
     modes 19 dB over the attack's share. By the board's linearity (a
-    probe, `out5/probes/thud_probe`) kThud 6 reads +4.1 dB and 8 +7.6 at C4
+    probe) kThud 6 reads +4.1 dB and 8 +7.6 at C4
     (1 .. 3 first lower the band: the thud against the string's onset); at
     C2, whose first two partials sit in the band, 8 reads +2.6. kKnock 4
     would add 4.8 dB to C4's first 3 ms.
-125. **A0's longitudinal fundamental is 685 Hz**, not the brief's "about
+125. **A0's longitudinal fundamental is 685 Hz**, not the expected "about
     1.3 kHz at C2 and A0": A0's 1.48 mm core on 70.2 g/m gives c_L 2210
     m/s on the case's 1.614 m; C2's 1.10 mm core on 12.4 g/m 3899 m/s,
     1208 Hz.
@@ -2020,7 +2011,7 @@ upright's soundboard modes.
     to Askenfelt & Jansson's line.
 127. **kBoardOut stays 1.311e-6**: grand's octave reads 0.08970 rms
     (0.08970131; stage 4b's 0.08970784, −0.0006 dB; 1.31098e-6 would land
-    it exactly). The examples keep their gains (`out5/probes/gains_probe`):
+    it exactly). The examples keep their gains:
     01_Grand 4 (0.104 at 1: 0.42), 03_Keyboard 0.45 (rhodesBark's eight keys 2.01: 0.90; grand's
     0.66), 99_Benchmark 0.35 (0.50, 0.54, 0.33 at 1).
 128. **The attack's cost**: 0.43 µs of a ringing grand C4's voice block on
@@ -2028,8 +2019,8 @@ upright's soundboard modes.
     and 440 bytes a voice; `config_core_guard` names `Attack::init` (the
     pulses' turns, per rate) and `Attack::setBlock` (a cos a mode, per
     block).
-129. **The knock is the blow and the action's noise** (stage 5b, brief-5b's
-    decision 2): the raised cosine goes. The blow's share is kKnockForce ×
+129. **The knock is the blow and the action's noise** (stage 5b): the
+    raised cosine goes. The blow's share is kKnockForce ×
     the mean of the sample's substeps' forces (the sample's impulse at the
     sample rate). The noise is a burst from the voice's xorshift32, drawn
     by nothing else (one draw a sample for the burst's 1058 samples, so the
@@ -2038,7 +2029,7 @@ upright's soundboard modes.
     from per-rate coefficients (`Attack::init`). `Attack::parts()` holds the
     last sample's four parts apart (the host's window): the tests and the
     probes read each through a board of its own.
-130. **The knock's calibration** (`out5b/probes/parts_probe`): at grand's C4,
+130. **The knock's calibration** (a probe): at grand's C4,
     velocity 1, over the first 10 ms against the string's own, the blow
     −10.00 dB (kKnockForce 0.983: near the hammer's whole force through the
     action), the noise −8.00 (kNoise 9.84), the two −6.14, the attack's own
@@ -2052,9 +2043,9 @@ upright's soundboard modes.
     probe's sweep: +9.8 at 0.5, +6.2 at 4, +5.1 at 8, +6.8 at 10), and the
     check, 4 ± 1, holds there. The thud alone reads +8.9 dB over the
     string's own band, the blow alone +7.0.
-132. **The clank's per-note scale** (decision 3): the drive and the output as
-    the brief derives them, the rank supplying A_core, μ, L, T and c_L = 2 L
-    longHz; kLongAngle 0.08; kLongShare 0.1158 at grand's A0 (−10.00 dB
+132. **The clank's per-note scale**: the drive and the output derived per
+    note, the rank supplying A_core, μ, L, T and c_L = 2 L longHz;
+    kLongAngle 0.08; kLongShare 0.1158 at grand's A0 (−10.00 dB
     against the note over the first 50 ms). Against the note at velocity 1
     A0 −10.0, C2 −35.8, C4 −37.4, C6 −31.9, at 0.5 −26.5, −52.9, −57.4,
     −54.3; against the strongest partial A0 −5.1, C2 −24.2, C4 −39.2, C6
@@ -2065,7 +2056,7 @@ upright's soundboard modes.
 133. **The clank's pitch is read from the burst's end**: the attack's own
     force over 24 .. 84 ms, where the blow, the noise and the thud are done,
     peaks at the rank's frequency to 0.001 % at A0, C2, C4 and C6.
-134. **`Tuning.attack` is held 0 .. 2** (decision 4); 1 is the calibration.
+134. **`Tuning.attack` is held 0 .. 2**; 1 is the calibration.
 135. **The hammer's floor is read at attack 0**: the noise, the same for
     either hammer, sits in the tracker's first frame over C4's upper
     partials, and at velocity 0.5 the soft-to-hard move reads 5.8 dB at
@@ -2074,7 +2065,7 @@ upright's soundboard modes.
     reads 81.1 dB (84.3), the body's 11.4 (11.3).
 136. **kBoardOut 1.310e-6** (from 1.311e-6): grand's octave read 0.08976
     rms at the old (the knock's first 10 ms), now 0.08969 (−0.0008 dB). The
-    examples (`out5b/probes/gains_probe`): 01_Grand 4 (0.106 at 1: 0.42);
+    examples: 01_Grand 4 (0.106 at 1: 0.42);
     03_Keyboard 0.45 (rhodesBark's eight keys 2.01: 0.90;
     grand's 0.82); 99_Benchmark 0.35 (0.51, 0.54, 0.33 at 1).
 137. **The attack-0 check**: `uptool corpus --tune attack=0` on stage 4b's

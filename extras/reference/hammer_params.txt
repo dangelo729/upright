@@ -1,7 +1,7 @@
 # hammer_params: piano hammer mass, felt stiffness and exponent for three notes (chaigne & askenfelt's measured hammers), plus kth grand-piano hammer velocities and contact durations
 # source: a. chaigne and a. askenfelt, "numerical simulations of piano strings. i / ii", j. acoust. soc. am. 95(2) 1112-1118 and 95(3) 1631-1640, 1994 (paywalled, not downloaded)
 # via: b. bank, f. avanzini, g. borin, g. de poli, f. fontana, d. rocchesso, "physically informed signal processing methods for piano sound synthesis: a research overview", eurasip j. appl. signal process. 2003:10, 941-952, table 1, https://home.mit.bme.hu/~bank/publist/jasp03.pdf
-# the via source labels the third column "c6", not c7 (the planner's brief says c&a used c2, c4, c7). transcribed here as printed (midi 84); see notes.
+# the via source labels the third column "c6", not c7 (c&a may have used c2, c4, c7). transcribed here as printed (midi 84); see notes.
 # c4 row also confirmed by p. miranda valiente et al., internoise 2022 (k_h = 4.5e9, gamma = 2.5, m_h = 2.97 g "obtained from" c&a part ii).
 # force law in the via source: f = k (dy)^p for dy > 0, else 0 (dy = felt compression)
 # units: mass_g in g (source prints kg: 4.9e-3, 2.97e-3, 2.2e-3); K in n/m^p (unit not printed in the via table; miranda prints "n/m" for c4); p dimensionless (the column K_Nmp: K in n/m^p)
@@ -9,7 +9,7 @@
 # columns: midi mass_g K_Nmp p
 36 4.9 4.0e8 2.3    # C2
 60 2.97 4.5e9 2.5   # C4
-84 2.2 1.0e12 3     # printed as C6 in the via source (c&a's third hammer is c7 per the brief; unverified here)
+84 2.2 1.0e12 3     # printed as C6 in the via source (c&a's third hammer may be c7; unverified here)
 #
 # hammer velocity at the string by dynamic level, grand piano, note c4.
 # source: a. askenfelt and e. jansson, "from touch to string vibrations", in "five lectures on the acoustics of the piano" (kth, 1990), web edition https://www.speech.kth.se/music/5_lectures/askenflt/stricont.html, fig. 6

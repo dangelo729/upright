@@ -19,8 +19,8 @@ constants' fit; `# midi:` names a tine table's note. Each file's header
 says how its numbers were obtained: printed in a table, recovered from a
 figure's vector marker coordinates, read by pixel from a figure image, read
 by eye, or computed from printed numbers. The full provenance (file, page, table or
-figure, a verbatim quote for each number) is in the stage's notes,
-plans/upright-engine/out0/reftables/NOTES.md, outside the repository.
+figure, a verbatim quote for each number) is in the stage's notes, outside
+the repository.
 
   inharmonicity_grand.txt
     J. Jaatinen and J. Pätynen, "Effect of inharmonicity on pitch perception

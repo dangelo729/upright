@@ -11,11 +11,9 @@ namespace up {
 namespace {
 
 // ---- the constants ---------------------------------------------------------------------------------
-// each with what sets it: the plan's figure, a source, or the fit (uptool fit --constants,
-// plans/upright-engine/out0/fit)
+// each with what sets it: the plan's figure, a source, or the fit (uptool fit --constants)
 constexpr LawConstants kLaw = {
-    553.0f,     // tension: the design tension, about the same the keyboard over (the measured b tables' fit,
-                //   plans/upright-engine/out1/planner/scale_fit_003.txt)
+    553.0f,     // tension: the design tension, about the same the keyboard over (the measured b tables' fit)
     0.915f,     // rankLength: the length goes as (f_c4 / f0)^0.915 until the case stops it (the same fit)
     1.08875e-3f,  // dMax: the thickest plain wire (the same fit)
     1.0e-3f,    // core: a wound string's steel core at the bass break (the same fit)

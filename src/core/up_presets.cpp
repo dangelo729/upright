@@ -8,11 +8,11 @@ namespace up {
 namespace {
 
 // the tables: the twenty-four instrument channels in the enum's order, a line a group. each with where it came
-// from: the fit's residual (uptool fit --table) or by hand, heard (plans/upright-engine/out2/listen)
+// from: the fit's residual (uptool fit --table) or by hand, heard
 typedef float Table[kInstrumentChannels];
 
 // the reference. the strings: a grand's c4 speaking length and its longest string, at the design tension (the measured
-// b tables' fit, plans/upright-engine/out1/planner/scale_fit_003.txt); three strings tuned inside half a cent (under
+// b tables' fit); three strings tuned inside half a cent (under
 // the lock's critical detune at every note); the strike at 0.12 of the length, a little under an eighth (fletcher &
 // rossing, by memory); the c4 fundamental's t60 14.4 s, one string, the loss's power 2 (estimates). the hammer:
 // chaigne & askenfelt's c4 (4.5e9 N/m^2.5, 2.97 g), the felt's hunt & crossley loss 0.5 s/m (an estimate). the body: a
