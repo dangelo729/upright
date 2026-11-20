@@ -1,4 +1,4 @@
-// upright — up_pool.cpp  (plan §13, the pool)
+// upright — up_pool.cpp
 // no libm here: the fade's step is approachCoef's (up_config.h), per tuning;
 // the board's table and weights are up_board.cpp's, per body write and per
 // note.
@@ -296,5 +296,85 @@ void PoolBase::renderWith(float* out, int n, int which, float* oneBridge, float*
 
 template void PoolBase::renderWith<false>(float*, int, int, float*, float*);
 template void PoolBase::renderWith<true>(float*, int, int, float*, float*);
+
+// ---- the queue -----------------------------------------------------------------------------------
+
+bool PoolQueue::put(const Command& c) {
+    if (count_ == kQueue) return false;
+    queue_[(head_ + count_) % kQueue] = c;
+    ++count_;
+    return true;
+}
+
+bool PoolQueue::lastIs(Op op) const { return count_ > 0 && queue_[(head_ + count_ - 1) % kQueue].op == op; }
+
+bool PoolQueue::noteOn(float midi, float vel01) { return put({Op::noteOn, 0, midi, vel01, 0.0f, 0.0f}); }
+bool PoolQueue::noteOff(float midi) { return put({Op::noteOff, 0, midi, 0.0f, 0.0f, 0.0f}); }
+bool PoolQueue::pedal(float p01) { return put({Op::pedal, 0, p01, 0.0f, 0.0f, 0.0f}); }
+bool PoolQueue::allNotesOff() { return put({Op::allOff, 0, 0.0f, 0.0f, 0.0f, 0.0f}); }
+bool PoolQueue::set(Channel c, float target) { return put({Op::set, (uint16_t)c, target, 0.0f, 0.0f, 0.0f}); }
+bool PoolQueue::setRate(Channel c, float perSec) { return put({Op::rate, (uint16_t)c, perSec, 0.0f, 0.0f, 0.0f}); }
+
+bool PoolQueue::setPartial(int k, float ratio, float t60, float gain, float out) {
+    if (k < 0 || k >= kMaxModes) return true;
+    return put({Op::partial, (uint16_t)k, ratio, t60, gain, out});
+}
+
+bool PoolQueue::setShape(const Shape& s) {
+    if (count_ == kQueue || shapes_.full()) return false;
+    shapes_.put(s);
+    return put({Op::shape, 0, 0.0f, 0.0f, 0.0f, 0.0f});
+}
+
+// a table straight after a table: its entries over the queued one's (a nan skips), as the pool would hold them
+bool PoolQueue::setPartials(const PartialTable& t) {
+    if (lastIs(Op::partials)) {
+        PartialTable& to = tables_.last();
+        for (int k = 0; k < kMaxModes; ++k) {
+            if (!isNan(t.ratio[k])) to.ratio[k] = t.ratio[k];
+            if (!isNan(t.t60[k])) to.t60[k] = t.t60[k];
+            if (!isNan(t.gain[k])) to.gain[k] = t.gain[k];
+            if (!isNan(t.out[k])) to.out[k] = t.out[k];
+        }
+        return true;
+    }
+    if (count_ == kQueue || tables_.full()) return false;
+    tables_.put(t);
+    return put({Op::partials, 0, 0.0f, 0.0f, 0.0f, 0.0f});
+}
+
+// a tuning straight after a tuning: the later one, whole
+bool PoolQueue::setTuning(const Tuning& t) {
+    if (lastIs(Op::tuning)) {
+        tunings_.last() = t;
+        return true;
+    }
+    if (count_ == kQueue || tunings_.full()) return false;
+    tunings_.put(t);
+    return put({Op::tuning, 0, 0.0f, 0.0f, 0.0f, 0.0f});
+}
+
+void PoolQueue::drain(PoolBase& pool) {
+    while (count_ > 0) {
+        apply(pool, queue_[head_]);
+        head_ = (head_ + 1) % kQueue;
+        --count_;
+    }
+}
+
+void PoolQueue::apply(PoolBase& pool, const Command& c) {
+    switch (c.op) {
+        case Op::noteOn:   pool.noteOn(c.a, c.b); break;
+        case Op::noteOff:  pool.noteOff(c.a); break;
+        case Op::pedal:    pool.pedal(c.a); break;
+        case Op::allOff:   pool.allNotesOff(); break;
+        case Op::set:      pool.set((Channel)c.index, c.a); break;
+        case Op::rate:     pool.setRate((Channel)c.index, c.a); break;
+        case Op::partial:  pool.setPartial((int)c.index, c.a, c.b, c.c, c.d); break;
+        case Op::shape:    pool.setShape(shapes_.take()); break;
+        case Op::partials: pool.setPartials(tables_.take()); break;
+        case Op::tuning:   pool.setTuning(tunings_.take()); break;
+    }
+}
 
 }  // namespace up

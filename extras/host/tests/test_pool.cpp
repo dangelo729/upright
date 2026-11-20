@@ -1,16 +1,19 @@
-// upright — tests/test_pool.cpp  (plan §13; the tests' "the pool" bullet)
+// upright — tests/test_pool.cpp
 //
 // Pool<4> of grand: five keys steal the quietest (not the oldest), and the
 // stolen voice's share of the output (its bridge force through the board,
-// its pickup) is continuous through its fade (the click measure under the
-// stage 1 bound); the same key struck twice meets the moving string on one
-// voice (finite, its onset within 2 db of a fresh strike's); noteOff lands
-// the damper and the pedal holds it; the pool's output is its voices' pairs
-// through one board, summed by hand, bit for bit; two pools share nothing;
-// a pool-wide shape reaches a later note and moves the board; the same calls
-// give the same bytes at render sizes 1, 128 and 1000; a stolen voice's
-// waiting note lands whole with the pool's pedal. and the umbrella header
-// compiles on the host, its teensy wrappers empty.
+// its pickup) is continuous through its fade (the click measure under
+// up_analysis.h's click bound); the same key struck twice meets the moving
+// string on one voice (finite, its onset within 2 db of a fresh strike's);
+// noteOff lands the damper and the pedal holds it; the pool's output is its
+// voices' pairs through one board, summed by hand, bit for bit; two pools
+// share nothing; a pool-wide shape reaches a later note and moves the board;
+// the same calls give the same bytes at render sizes 1, 128 and 1000; a
+// stolen voice's waiting note lands whole with the pool's pedal. the queue
+// (PoolQueue, the teensy pool's hand-off): calls through it play the same
+// bytes as calls made directly, in their order; a shape straight after a
+// shape stays its own; a full queue or ring refuses a call whole. and the
+// umbrella header compiles on the host, its teensy wrappers empty.
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -90,7 +93,7 @@ double db(double x) { return 20.0 * std::log10(x + 1e-30); }
 // sounding voice, e4's, not the oldest (c4's). the stolen voice's share
 // (its bridge force at the level it is summed at, through a board of its
 // own at the pool's plate, and its pickup) from 0.1 s before the steal to
-// the sample before its new note: the click measure under the stage 1 bound
+// the sample before its new note: the click measure under the click bound
 // for its top partial, the same window without the steal printed beside;
 // its force fades to under 1 % and to zero across one block, and the new
 // note lands on it at the next block
@@ -467,6 +470,137 @@ UP_TEST(pool_steal_lands_whole_with_the_pool_pedal) {
     CHECK_MSG(st.shape[Channel::pedal] == 0.7f && st.shape[Channel::midi] == 64.0f && !st.asleep, "the landed voice: pedal %.4f, midi %.2f, asleep %d",
               st.shape[Channel::pedal], st.shape[Channel::midi], (int)st.asleep);
     printf("    the stolen voice took e4 %d blocks after its key, released, its pedal 0.7 and its note at once\n", landed + 4);
+}
+
+// the same calls on two pools: made on one directly, and through a PoolQueue
+// drained into the other at each block's top, as the teensy pool's update()
+// drains it. `calls(writer, block)` makes a block's calls on either
+template <typename Calls>
+void playBoth(PoolBase& direct, PoolBase& queued, int blocks, Calls calls, std::vector<float>& x, std::vector<float>& y) {
+    PoolQueue q;
+    x.assign((size_t)blocks * kBlock, 0.0f);
+    y.assign(x.size(), 0.0f);
+    for (int k = 0; k < blocks; ++k) {
+        calls(direct, k);
+        calls(q, k);
+        q.drain(queued);
+        direct.render(x.data() + (size_t)k * kBlock, kBlock);
+        queued.render(y.data() + (size_t)k * kBlock, kBlock);
+    }
+}
+
+// every kind of call through the queue, several in one block: the same bytes
+// as the calls made directly, in their order (two writes of one channel in a
+// block, the second wins; a key struck and let go in one block lands
+// released)
+UP_TEST(pool_queue_keeps_order) {
+    Pool<4> a(21), b(21);
+    std::vector<float> x, y;
+    PartialTable table;
+    for (int k = 0; k < kMaxModes; ++k) table.ratio[k] = table.t60[k] = table.gain[k] = table.out[k] = std::nanf("");
+    table.ratio[1] = 2.2f;
+    table.t60[1] = 3.0f;
+    playBoth(a, b, blocks(3.0f), [&](auto& w, int k) {
+        Tuning t;
+        t.stealRate = 90.0f;
+        switch (k) {
+            case 0: w.setShape(grand()); w.setTuning(t); w.noteOn(48.0f, 1.0f); w.noteOn(52.0f, 0.6f); break;
+            case 2: w.set(Channel::hardness, 100.0f); w.set(Channel::hardness, 900.0f); w.noteOn(55.0f, 0.9f); break;
+            case 40: w.setRate(Channel::boardArea, 4.0f); w.set(Channel::boardArea, 1.4f); w.noteOn(60.0f, 0.8f); w.noteOff(60.0f); break;
+            case 80: w.pedal(0.6f); w.setPartial(2, 3.05f, 1.5f, 0.5f, 2.0f); w.setPartials(table); w.noteOn(64.0f, 1.0f); break;
+            case 120: w.noteOn(67.0f, 1.0f); w.noteOff(48.0f); break;
+            case 160: w.allNotesOff(); w.pedal(0.0f); break;
+        }
+    }, x, y);
+    CHECK(std::memcmp(x.data(), y.data(), x.size() * sizeof(float)) == 0);
+    CHECK(rms(y.data(), y.size()) > 0.0 && allFinite(y.data(), y.size()));
+    CHECK(b.voice(0).shape()[Channel::hardness] == 900.0f);
+    printf("    3 s of notes, a steal, releases, the pedal, a shape, a tuning, sets, a rate, a partial and a table, through the queue drained "
+           "each block: the same bytes as the calls made directly\n");
+}
+
+// a shape straight after a shape stays its own sequence: grand's instrument
+// then the 5th partial by hand, then c4: the partial stands at 5.31 as on a
+// pool written directly (one merged shape would tie with the law, and the
+// law would win). a partial table or a tuning straight after one of its kind
+// merges, and still plays what the pool plays
+UP_TEST(pool_queue_shapes_stand_apart) {
+    const int k = 4;
+    Shape hand = nanShape();
+    hand[ratioChannel(k)] = 5.31f;
+    PartialTable t1, t2;
+    for (int i = 0; i < kMaxModes; ++i) t1.ratio[i] = t1.t60[i] = t1.gain[i] = t1.out[i] = t2.ratio[i] = t2.t60[i] = t2.gain[i] = t2.out[i] = std::nanf("");
+    t1.ratio[6] = 7.4f;
+    t2.ratio[6] = 7.6f;
+    t2.gain[7] = 0.2f;
+    Tuning slow, fast;
+    slow.stealRate = 30.0f;
+    fast.stealRate = 120.0f;
+    PoolQueue q;
+    CHECK(q.setShape(grand()) && q.setShape(hand) && q.count() == 2);
+    CHECK(q.setPartials(t1) && q.setPartials(t2) && q.count() == 3);
+    CHECK(q.setTuning(slow) && q.setTuning(fast) && q.count() == 4);
+    Pool<4> a(22), b(22);
+    std::vector<float> x, y;
+    playBoth(a, b, blocks(1.0f), [&](auto& w, int block) {
+        if (block != 0) return;
+        w.setShape(grand());
+        w.setShape(hand);
+        w.setPartials(t1);
+        w.setPartials(t2);
+        w.setTuning(slow);
+        w.setTuning(fast);
+        w.noteOn(60.0f, 1.0f);
+    }, x, y);
+    // the shape the merge would have made, on a third pool
+    Shape merged = grand();
+    merged[ratioChannel(k)] = 5.31f;
+    Pool<4> c(22);
+    c.setShape(merged);
+    c.noteOn(60.0f, 1.0f);
+    std::vector<float> z((size_t)blocks(1.0f) * kBlock);
+    c.render(z.data(), (int)z.size());
+    const float stood = b.voice(0).shape()[ratioChannel(k)], law = c.voice(0).shape()[ratioChannel(k)];
+    CHECK(std::memcmp(x.data(), y.data(), x.size() * sizeof(float)) == 0);
+    CHECK_MSG(stood == 5.31f && a.voice(0).shape()[ratioChannel(k)] == 5.31f && law != 5.31f, "the 5th partial %.4f through the queue, %.4f merged", stood, law);
+    CHECK(b.voice(0).shape()[ratioChannel(6)] == 7.6f && b.voice(0).shape()[gainChannel(7)] == 0.2f && b.tuning().stealRate == 120.0f);
+    printf("    two shapes queued as two: the 5th partial by hand stood at %.4f through the queue, as written directly (one merged shape: the "
+           "law's %.4f); two tables and two tunings merged, the same bytes\n",
+           stood, law);
+}
+
+// a full queue refuses a call and queues nothing of it: kQueue commands, then
+// a note refused (it never sounds); a table straight after a table still
+// merges into a full queue; each payload ring holds two, a third of its kind
+// refused; a drain empties the queue and makes room again
+UP_TEST(pool_queue_full) {
+    PoolQueue q;
+    int n = 0;
+    while (n < 2 * PoolQueue::kQueue && q.set(Channel::hardness, 100.0f + (float)n)) ++n;
+    CHECK(n == PoolQueue::kQueue && q.count() == PoolQueue::kQueue);
+    CHECK(!q.noteOn(60.0f, 1.0f) && !q.setShape(grand()) && !q.setPartials(PartialTable()) && !q.setTuning(Tuning()));
+    CHECK(q.count() == PoolQueue::kQueue);
+    Pool<4> p(23);
+    q.drain(p);
+    float out[kBlock];
+    p.render(out, kBlock);
+    CHECK(q.count() == 0 && p.sounding() == 0 && p.voice(0).shape()[Channel::hardness] == 100.0f + (float)(PoolQueue::kQueue - 1));
+
+    PartialTable t;
+    for (int i = 0; i < kMaxModes; ++i) t.ratio[i] = t.t60[i] = t.gain[i] = t.out[i] = std::nanf("");
+    for (int i = 0; i < PoolQueue::kQueue - 1; ++i) q.pedal(0.0f);
+    CHECK(q.setPartials(t) && q.count() == PoolQueue::kQueue);
+    t.ratio[3] = 4.4f;
+    CHECK(q.setPartials(t) && q.count() == PoolQueue::kQueue);
+    q.drain(p);
+
+    bool rings = q.setShape(grand()) && q.setShape(grand()) && !q.setShape(grand());
+    rings = rings && q.setPartials(t) && q.pedal(0.0f) && q.setPartials(t) && q.pedal(0.0f) && !q.setPartials(t);
+    rings = rings && q.setTuning(Tuning()) && q.pedal(0.0f) && q.setTuning(Tuning()) && q.pedal(0.0f) && !q.setTuning(Tuning());
+    CHECK(rings && q.count() == 10);
+    q.drain(p);
+    CHECK(q.count() == 0 && q.setShape(grand()) && q.setPartials(t) && q.setTuning(Tuning()) && q.count() == 3);
+    printf("    the queue holds %d commands and two of each payload; a call it has no room for is refused whole\n", PoolQueue::kQueue);
 }
 
 // the sizes, for the record

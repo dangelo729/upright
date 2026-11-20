@@ -1,4 +1,4 @@
-// upright — AudioSynthUpright.h  (plan §14, §11 the public surface)
+// upright — AudioSynthUpright.h
 // one voice for the teensy audio library: an AudioStream with no inputs and
 // one output, 0: the voice's bridge force through a board of its own, its
 // pickup's voltage added (as uptool play renders a note). it owns an
@@ -34,7 +34,7 @@
 // is rebuilt every block for a while after one. a rebuild is kBoardModes
 // frequencies, decays and radiations from the mode pairs found once, the
 // field's loss a line, and the moved modes' turns at the board's next block:
-// about a twentieth of a voice's block on the host, never the grid search.
+// about a fiftieth of a voice's block on the host, never the grid search.
 //
 // denormals: update() runs in an interrupt, whose floating-point context is
 // loaded from FPDSCR, not from the thread's FPSCR; the constructor sets
@@ -53,6 +53,29 @@
 #include "core/up_telemetry.h"
 #include "core/up_tuning.h"
 #include "core/up_voice.h"
+
+namespace up {
+
+// interrupts off for the length of a scope, and back as the caller had them:
+// PRIMASK is read first, and only re-enabled when it was clear. both
+// wrappers' setters, readback and update() run under it
+class Masked {
+public:
+    Masked() {
+        __asm__ volatile("mrs %0, primask" : "=r"(primask_) : : "memory");
+        __disable_irq();
+    }
+    ~Masked() {
+        if ((primask_ & 1u) == 0u) __enable_irq();
+    }
+    Masked(const Masked&) = delete;
+    Masked& operator=(const Masked&) = delete;
+
+private:
+    uint32_t primask_ = 0;
+};
+
+}  // namespace up
 
 class AudioSynthUpright : public AudioStream {
 public:

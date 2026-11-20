@@ -1,31 +1,15 @@
-// upright — AudioSynthUpright.cpp  (plan §14)
+// upright — AudioSynthUpright.cpp
 // the header holds the whole file inside #if defined(ARDUINO); on the host
 // this translation unit is empty.
 #include "AudioSynthUpright.h"
 
 #if defined(ARDUINO)
 
+using up::Masked;
+
 namespace {
 
 constexpr uint32_t kFlushToZero = 1u << 24;          // FPSCR and FPDSCR: FZ
-
-// interrupts off for the length of a scope, and back as the caller had them:
-// PRIMASK is read first, and only re-enabled when it was clear
-class Masked {
-public:
-    Masked() {
-        __asm__ volatile("mrs %0, primask" : "=r"(primask_) : : "memory");
-        __disable_irq();
-    }
-    ~Masked() {
-        if ((primask_ & 1u) == 0u) __enable_irq();
-    }
-    Masked(const Masked&) = delete;
-    Masked& operator=(const Masked&) = delete;
-
-private:
-    uint32_t primask_ = 0;
-};
 
 }  // namespace
 

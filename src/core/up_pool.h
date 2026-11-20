@@ -1,4 +1,4 @@
-// upright — up_pool.h  (plan §13, the pool)
+// upright — up_pool.h
 // m voices, a note table and one board: one piano on a keyboard. a key is a
 // strike of the piano the pool was last written, at that note (the rank
 // chooses the string at the note, up_rank.h).
@@ -16,7 +16,7 @@
 // counts as loud while another sounds, ties go to the oldest note), and when
 // every voice is already stolen it replaces the note the oldest one waits
 // for. a stolen voice's share fades at tuning.stealRate by the one law,
-// block by block, to under 1 % of its level, then linearly to exactly zero
+// block by block, to about 1 % of its level, then linearly to exactly zero
 // across one block; at the next block it is stopped (Voice::stop: its share
 // is already zero, so nothing is cut) and takes the waiting note, which lands
 // whole: 27 blocks, 78 ms, at the default 60 a second. the board it fed rings
@@ -182,6 +182,70 @@ public:
                    fs) {}
     Pool(const Pool&) = delete;
     Pool& operator=(const Pool&) = delete;
+};
+
+// a pool's calls held in order for the thread that renders it (the teensy
+// pool's audio interrupt), which drains them into the pool at the top of its
+// block: a pool written through the queue plays what one written directly
+// does. a fixed queue of kQueue commands, the shapes, partial tables and
+// tunings in small rings beside it, nothing on the heap. a partial table or a
+// tuning straight after one of its kind merges into it (nothing runs between
+// them); a shape never does: each is one sequence, so a partial in a later
+// shape stands over what the law writes for an earlier one's instrument
+// channels, where one merged shape would tie and the law would win. nothing
+// here masks or waits: the caller keeps the writer and drain() apart
+class PoolQueue {
+public:
+    static constexpr int kQueue = 64, kShapes = 2, kTables = 2, kTunings = 2;
+
+    // each false when there is no room (the queue, or its payload's ring, full): nothing is queued then
+    bool noteOn(float midi, float vel01);
+    bool noteOff(float midi);
+    bool pedal(float p01);
+    bool allNotesOff();
+    bool set(Channel c, float target);
+    bool setRate(Channel c, float perSec);
+    bool setShape(const Shape& s);
+    bool setPartial(int k, float ratio, float t60, float gain, float out);   // a slot outside the build's: nothing queued, true
+    bool setPartials(const PartialTable& t);
+    bool setTuning(const Tuning& t);
+
+    void drain(PoolBase& pool);                    // every command into the pool, in order; the queue empty after
+    int  count() const { return count_; }          // commands queued
+
+private:
+    enum class Op : uint8_t { noteOn, noteOff, pedal, allOff, set, rate, partial, shape, partials, tuning };
+    struct Command {
+        Op       op;
+        uint16_t index;                            // a channel, or a partial's slot
+        float    a, b, c, d;
+    };
+
+    // a payload ring: filled in the queue's order, taken in it
+    template <typename T, int N>
+    struct Ring {
+        T   item[N];
+        int head = 0, count = 0;
+        bool full() const { return count == N; }
+        T&   last() { return item[(head + count - 1) % N]; }
+        void put(const T& x) { item[(head + count++) % N] = x; }
+        const T& take() {
+            const T& x = item[head];
+            head = (head + 1) % N;
+            --count;
+            return x;
+        }
+    };
+
+    bool put(const Command& c);                    // false when the queue is full
+    bool lastIs(Op op) const;                      // the queue's last command is op
+    void apply(PoolBase& pool, const Command& c);
+
+    Command                     queue_[kQueue];
+    int                         head_ = 0, count_ = 0;
+    Ring<Shape, kShapes>        shapes_;
+    Ring<PartialTable, kTables> tables_;
+    Ring<Tuning, kTunings>      tunings_;
 };
 
 }  // namespace up
