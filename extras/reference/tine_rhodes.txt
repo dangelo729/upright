@@ -1,6 +1,6 @@
 # tine_rhodes: rhodes electric piano tine data: one measured inharmonic overtone, fundamental decay (q) per note, geometry, pickup and hammer model numbers
 # source: g. shear, "the electromagnetically sustained rhodes piano", m.s. thesis, uc santa barbara (media arts & technology), 2011, https://www.mat.ucsb.edu/Masters/GregShearMasters2011_12_5.pdf
-# measured partial ratios across the keyboard (gabrielli et al., jasa 148(5) 3052, 2020; muenster & pfeifle, isma 2014) were not openly available; see notes.
+# measured partial ratios across the keyboard (gabrielli et al., jasa 148(5) 3052, 2020; muenster & pfeifle, isma 2014) were not openly available.
 # block 1: acoustic (not pickup) signal of one vibrating tine, thesis fig. 2.2 (spectrogram, note not named).
 #   partial 2 frequency is printed on the figure ("inharmonic partial (1.95 khz)"); the fundamental is read off the figure by eye
 #   (strongest line sits on the 264 hz tick; tick labels are multiples of 264). so the ratio 1950/264 = 7.4 is by eye, not printed.
@@ -23,7 +23,7 @@
 75 622.3 2175 1.11 7.69   # Eb5
 87 1244.5 1761 0.450 3.11 # Eb6
 #
-# block 3: geometry, pickup and model constants as printed (si units). sources per row; all quotes in notes.
+# block 3: geometry, pickup and model constants as printed (si units), each row's source beside it.
 # columns: name value
 tine_diameter_m 1.5e-3            # shear thesis sec. 2.1 / shear & wright nime 2011: "diameter of 1.5 mm"
 tine_length_min_m 18e-3           # same: "lengths ranging from 18 mm to 157 mm" (88-key piano)

@@ -1,59 +1,46 @@
-// ----------------------------------------------------------------------------
-// upright example 02 — Channels  (plan: module layout)
-//
-// one voice set by its channels from the serial monitor (115200, newline).
-// the piano starts as grand's shape (up::grand(), written whole with
-// setShape); a preset replaces it whole; a channel by name writes that one
-// target with set, and the voice eases there at its group's rate (the
-// tuning's: the strings and the hammer 8 a second, the body, the generator
-// and the damper 4). a shape filled in by hand starts from up::nanShape(),
-// every channel nan (no write): only the channels written in it move.
+// upright example 02: channels
+// one voice set by its channels from the serial monitor (115200, newline),
+// starting as the grand preset:
 //
 //   preset NAME     a preset, written whole: grand concertGrand upright
 //                   spinet honkyTonk fortepiano rhodes rhodesBark wurlitzer
 //   set NAME VALUE  one instrument channel by name (its range is printed)
-//   tine T60 LOAD   the generator at the tine (0), the tine's t60 at c4 (s)
-//                   and its load (the overtones' stretch, 1 the bare beam),
-//                   one shape from nanShape: everything else stands.
-//                   "tine 2 1" a small tine that pings; "tine 30 1.6" a big
-//                   one that rings long, its overtones stretched
+//   tine T60 LOAD   the generator at the tine, the tine's t60 at c4 (s) and
+//                   its load (the overtones' stretch, 1 the bare beam):
+//                   "tine 2 1" pings, "tine 30 1.6" rings long
 //   n MIDI VEL      a strike: the note, its velocity 0 .. 1
-//   o               the key up: its damper lands (unless the pedal holds it)
-//   p AMOUNT        the sustain pedal, 0 .. 1 (0 up, 1 down, between half)
-//   print           the twenty-four instrument channels as --set lines (uptool play takes them)
-//   ladder          c4 at velocities 0.2, 0.4, 0.6, 0.8 and 1, a second apart,
-//                   each let go after 0.9 s: velocity is brightness
+//   o               the key let go
+//   p AMOUNT        the sustain pedal, 0 up .. 1 down
+//   print           the twenty-four instrument channels as --set lines
+//   ladder          c4 at velocities 0.2, 0.4, 0.6, 0.8 and 1, a second apart
 //
-// after each change the rank's line at the note: the string's speaking
-// length, its wire (plain, or wound on a core), its inharmonicity B, the
-// hammer's mass and its felt's stiffness K and power p.
+// after each change it prints the string at the note: its length, its wire,
+// its inharmonicity b, the hammer's mass and its felt's stiffness.
 //
-// teensy 4.1 and the audio shield (sgtl5000). the voice's one output to both
-// channels. the output gain is 1.2: measured on the host, every preset
-// struck at c2, c3, c4, c5 and c6 at velocity 1 for 2 s through the voice and
-// its board peaks at most 0.71 of full scale at a gain of 1 (rhodesBark; grand
-// 0.33, wurlitzer 0.06), rhodes with "tine 2 1" 0.35 and with "tine 30 1.6"
-// 0.23, so here at most 0.85; the ladder at grand peaks 0.21 here. a channel
-// set by hand far from a preset can be louder: the voice's sum is clamped.
-// ----------------------------------------------------------------------------
+// teensy 4.x and the audio shield (sgtl5000): the voice on both channels. a
+// pot on a0, its ends on 3.3 v and ground, is the hammer's hardness, log
+// from 25 to 800 N/mm^p: turned, it writes the hardness channel.
 
 #include <Audio.h>
 #include <Upright.h>
 
-AudioSynthUpright    piano(1);
+AudioSynthUpright    piano;
 AudioOutputI2S       i2s;
 AudioConnection      cordLeft(piano, 0, i2s, 0);
 AudioConnection      cordRight(piano, 0, i2s, 1);
 AudioControlSGTL5000 codec;
 
-const float kGain = 1.2f;                   // the voice's output gain
+const float kGain = 1.2f;                   // the voice's output gain: every preset at c2 .. c6 under full scale
+const float kSoft = 25.0f;                  // N/mm^p: the hardness with the pot fully down ...
+const float kHard = 800.0f;                 // ... and fully up
 
 float     note = 60.0f;
 char      line[64];
 int       used = 0;
 int       ladder = -1;                      // the ladder's next step, -1 when none
 bool      ladderDown = false;
-uint32_t  ladderMs = 0;
+uint32_t  ladderMs = 0, potMs = 0;
+float     lastPot = -1.0f;
 
 // the instrument channels as --set lines, a line a group
 void printShape() {
@@ -123,6 +110,16 @@ void command(char* text) {
     }
 }
 
+// the pot, a hundred times a second: a move of more than a few counts writes the hardness, log between the two
+void readPot(uint32_t now) {
+    if (now - potMs < 10u) return;
+    potMs = now;
+    const float pot = (float)analogRead(A0) / 1023.0f;
+    if (fabsf(pot - lastPot) <= 0.004f) return;
+    lastPot = pot;
+    piano.set(up::Channel::hardness, kSoft * powf(kHard / kSoft, pot));
+}
+
 void setup() {
     Serial.begin(115200);
 
@@ -151,8 +148,10 @@ void loop() {
         }
     }
 
-    // the ladder: a strike a second, each let go 0.9 s after it
     const uint32_t now = millis();
+    readPot(now);
+
+    // the ladder: a strike a second, each let go 0.9 s after it
     if (ladder >= 0 && ladder < 5 && now - ladderMs >= 1000u) {
         ladderMs = now;
         const float vel = 0.2f * (float)(ladder + 1);

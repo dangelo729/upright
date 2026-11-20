@@ -17,7 +17,6 @@ PartialTable	KEYWORD1
 Group	KEYWORD1
 Tuning	KEYWORD1
 Ramp	KEYWORD1
-Arc	KEYWORD1
 Rng	KEYWORD1
 Law	KEYWORD1
 LawConstants	KEYWORD1
@@ -42,6 +41,7 @@ PoolBase	KEYWORD1
 PoolStorage	KEYWORD1
 PoolSlot	KEYWORD1
 PoolLane	KEYWORD1
+PoolQueue	KEYWORD1
 
 #######################################
 # Methods and functions (KEYWORD2)
@@ -237,7 +237,7 @@ presetByName	KEYWORD2
 seed	KEYWORD2
 bipolar	KEYWORD2
 to	KEYWORD2
-aim	KEYWORD2
+drain	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

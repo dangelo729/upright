@@ -1,7 +1,7 @@
 # cantilever: clamped-free (cantilever) euler-bernoulli beam eigenvalues beta_n l, roots of cos(x) cosh(x) + 1 = 0
 # source: t. irvine, "bending frequencies of beams, rods, and pipes", revision s, vibrationdata, 2012, http://www.vibrationdata.com/tutorials2/beam.pdf, p. 22 ("eigenvalues", cantilever beam iv) and table d-1 p. 20
 # cross-check: wikipedia "euler-bernoulli beam theory", example: cantilevered beam (saved 2026-10-22): "beta_1 l = 0.596864 pi, beta_2 l = 1.49418 pi, beta_3 l = 2.50025 pi, and beta_4 l = 3.49999 pi"
-# n = 1..4 as printed by irvine. n = 5, 6 are computed here by bisection of the same frequency equation (script cantilever_roots.py);
+# n = 1..4 as printed by irvine. n = 5, 6 are computed here by bisection of the same frequency equation;
 #   irvine prints only the asymptote "(2n-1) pi/2" for n >= 5 ("approximate"). asymptote and ratio columns are computed, not printed.
 # omega_n = (beta_n l)^2 sqrt(e i / (mu l^4)); ratio = (beta_n l / beta_1 l)^2 = f_n / f_1 for a uniform clamped-free beam.
 # units: betaL dimensionless, asymptote dimensionless, ratio dimensionless

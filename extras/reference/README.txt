@@ -18,9 +18,7 @@ a value a number or `-`. `# hold: CHANNEL=V` holds a channel in the
 constants' fit; `# midi:` names a tine table's note. Each file's header
 says how its numbers were obtained: printed in a table, recovered from a
 figure's vector marker coordinates, read by pixel from a figure image, read
-by eye, or computed from printed numbers. The full provenance (file, page, table or
-figure, a verbatim quote for each number) is in the stage's notes, outside
-the repository.
+by eye, or computed from printed numbers.
 
   inharmonicity_grand.txt
     J. Jaatinen and J. Pätynen, "Effect of inharmonicity on pitch perception
@@ -47,7 +45,7 @@ the repository.
     D#1 and C4 of an 1873 Streicher and E6 of a 1960 Bösendorfer (printed;
     t60 computed as tau ln 1000). Block 2: Chabassier and Duruflé (as
     above): their damping coefficients R_u and eta_u per key, read as Bank's
-    b1 and b3 (the mapping derived in the notes); model settings the source
+    b1 and b3 (the mapping derived in the file's header); model settings the source
     calls difficult to tune, not measurements. No open (midi, partial, t60)
     table for a grand was found: unverified as a measured decay law.
 

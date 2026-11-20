@@ -1,61 +1,24 @@
-// ----------------------------------------------------------------------------
-// upright example 99 — Benchmark  (plan: the acceptance gate, hardware;
-// memory and time budget)
+// upright example 99: benchmark
+// what a piano costs on a teensy at its worst case: every partial of the
+// build on, three strings a note, a chord re-struck every two seconds, and
+// the strings gliding from the spinet's to the concert grand's and back over
+// 20 s, written fifty times a second, so the law runs on every write. four
+// phases, a line a second, then a summary of each pool's processor usage
+// and a voice's share of it:
 //
-// what a piano costs on a teensy 4.1, at the worst case the plan names: a
-// pool of eight, every partial of the build on (64 by default: the notes are
-// e1 .. g3, under which every partial of every scale sits below the
-// ceiling), three strings a note coupled through the bridge on their first
-// sixteen partials, a chord of eight re-struck every two seconds, and the
-// strings (length and bass) gliding from the spinet's to the concert
-// grand's and back over 20 s, written fifty times a second through setShape
-// (a shape from nanShape holding the two), so the law runs at every write
-// and every partial's coefficients are computed again every block (an expm1
-// and a sin pair a partial a block, for the main string and its two
-// secondaries: the libm the plan budgeted for a glide). then the pool of
-// eight at rhodes (the electric side's cost: six partials, the tonebar, the
-// pickup), then the same as the first on a pool of four.
+//   pool8   60 s   a pool of eight playing grand
+//   rhodes  60 s   the same pool playing rhodes
+//   pool4   60 s   a pool of four playing grand
+//   ring    30 s   no strikes, the pool of four ringing out: a voice costs
+//                  the same at any level, so the usage holds while it rings
+//                  and falls as its voices sleep; a rise is denormals
 //
-// four phases, a line a second, then a summary, then again:
-//
-//   pool8   60 s   the AudioSynthUprightPool<8> playing grand; the pool of
-//                  four asleep (its column is what four idle voices and an
-//                  idle board cost)
-//   rhodes  60 s   the pool of eight playing rhodes (its shape written at
-//                  the phase's start, eased in under the ringing keys)
-//   pool4   60 s   the AudioSynthUprightPool<4> playing grand; the pool of
-//                  eight let go to sleep at the phase's start
-//   ring    30 s   no strike, no glide: the pool of four rings out. a voice
-//                  costs the same awake whatever its level, so the usage must
-//                  stay flat while it rings and fall as the voices sleep; if
-//                  it rises, denormals are getting through (flush-to-zero:
-//                  AudioSynthUpright.cpp)
-//
-// columns: phase, second, total % now, total % max this second, the phase's
-// max so far, the pool of eight's max this second, the pool of four's, the
-// voices sounding in each, audio memory blocks in use at most. the second a
-// phase begins in is left out of its max (the change lands inside it). the
-// summary gives each pool's max and a voice's share of it (the pool's max
-// over its voices): a pool is sized from that, beside the rest of the
-// sketch's frame.
-//
-// the partial count is the build's, printed at the top: the line below
-// builds the default (64) for make board. a 48-partial build is this sketch
-// with -DUP_MAX_MODES=48 in its build flags (platformio's build_flags, or
-// the line below changed), never a #define in the sketch: the library's own
-// sources must see the same count.
-//
-// the output gain is 0.35 a voice and the mixer halves each pool, holding
-// the mix under 0.1 of full scale: measured on the host as the phases play
-// (20 s, the strings gliding), at a gain of 1 the pool of eight peaks 0.53
-// at grand and 0.56 at rhodes, the pool of four 0.35.
-// the sum is for hearing that it rings, not for listening.
-//
-// teensy 4.1 + the audio shield (sgtl5000), 600 mhz. both pools into one
-// mixer, to both channels.
+// teensy 4.x and the audio shield (sgtl5000): both pools into one mixer, on
+// both channels. the build's partial count is printed first; a 48-partial
+// build takes -DUP_MAX_MODES=48 in its build flags, never a #define in the
+// sketch, so the library's sources see the same count.
 //
 // make board: -DUP_MAX_MODES=64
-// ----------------------------------------------------------------------------
 
 #include <Audio.h>
 #include <Upright.h>
@@ -64,8 +27,8 @@
 // call too, so make board checks the whole template
 template class AudioSynthUprightPool<8>;
 
-AudioSynthUprightPool<8> pool8(1);
-AudioSynthUprightPool<4> pool4(2);
+AudioSynthUprightPool<8> pool8;
+AudioSynthUprightPool<4> pool4;
 AudioMixer4              mix;
 AudioOutputI2S           i2s;
 AudioConnection          c8(pool8, 0, mix, 0), c4(pool4, 0, mix, 1);
