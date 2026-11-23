@@ -50,7 +50,7 @@ void onNoteOff(byte channel, byte note, byte velocity) {
 void onControlChange(byte channel, byte control, byte value) {
     (void)channel;
     if (control == 64) {
-        keyboard.pedal(value >= 64 ? 1.0f : 0.0f);           // the dampers held off, or let down
+        keyboard.setPedal(value >= 64 ? 1.0f : 0.0f);        // the dampers held off, or let down
     } else if (control == 123) {
         keyboard.allNotesOff();
     }

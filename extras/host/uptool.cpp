@@ -1489,11 +1489,11 @@ int cmdCorpus(const Args& a) {
             }
     }
     // the pool: grand on four voices, a chord with the pedal and five keys on four voices (the fifth steals the quietest)
-    std::fprintf(index, "\n# the pool: up::Pool<4> (seed 1, the default tuning), grand (setShape), each call landing at the top of the block its\n"
+    std::fprintf(index, "\n# the pool: up::Pool<4> (the default tuning), grand (setShape), each call landing at the top of the block its\n"
                         "# time falls in; the sum, not clamped, written at the gain that brings its peak to 0.99 where it passes full scale\n");
     struct PoolCall { float at; int what; float key, vel; };     // what: 0 a note on, 1 a note off, 2 the pedal (key: its value)
     auto pool = [&](const std::string& name, const char* what, const std::vector<PoolCall>& calls, float sec) {
-        Pool<4> p(1);
+        Pool<4> p;
         p.setTuning(a.tuning);
         p.setShape(grand());
         const float fs = kDefaultFs;
@@ -1517,7 +1517,7 @@ int cmdCorpus(const Args& a) {
                 } else if (c.what == 1) {
                     p.noteOff(c.key);
                 } else {
-                    p.pedal(c.key);
+                    p.setPedal(c.key);
                 }
                 ++next;
             }

@@ -208,7 +208,7 @@ UP_TEST(pickup_in_the_voice) {
     Shape s = rhodesAt(1);
     s[Channel::strings] = 1.0f;
     const int n = (int)(0.1 * kDefaultFs);
-    Voice v(1);
+    Voice v;
     v.setShape(s);
     v.noteOn(64.0f, 1.0f);
     std::vector<float> pk((size_t)n);
@@ -237,7 +237,7 @@ UP_TEST(pickup_thd_in_the_voice) {
     for (int p : {0, 1, 2}) {
         const Shape s = rhodesAt(p);
         const int n = (int)(0.15 * kDefaultFs);
-        Voice v(1);
+        Voice v;
         v.setShape(s);
         v.noteOn(64.0f, 1.0f);
         std::vector<float> pk((size_t)n);

@@ -23,7 +23,7 @@
 // on, as a soundboard does.
 //
 // noteOff releases the key's voice (Voice::noteOff: its damper lands unless
-// the pedal holds it); a note still waiting lands released. pedal writes
+// the pedal holds it); a note still waiting lands released. setPedal writes
 // every voice's pedal channel and is the pool's pedal: a note that lands
 // takes it. allNotesOff releases every key.
 //
@@ -47,9 +47,9 @@
 // on every voice's force; the pickups summed in voice order; the board's
 // output and the pickups' sum added: one output, not clamped (a wrapper
 // clamps what it sends). the same calls give the same bytes at any render
-// size. the voices' seeds follow from the pool's (seedOf). nothing on the
-// heap, no libm: the fade's step is the one law's coefficient (up_config.h),
-// set per tuning; the board's table runs per body write (up_board.cpp).
+// size. nothing on the heap, no libm: the fade's step is the one law's
+// coefficient (up_config.h), set per tuning; the board's table runs per body
+// write (up_board.cpp).
 //
 // Pool<M> holds its m voices, their slots and their scratch in itself: the
 // storage is the template's, the logic PoolBase's, here and in up_pool.cpp.
@@ -98,15 +98,14 @@ class PoolBase {
 public:
     // m voices, their slots and their lanes, and m force and weight pointers for the board, held by the
     // caller (Pool<M> holds them)
-    PoolBase(Voice* voices, PoolSlot* slots, PoolLane* lanes, const float** forces, const float** weights, int m, uint32_t seed = 1,
-             float fs = kDefaultFs);
+    PoolBase(Voice* voices, PoolSlot* slots, PoolLane* lanes, const float** forces, const float** weights, int m, float fs = kDefaultFs);
     PoolBase(const PoolBase&) = delete;
     PoolBase& operator=(const PoolBase&) = delete;
 
     // ---- the player -------------------------------------------------------------------
     void noteOn(float midi, float vel01);          // the key's own voice struck again; else a free one; else the quietest, stolen
     void noteOff(float midi);                      // the key released: its damper lands (unless the pedal holds it)
-    void pedal(float p01);                         // the sustain pedal on every voice, and on every note that lands
+    void setPedal(float p01);                      // the sustain pedal on every voice, and on every note that lands
     void allNotesOff();
 
     // ---- every voice, and later notes -------------------------------------------------------
@@ -124,7 +123,6 @@ public:
     const PoolSlot& slot(int i) const  { return s_[i < 0 ? 0 : (i >= m_ ? m_ - 1 : i)]; }
     Tuning          tuning() const     { return tuning_; }
     const Board&    board() const      { return board_; }   // the plate: amplitude(k), modeInfo(k), shape(x, y)
-    static uint32_t seedOf(uint32_t seed, int i);  // voice i's seed in a pool of this seed: distinct, never zero
 
     // ---- the engine ---------------------------------------------------------------------------
     void render(float* out, int n);                // the board on the voices' forces, plus their pickups, each at its level
@@ -176,10 +174,9 @@ struct PoolStorage {
 template <int M>
 class Pool : private PoolStorage<M>, public PoolBase {
 public:
-    explicit Pool(uint32_t seed = 1, float fs = kDefaultFs)
+    explicit Pool(float fs = kDefaultFs)
         : PoolStorage<M>(),
-          PoolBase(PoolStorage<M>::voices, PoolStorage<M>::slots, PoolStorage<M>::lanes, PoolStorage<M>::forces, PoolStorage<M>::weights, M, seed,
-                   fs) {}
+          PoolBase(PoolStorage<M>::voices, PoolStorage<M>::slots, PoolStorage<M>::lanes, PoolStorage<M>::forces, PoolStorage<M>::weights, M, fs) {}
     Pool(const Pool&) = delete;
     Pool& operator=(const Pool&) = delete;
 };
@@ -201,7 +198,7 @@ public:
     // each false when there is no room (the queue, or its payload's ring, full): nothing is queued then
     bool noteOn(float midi, float vel01);
     bool noteOff(float midi);
-    bool pedal(float p01);
+    bool setPedal(float p01);
     bool allNotesOff();
     bool set(Channel c, float target);
     bool setRate(Channel c, float perSec);

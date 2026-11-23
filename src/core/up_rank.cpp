@@ -8,7 +8,6 @@
 namespace up {
 namespace {
 
-inline float finiteOr(float x, float fallback) { return std::isfinite(x) ? x : fallback; }
 inline float atLeast(float x, float lo) { return x > lo ? x : lo; }
 
 }  // namespace

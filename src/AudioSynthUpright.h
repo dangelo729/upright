@@ -6,8 +6,11 @@
 // its scratch, all inside the object: nothing on the heap. its calls are the
 // voice's (src/core/up_voice.h), one for one.
 //
-// the whole file, includes too, sits inside #if defined(ARDUINO): on the host
-// this header is empty, and the tests and the tool use up::Voice directly.
+// the whole file, includes too, sits inside #if defined(ARDUINO) and
+// __has_include(<AudioStream.h>): it compiles on an arduino core that has the
+// teensy audio library's stream (a teensy). elsewhere, on the host and on
+// another arduino core, this header is empty and Upright.h gives the core
+// alone; the tests and the tool use up::Voice directly.
 //
 // the handoff:
 //   setters   write the pending table (an up::Channels: every target and
@@ -24,8 +27,9 @@
 //             from the voice's eased body channels when they moved, its
 //             weights at the voice's bridge point when the note moved), adds
 //             the pickup, clamps, scales to int16 and sends it
-//   readback  state(), shape(), partials(), stringShape() and rank() copy
-//             under the same mask, as of the end of the last block
+//   readback  state(), shape(), partials() and rank() copy under the same
+//             mask, as of the end of the last block; stringShape() copies the
+//             state under it and computes its points after, unmasked
 // a call lands at the top of the next block (128 samples, 2.9 ms): one
 // latency, for everything, a strike too.
 //
@@ -42,7 +46,7 @@
 // sleep before its phasors would reach denormal range anyway.
 #pragma once
 
-#if defined(ARDUINO)
+#if defined(ARDUINO) && __has_include(<AudioStream.h>)
 
 #include <Arduino.h>
 #include <AudioStream.h>
@@ -58,7 +62,7 @@ namespace up {
 
 // interrupts off for the length of a scope, and back as the caller had them:
 // PRIMASK is read first, and only re-enabled when it was clear. both
-// wrappers' setters, readback and update() run under it
+// wrappers' setters and readback run under it, and update()'s handoff
 class Masked {
 public:
     Masked() {
@@ -75,14 +79,23 @@ private:
     uint32_t primask_ = 0;
 };
 
+// what both wrappers share: an AudioStream with no inputs, whose constructor
+// sets flush-to-zero in FPDSCR (an interrupt's floating-point context, so
+// update()'s) and in the thread's FPSCR (setup() and loop()); send() clamps a
+// block, scales it to int16 and transmits it on output 0, and a failed
+// allocate drops that block only
+class Wrapper : public AudioStream {
+protected:
+    Wrapper();
+    void send(const float* x);
+};
+
 }  // namespace up
 
-class AudioSynthUpright : public AudioStream {
+class AudioSynthUpright : public up::Wrapper {
 public:
-    // one seeded xorshift32 per voice, drawn by nothing in the engine: any
-    // seed renders the same bytes. allocate statically and never destroy, as
-    // every AudioStream
-    explicit AudioSynthUpright(uint32_t seed = 1);
+    // allocate statically and never destroy, as every AudioStream
+    AudioSynthUpright();
 
     // ---- the player ---------------------------------------------------------------------
     void noteOn(float midi, float vel01);    // the note, and a hammer at the next block
@@ -115,7 +128,7 @@ public:
     // ---- readback, as of the end of the last block ----------------------------------------------
     up::State     state() const;
     int           partials(up::PartialTable& out) const;
-    int           stringShape(float* y, int n) const;
+    int           stringShape(float* y, int n) const;   // from a copy of the state: the mask is the copy's
     up::RankState rank() const;
 
     // the audio interrupt: latch (masked), render one block (unmasked), the
@@ -125,9 +138,6 @@ public:
     void update(void) override;
 
 private:
-    static void flushDenormals();
-    void send(const float* x);
-
     up::Pending pending_;
     up::Voice   voice_;
     up::Board   board_;
@@ -136,4 +146,4 @@ private:
     float       bridge_[AUDIO_BLOCK_SAMPLES], pickup_[AUDIO_BLOCK_SAMPLES], out_[AUDIO_BLOCK_SAMPLES];
 };
 
-#endif  // defined(ARDUINO)
+#endif  // defined(ARDUINO) && __has_include(<AudioStream.h>)

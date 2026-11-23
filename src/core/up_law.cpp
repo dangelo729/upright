@@ -46,7 +46,6 @@ constexpr LawConstants kLaw = {
 // the clamped-free beam's beta_n L for n = 1 .. 6; from n = 7 the asymptote (2n - 1) pi / 2
 constexpr double kBeta[6] = {1.875104069, 4.694091133, 7.854757438, 10.995540735, 14.137168391, 17.278759532};
 
-inline float finiteOr(float x, float fallback) { return std::isfinite(x) ? x : fallback; }
 inline float sign(int n) { return (n & 1) ? -1.0f : 1.0f; }   // (-1)^n
 
 // a to b along the geometric mean's path, landing on each exactly at its end

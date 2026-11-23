@@ -3,9 +3,9 @@
 // but the c++ standard library: the channel table, the tuning, the law and
 // the rank, the bank, the hammer and the strings, the attack, the pitch
 // axis, the pickup, the board, the telemetry, the voice, the presets and the
-// pool. on a teensy it brings in
-// AudioSynthUpright and AudioSynthUprightPool too; on the host those headers
-// are empty.
+// pool. on a teensy, an arduino core with the teensy audio library's
+// AudioStream.h, it brings in AudioSynthUpright and AudioSynthUprightPool
+// too; on the host and on another arduino core those headers are empty.
 #pragma once
 
 #include "core/up_attack.h"

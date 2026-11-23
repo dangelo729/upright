@@ -13,16 +13,10 @@ inline bool sounds(const PoolSlot& s) { return s.use == PoolSlot::Use::held || s
 
 }  // namespace
 
-uint32_t PoolBase::seedOf(uint32_t seed, int i) {
-    const uint32_t s = (seed ^ 0x5bd1e995u) + 0x9E3779B9u * (uint32_t)(i + 1);
-    return s ? s : 1u;
-}
-
-PoolBase::PoolBase(Voice* voices, PoolSlot* slots, PoolLane* lanes, const float** forces, const float** weights, int m, uint32_t seed, float fs)
+PoolBase::PoolBase(Voice* voices, PoolSlot* slots, PoolLane* lanes, const float** forces, const float** weights, int m, float fs)
     : v_(voices), s_(slots), lane_(lanes), forces_(forces), weights_(weights), m_(m < 1 ? 1 : m), fs_(fs > 1.0f ? fs : kDefaultFs) {
     board_.init(fs_);
     for (int i = 0; i < m_; ++i) {
-        v_[i].reseed(seedOf(seed, i));
         if (fs_ != kDefaultFs) v_[i].init(fs_);
         s_[i] = PoolSlot();
         s_[i].level.snap(1.0f);
@@ -83,7 +77,7 @@ void PoolBase::noteOff(float midi) {
     }
 }
 
-void PoolBase::pedal(float p01) {
+void PoolBase::setPedal(float p01) {
     if (!std::isfinite(p01)) return;
     pedal_ = p01;
     for (int i = 0; i < m_; ++i) v_[i].setPedal(p01);
@@ -309,7 +303,7 @@ bool PoolQueue::lastIs(Op op) const { return count_ > 0 && queue_[(head_ + count
 
 bool PoolQueue::noteOn(float midi, float vel01) { return put({Op::noteOn, 0, midi, vel01, 0.0f, 0.0f}); }
 bool PoolQueue::noteOff(float midi) { return put({Op::noteOff, 0, midi, 0.0f, 0.0f, 0.0f}); }
-bool PoolQueue::pedal(float p01) { return put({Op::pedal, 0, p01, 0.0f, 0.0f, 0.0f}); }
+bool PoolQueue::setPedal(float p01) { return put({Op::pedal, 0, p01, 0.0f, 0.0f, 0.0f}); }
 bool PoolQueue::allNotesOff() { return put({Op::allOff, 0, 0.0f, 0.0f, 0.0f, 0.0f}); }
 bool PoolQueue::set(Channel c, float target) { return put({Op::set, (uint16_t)c, target, 0.0f, 0.0f, 0.0f}); }
 bool PoolQueue::setRate(Channel c, float perSec) { return put({Op::rate, (uint16_t)c, perSec, 0.0f, 0.0f, 0.0f}); }
@@ -366,7 +360,7 @@ void PoolQueue::apply(PoolBase& pool, const Command& c) {
     switch (c.op) {
         case Op::noteOn:   pool.noteOn(c.a, c.b); break;
         case Op::noteOff:  pool.noteOff(c.a); break;
-        case Op::pedal:    pool.pedal(c.a); break;
+        case Op::pedal:    pool.setPedal(c.a); break;
         case Op::allOff:   pool.allNotesOff(); break;
         case Op::set:      pool.set((Channel)c.index, c.a); break;
         case Op::rate:     pool.setRate((Channel)c.index, c.a); break;

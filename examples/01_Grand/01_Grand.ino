@@ -16,7 +16,7 @@ void setup() {
     codec.enable();
     codec.volume(0.5f);
     up::Tuning t;
-    t.outputGain = 4.0f;            // the piano to full scale: this note peaks near 0.44
+    t.outputGain = 2.0f;            // grand's loudest key at velocity 1 peaks near 0.88, this note near 0.22
     piano.setTuning(t);
     piano.setShape(up::grand());    // the instrument
 }

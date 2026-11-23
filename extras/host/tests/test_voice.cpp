@@ -11,9 +11,9 @@
 // by hand stands until the instrument is written again; the generator swept
 // under a held note is finite and under the click bound; rhodes at e3
 // sleeps; a sleeping voice renders zeros; grand's octave through the board
-// reads the reference's level; two noteOns in a block are the second; the
-// pool's hooks; wild writes into every entry point stay finite, and a valid
-// note after them sounds and sleeps.
+// reads the reference's level; two noteOns in a block are the second; a note
+// that is not finite is no call; the pool's hooks; wild writes into every
+// entry point stay finite, and a valid note after them sounds and sleeps.
 #include <cfloat>
 #include <cmath>
 #include <cstring>
@@ -55,7 +55,7 @@ double underFrom(const std::vector<float>& x, double from, double under) {
 // a voice's bridge force with calls at block tops: (block, call)
 template <class Script>
 std::vector<float> bridgeOf(const Shape& s, float sec, Script script, const Tuning& t = Tuning()) {
-    Voice v(3);
+    Voice v;
     v.setTuning(t);
     v.setShape(s);
     const int blocks = (int)(sec * kFs) / kBlock;
@@ -107,7 +107,7 @@ Shape drawInPresets(Rng& r) {
 // are the attack's (up_attack.h): its blow's share follows a hard hammer's
 // force in the treble
 UP_TEST(voice_thrash_30s) {
-    Voice v(2026);
+    Voice v;
     Board board;
     board.init(kFs);
     Rng r;
@@ -193,7 +193,7 @@ struct Jump {
     size_t span;
 };
 Jump jumpOf(float from, float to) {
-    Voice v(3);
+    Voice v;
     v.setShape(grand());
     v.noteOn(from, 1.0f);
     Board board;
@@ -347,7 +347,7 @@ UP_TEST(voice_same_bytes_at_any_render_size) {
     const int total = (int)(2.0f * kFs);
     const Call calls[] = {{0, 0}, {(int)(0.5f * kFs), 1}, {(int)(0.8f * kFs), 2}, {(int)(1.0f * kFs), 3}};
     auto run = [&](int size) {
-        Voice v(77);
+        Voice v;
         v.setShape(withGenerator(grand(), -0.4f));
         std::vector<float> b((size_t)total), p((size_t)total);
         int at = 0;
@@ -406,7 +406,7 @@ UP_TEST(voice_handoff_same_bytes) {
             default: break;
         }
     };
-    Voice direct(31), handed(31);
+    Voice direct, handed;
     Pending p;
     handed.attach(&p);
     const int blocks = 1800;
@@ -467,7 +467,7 @@ UP_TEST(voice_measured_table_rings_where_it_says) {
 // (no instrument write) and is written over by the next instrument write,
 // in the eased table and in the targets
 UP_TEST(voice_hand_partial_stands_until_the_instrument) {
-    Voice v(5);
+    Voice v;
     v.setShape(grand());
     v.noteOn(60.0f, 1.0f);
     float b[kBlock];
@@ -500,7 +500,7 @@ UP_TEST(voice_hand_partial_stands_until_the_instrument) {
 // written each block) under a held grand c4: the voice's pair
 // finite, and its click measure under the bound for its top partial (printed)
 UP_TEST(voice_generator_sweep) {
-    Voice v(9);
+    Voice v;
     Tuning t;
     t.rateBody = 0.0f;                                   // the written path is the sweep
     v.setTuning(t);
@@ -560,7 +560,7 @@ UP_TEST(voice_generator_middle_sounds) {
 // centre from the magnet's offset to the gap; the output finite and its
 // click measure under the bound for its top partial (printed)
 UP_TEST(voice_generator_sweep_electric) {
-    Voice v(9);
+    Voice v;
     Tuning t;
     t.rateBody = 0.0f;
     v.setTuning(t);
@@ -611,7 +611,7 @@ UP_TEST(voice_rhodes_sleeps) {
 // a voice nobody struck renders zeros on both outputs, and so does one that
 // has slept
 UP_TEST(voice_asleep_is_zero) {
-    Voice v(6);
+    Voice v;
     v.setShape(grand());
     v.setPedal(0.5f);
     std::vector<float> b(4 * kBlock + 17), p(b.size());
@@ -678,7 +678,7 @@ UP_TEST(voice_board_keyboard_balance) {
 
 // two noteOns in one block are the second: its note, its velocity
 UP_TEST(voice_second_note_in_a_block_wins) {
-    Voice a(8), b(8);
+    Voice a, b;
     a.setShape(grand());
     b.setShape(grand());
     a.noteOn(60.0f, 0.3f);
@@ -690,13 +690,53 @@ UP_TEST(voice_second_note_in_a_block_wins) {
     CHECK(std::memcmp(x.data(), y.data(), x.size() * sizeof(float)) == 0);
 }
 
+// a note that is not finite is no call, as on the pool: noteOn at a nan, an
+// infinity or minus one strikes nothing on a ringing voice, written directly
+// or through the handoff (the same bytes as a voice never called), and wakes
+// nothing on a sleeping one
+UP_TEST(voice_note_on_not_finite_is_no_call) {
+    const float notes[] = {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
+    Voice called, handed, left;
+    Pending p;
+    handed.attach(&p);
+    for (Voice* v : {&called, &handed, &left}) {
+        v->setShape(grand());
+        v->noteOn(60.0f, 0.8f);
+    }
+    std::vector<float> x, y, z;
+    auto run = [&](int blocks) {
+        float b[kBlock];
+        for (int k = 0; k < blocks; ++k) {
+            handed.latch();
+            called.render(b, nullptr, kBlock);
+            x.insert(x.end(), b, b + kBlock);
+            handed.render(b, nullptr, kBlock);
+            y.insert(y.end(), b, b + kBlock);
+            left.render(b, nullptr, kBlock);
+            z.insert(z.end(), b, b + kBlock);
+        }
+    };
+    run(20);
+    for (float note : notes) {
+        called.noteOn(note, 1.0f);
+        handed.noteOn(note, 1.0f);
+    }
+    run(blockAt(1.0));
+    CHECK(std::memcmp(x.data(), z.data(), x.size() * sizeof(float)) == 0);
+    CHECK(std::memcmp(y.data(), z.data(), y.size() * sizeof(float)) == 0);
+    Voice asleep;
+    asleep.setShape(grand());
+    for (float note : notes) asleep.noteOn(note, 1.0f);
+    std::vector<float> w((size_t)(4 * kBlock), 1.0f);
+    asleep.render(w.data(), nullptr, 4 * kBlock);
+    CHECK(asleep.asleep() && peakAbs(w.data(), w.size()) == 0.0 && rms(z.data(), z.size()) > 0.0);
+}
+
 // the pool's hooks: energy() is every bank's summed energy as of the last
 // block and falls as the ring does; stop() sleeps now, every phasor zero, no
-// strike due; released() the key; bridgePoint() the note as eased; reseed()
-// restarts the voice's generator (nothing in the engine draws it): a voice
-// reseeded to another's seed renders its bytes
+// strike due; released() the key; bridgePoint() the note as eased
 UP_TEST(voice_pool_hooks) {
-    Voice v(10);
+    Voice v;
     v.setShape(grand());
     v.noteOn(62.0f, 1.0f);
     std::vector<float> x((size_t)kFs);
@@ -715,16 +755,6 @@ UP_TEST(voice_pool_hooks) {
     bool zero = v.asleep() && v.energy() == 0.0f;
     for (int i = 0; i < 4 * kBlock; ++i) zero = zero && x[(size_t)i] == 0.0f;
     CHECK(zero);
-    Voice a(11), b(12);
-    b.reseed(11);
-    for (Voice* p : {&a, &b}) {
-        p->setShape(grand());
-        p->noteOn(60.0f, 1.0f);
-    }
-    std::vector<float> ya(4000), yb(4000);
-    a.render(ya.data(), nullptr, 4000);
-    b.render(yb.data(), nullptr, 4000);
-    CHECK(std::memcmp(ya.data(), yb.data(), ya.size() * sizeof(float)) == 0);
 }
 
 // wild writes on grand then rhodes, heard through a board of their own: each
@@ -749,7 +779,7 @@ UP_TEST(voice_wild_writes_stay_finite) {
     const int nc = (int)chans.size(), per = 2 * nc + 14 + 5;
     for (const Shape* preset : {&grand(), &rhodes()}) {
         const char* name = preset == &grand() ? "grand" : "rhodes";
-        Voice v(15);
+        Voice v;
         Board board;
         board.init(kFs);
         std::vector<float> y;

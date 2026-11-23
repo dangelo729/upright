@@ -25,13 +25,15 @@ by eye, or computed from printed numbers.
     and subjective tuning of piano tones", JASA 152(2) 1146-1157, 2022, open
     copy at acris.aalto.fi. A Steinway & Sons model D, one string per key,
     mezzoforte: B per key from A0 to G#5 (59 keys), recovered from fig. 4's
-    vector markers (not a printed table). Keys above A5 are comments: the
-    source calls them unreliable. B4 (2.74e-3) is an outlier as plotted.
+    vector markers (not a printed table): values read from that figure,
+    written down as numbers. Keys above A5 are comments: the source calls
+    them unreliable. B4 (2.74e-3) is an outlier as plotted.
 
   inharmonicity_upright.txt
     H. Hinrichsen, "Entropy-based tuning of musical instruments", arXiv
     1203.5101, 2012. An unnamed upright: B for all 88 keys, recovered from
-    fig. 4(a)'s vector markers (not a printed table).
+    fig. 4(a)'s vector markers (not a printed table): values read from that
+    figure, written down as numbers.
 
   inharmonicity_grand_model.txt
     J. Chabassier and M. Duruflé, "Physical parameters for piano modeling",

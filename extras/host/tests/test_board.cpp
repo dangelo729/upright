@@ -208,7 +208,7 @@ UP_TEST(board_pairs_found_once) {
         sink = sink + out[0];
     }
     const double still = std::chrono::duration<double, std::micro>(clock::now() - t0).count() / n;
-    Voice v(1);
+    Voice v;
     v.setShape(grand());
     float br[kBlock], pk[kBlock];
     v.noteOn(60.0f, 1.0f);

@@ -20,8 +20,6 @@ static_assert([] {
     return n;
 }() == kFieldSamples, "the field's lines fill its buffer");
 
-inline float finiteOr(float x, float fallback) { return std::isfinite(x) ? x : fallback; }
-
 // the lowest kBoardModes (m, n) in frequency order, the full search's at 1 m²: area-independent (up_board.h),
 // filled on the first call and kept. zero-initialised statics, no constructor: no initialisation order to meet
 struct ModePairs {

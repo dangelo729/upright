@@ -25,4 +25,10 @@ float stringAt(const float* re, int count, const Shape& eased, float share) {
     return y;
 }
 
+int stringShape(const State& st, float* y, int n) {
+    if (!y || n <= 0) return 0;
+    for (int i = 0; i < n; ++i) y[i] = stringAt(st.re, kMaxModes, st.shape, n > 1 ? (float)i / (float)(n - 1) : 0.0f);
+    return n;
+}
+
 }  // namespace up

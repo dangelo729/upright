@@ -254,4 +254,9 @@ Shape Channels::shape() const {
     return s;
 }
 
+// ---- the sizes the library is built at: the one definition the link check finds (up_config.h) ----------
+
+template <>
+const int UP_MAX_MODES_and_the_sizes_belong_in_the_build_flags<kMaxModes, kUnisonModes, kBoardModes, kContactRate>::built = 1;
+
 }  // namespace up

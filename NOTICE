@@ -108,7 +108,8 @@ of them is compiled into the library.
     paper not transcribed).
   - Mutable Instruments, Rings, resonator.cc. The ceiling on the partials
     (0.45 of the sample rate); read, not copied.
-  - The author's earlier libraries. The channel table and its sequence, the
+  - The author's earlier libraries for the Teensy, separate projects whose
+    code is not in this repository. The channel table and its sequence, the
     law as a derived-channel writer, the pool with its note table and its
     fade, the two Teensy wrappers and their handoff (the pending table under
     an interrupt mask, the command queue with its payload rings), the host

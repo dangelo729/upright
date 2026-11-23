@@ -5,9 +5,11 @@
 // decay since undone, within 1 db; the hammer's force integrates to its
 // momentum change within 1 %; the string's shape at the strike point is the
 // hammer's readback within 1e-6 mm; the state reads back the note, the rank,
-// the partials on and the hammer.
+// the partials on and the hammer; a copy of the state draws the string as the
+// voice did when it was copied.
 #include <cmath>
 #include <complex>
+#include <cstring>
 #include <initializer_list>
 #include <vector>
 
@@ -30,7 +32,7 @@ UP_TEST(telemetry_amplitude_is_drive_times_force) {
     int partials = 0, strikes = 0;
     for (float midi : {48.0f, 60.0f, 72.0f})
         for (float vel : {0.4f, 1.0f}) {
-            Voice v(4);
+            Voice v;
             v.setShape(grand());
             v.noteOn(midi, vel);
             std::vector<double> force;
@@ -68,7 +70,7 @@ UP_TEST(telemetry_force_is_the_momentum) {
     double worst = 0.0;
     for (float midi : {36.0f, 60.0f, 84.0f})
         for (float vel : {0.3f, 1.0f}) {
-            Voice v(4);
+            Voice v;
             v.setShape(grand());
             v.noteOn(midi, vel);
             float b[kBlock], p[kBlock];
@@ -90,7 +92,7 @@ UP_TEST(telemetry_force_is_the_momentum) {
 // at the end of every block of a strike's first 50 ms; stringShape's ends
 // are the string's fixed ends; the state's note, rank and partials on
 UP_TEST(telemetry_shape_at_the_strike_point) {
-    Voice v(4);
+    Voice v;
     v.setShape(grand());
     v.noteOn(60.0f, 0.8f);
     float b[kBlock], p[kBlock];
@@ -110,4 +112,28 @@ UP_TEST(telemetry_shape_at_the_strike_point) {
     CHECK(st.f0 == midiToHz(60.0f) && st.modesOn == on && st.rank.f0 == st.f0 && !st.asleep && st.hammerContact > 0.0f);
     printf("    the shape at the strike point against the readback: %.2e mm at worst over 17 blocks (the string to %.3f mm); %d partials on\n", worst,
            largest, on);
+}
+
+// the string's shape from a copy of the state (stringShape(state), what the
+// voice wrapper draws after its masked copy) is the voice's own, point for
+// point, on the string side and between it and the tine; the copy, kept while
+// the voice renders on, still draws the string as it was; no points, nothing
+UP_TEST(telemetry_shape_from_a_copied_state) {
+    for (float g : {-1.0f, -0.4f}) {
+        Voice v;
+        Shape s = grand();
+        s[Channel::generator] = g;
+        v.setShape(s);
+        v.noteOn(52.0f, 0.9f);
+        float b[kBlock], p[kBlock], own[65], copied[65], later[65], again[65];
+        for (int i = 0; i < 5; ++i) v.render(b, p, kBlock);
+        const State st = v.state();
+        v.stringShape(own, 65);
+        CHECK(stringShape(st, copied, 65) == 65 && std::memcmp(own, copied, sizeof own) == 0);
+        for (int i = 0; i < 3; ++i) v.render(b, p, kBlock);
+        v.stringShape(later, 65);
+        stringShape(st, again, 65);
+        CHECK(std::memcmp(copied, again, sizeof again) == 0 && std::memcmp(later, again, sizeof again) != 0);
+        CHECK(stringShape(st, nullptr, 65) == 0 && stringShape(st, again, 0) == 0);
+    }
 }

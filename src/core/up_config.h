@@ -1,7 +1,7 @@
 // upright — up_config.h
-// the build's sizes and the small helpers every module shares: clamp, the
-// one smoothing law, the per-sample ramp, xorshift32, and the note's
-// frequency.
+// the build's sizes and the small helpers every module shares: clamp, a
+// finite value or a fallback, the one smoothing law, the per-sample ramp,
+// xorshift32, and the note's frequency.
 //
 // the sizes: kMaxModes partial slots on a note's main string (-D UP_MAX_MODES,
 // 8 .. 96), kUnisonModes partials on each secondary string (-D
@@ -9,6 +9,10 @@
 // (-D UP_BOARD_MODES, 4 .. 64), kContactRate substeps a sample while the
 // hammer touches a string (-D UP_CONTACT_RATE, 1 .. 16); kLongModes free
 // longitudinal modes a string rings in its attack (up_attack.h), no flag.
+// the four are set in the build's flags, which reach the library's sources
+// and the sketch alike, never by a #define in a sketch, which reaches the
+// sketch alone: the two would lay out every object differently. a build
+// that does is refused at link time (below).
 //
 // src/core/ includes nothing but the c++ standard library. approachCoef and
 // midiToHz call libm: once per block and once per write, never per sample.
@@ -50,6 +54,25 @@ static_assert(kUnisonModes >= 4 && kUnisonModes <= kMaxModes, "UP_UNISON_MODES m
 static_assert(kBoardModes >= 4 && kBoardModes <= 64, "UP_BOARD_MODES must be 4..64");
 static_assert(kContactRate >= 1 && kContactRate <= 16, "UP_CONTACT_RATE must be 1..16");
 
+// ---- the sizes, checked at link time ---------------------------------------------
+// the library defines `built` once (up_channels.cpp), under the sizes its own
+// sources were compiled at. every translation unit that includes this header
+// reads it under the sizes it was compiled at, so one compiled at other sizes
+// (a sketch with its own #define) names a `built` the library does not have,
+// and the link stops: "undefined reference to
+// up::UP_MAX_MODES_and_the_sizes_belong_in_the_build_flags<48, 16, 32, 2>::built".
+// the read is a static initializer, so the linker's garbage collection keeps
+// it: 4 bytes and a few instructions at startup a translation unit
+template <int maxModes, int unisonModes, int boardModes, int contactRate>
+struct UP_MAX_MODES_and_the_sizes_belong_in_the_build_flags {
+    static const int built;
+};
+template <>
+const int UP_MAX_MODES_and_the_sizes_belong_in_the_build_flags<kMaxModes, kUnisonModes, kBoardModes, kContactRate>::built;
+namespace {
+__attribute__((used)) const int kSizesChecked = UP_MAX_MODES_and_the_sizes_belong_in_the_build_flags<kMaxModes, kUnisonModes, kBoardModes, kContactRate>::built;
+}  // namespace
+
 // ---- the guards ----------------------------------------------------------------
 constexpr float kPi      = 3.14159265358979f;
 constexpr float kCeiling = 0.45f;                   // a partial over this share of fs is off
@@ -57,6 +80,7 @@ constexpr float kCeiling = 0.45f;                   // a partial over this share
 // ---- helpers ----------------------------------------------------------------------
 inline float clamp(float x, float lo, float hi) { return x < lo ? lo : (x > hi ? hi : x); }
 inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
+inline float finiteOr(float x, float fallback) { return std::isfinite(x) ? x : fallback; }
 
 // the one smoothing law, once per block: x += (target - x) * (1 - exp(-rate * dt)).
 // a rate at or below zero is a jump, and lands exactly on the target.
@@ -77,7 +101,7 @@ struct Ramp {
     inline float next() { v += dv; return v; }
 };
 
-// one seeded xorshift32 per voice: the same calls give the same samples
+// a seeded xorshift32: the same seed, the same draws (the engine draws none)
 struct Rng {
     uint32_t s = 0x6D2B79F5u;
     void seed(uint32_t v) { s = v ? v : 0x6D2B79F5u; }

@@ -7,13 +7,17 @@ library alone (`clang++ -std=c++17 -Wall -Wextra -Werror -O2 -fno-math-errno`). 
 ## Make
 
 - `make test` builds and runs every test in `extras/host/tests` (the wrappers' sources compile too,
-  to nothing off the board, and `test_pool.cpp` includes `Upright.h`). The tests read `src/core`'s
-  sources for libm calls and heap use (`config_core_guard`) and the reference tables in
+  to nothing off the board, `test_pool.cpp` includes `Upright.h`, and `test_arduino.cpp` includes
+  it with `ARDUINO` defined and no `AudioStream.h`, as on another Arduino core). The tests read
+  `src/core`'s sources for libm calls and heap use (`config_core_guard`) and the reference tables in
   `extras/reference`. A row that does not pass and is kept with what it measured prints as
   `KNOWN` and is counted apart from the failures ([limits.md](limits.md) lists each).
 - `make tool` builds `extras/host/build/uptool`.
 - `make corpus` writes `extras/host/build/corpus`, the same bytes on every run: the library's byte
-  baseline.
+  baseline, clang's. Clang fuses a multiply and an add into one instruction only inside a
+  statement, and the core writes the products it keeps apart as statements of their own; gcc, the
+  Teensy's compiler, fuses across statements too (its default `-ffp-contract=fast`), so the board's
+  samples can differ from the host's in their last bits.
 - `make clean`.
 - `make board` (the root's) compiles every example for teensy41 with PlatformIO
   (`$HOME/.platformio/penv/bin/pio`), nothing flashed: the library staged under

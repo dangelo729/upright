@@ -15,6 +15,8 @@ It needs a Teensy 4.x and the Teensy Audio Library (in Teensyduino); then `#incl
 
 ## Use
 
+This sketch plays through the Teensy audio shield (SGTL5000):
+
 ```cpp
 #include <Audio.h>
 #include <Upright.h>
@@ -29,7 +31,7 @@ void setup() {
     codec.enable();
     codec.volume(0.5f);
     up::Tuning t;
-    t.outputGain = 4.0f;            // the piano to full scale: this note peaks near 0.44
+    t.outputGain = 2.0f;            // grand's loudest key at velocity 1 peaks near 0.88, this note near 0.22
     piano.setTuning(t);
     piano.setShape(up::grand());    // the instrument
 }
@@ -42,6 +44,9 @@ void loop() {
 }
 ```
 
+At that gain no single key of grand passes full scale; chords and the louder presets want less
+([each preset's figure](extras/docs/limits.md#level-and-the-board)).
+
 `AudioSynthUpright` is one voice with a soundboard of its own:
 
 - `noteOn(midi, velocity)` strikes a note, velocity 0 to 1; `noteOff()` lets the key go.
@@ -53,10 +58,11 @@ void loop() {
 - `setTuning(t)` sets the output gain and the engine's rates from an `up::Tuning`.
 
 `AudioSynthUprightPool<M>` is M voices on one shared soundboard, for a keyboard: `noteOn(midi,
-velocity)`, `noteOff(midi)`, `pedal(amount)`, `allNotesOff()`, and `setShape`, `set` and
-`setTuning` for every voice at once. A key struck while all M voices sound takes the quietest one.
-Every call lands at the start of the next audio block (128 samples, 2.9 ms). Declare the objects
-globally, as every Teensy Audio object.
+velocity)`, `noteOff(midi)`, `setPedal(amount)`, `allNotesOff()`, and `setShape`, `set` and
+`setTuning` for every voice at once. Every call lands at the start of the next audio block (128
+samples, 2.9 ms), but a key struck while all M voices sound waits for the quietest one to fade out:
+it sounds 78 ms later at the default `Tuning::stealRate` (60 a second), 9 ms at 600. Declare the
+objects globally, as every Teensy Audio object.
 
 ## Examples
 

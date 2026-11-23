@@ -17,7 +17,7 @@
 #   - --keep-build-dir keeps each example's firmware.elf, whose symbol table
 #     gives the voices' size on the board; pio ci does not copy over a
 #     library or sketch already there, so those two are removed first.
-#   - the flags are the house's: -Wall -Wextra -fno-math-errno, and a
+#   - the flags: -Wall -Wextra -fno-math-errno, and a
 #     sketch's own from a line in it, "// make board: FLAGS" (a sketch's usb
 #     type: -DUSB_MIDI_AUDIO_SERIAL, which the teensy platform takes in place
 #     of its default USB_SERIAL). not -Werror:

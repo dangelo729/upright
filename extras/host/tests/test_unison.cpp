@@ -65,7 +65,7 @@ struct Note {
 // the shape at midi with the strings and the detune written, struck at velocity 1, sec seconds of the voice's
 // pair; the slot's band envelope (half way to its neighbours, at most 0.2 of its frequency)
 Note noteOf(const Shape& s, float midi, float strings, float detune, float sec, int slot = 0) {
-    Voice v(1);
+    Voice v;
     v.setShape(s);
     v.set(Channel::strings, strings);
     v.set(Channel::detune, detune);
@@ -323,7 +323,7 @@ UP_TEST(unison_comb) {
 UP_TEST(unison_fractional_string) {
     struct Run { double r1, r2, e1, e2, rise; bool finite; };
     auto run = [](float strings) {
-        Voice v(1);
+        Voice v;
         v.setShape(grandShape());
         v.set(Channel::strings, strings);
         v.noteOn(60.0f, 1.0f);
@@ -370,7 +370,7 @@ UP_TEST(unison_under_a_note) {
     Shape one = grand(), wide = grand();
     one[Channel::strings] = 1.0f;
     wide[Channel::detune] = 20.0f;
-    Voice v(4);
+    Voice v;
     v.setShape(one);
     v.noteOn(60.0f, 1.0f);
     const int blocks = (int)(4.0f * kFs) / kBlock, at = (int)kFs / kBlock;
@@ -412,7 +412,7 @@ UP_TEST(unison_under_a_note) {
 // kAftersound x the tine's t60, and the tine alone, printed
 UP_TEST(unison_tine_side_uncoupled) {
     const Shape& rh = presetByName("rhodes")->shape();
-    Voice v(1);
+    Voice v;
     v.setShape(rh);
     v.noteOn(64.0f, 1.0f);
     float scratch[kBlock];

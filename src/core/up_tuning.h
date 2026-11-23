@@ -24,7 +24,7 @@ struct Tuning {
     float ratePedal   = 30.0f;    // the sustain pedal, down and up
 
     // ---- the hammer's throw ---------------------------------------------------------------
-    float hammerScale = 7.0f;     // kVmax: the hammer's speed at velocity 1, m/s (a fortissimo hammer)
+    float hammerScale = 7.0f;     // the hammer's speed at velocity 1, m/s (a fortissimo hammer)
     float velCurve    = 2.0f;     // v = hammerScale vel^velCurve: velocity 0.3 is 0.63 m/s (pp), 0.5 is 1.75 (mf)
 
     // ---- the voice ----------------------------------------------------------------------

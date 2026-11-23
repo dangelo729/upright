@@ -9,7 +9,22 @@ failures. Each is named below where it belongs, marked **known row**.
 - **The presets are not levelled.** Their octaves from C4 run from wurlitzer's −16.34 dB to
   concertGrand's +1.77 against grand's ([design.md](design.md#the-presets)), and a single note is
   the board's coincidence of partials, plate modes and the field's grain; a consumer sets its own
-  gain (`Tuning.outputGain`), one gain for all in `03_Keyboard`.
+  gain (`Tuning.outputGain`), one gain for all in `03_Keyboard`. One key at velocity 1 on one voice
+  (as `AudioSynthUpright` plays it: its own board, the pickup added), every key of each preset's
+  range over its first 3 s on the host: the loudest key's peak at a gain of 1, and the most gain
+  at which no key passes full scale (`01_Grand` takes 2):
+
+  | Preset | Loudest key | Its peak at gain 1 | The most gain |
+  | --- | --- | --- | --- |
+  | grand | D1 | 0.438 | 2.28 |
+  | concertGrand | B0 | 0.577 | 1.73 |
+  | upright | F#1 | 0.368 | 2.71 |
+  | spinet | G1 | 0.361 | 2.76 |
+  | honkyTonk | F1 | 0.304 | 3.29 |
+  | fortepiano | G6 | 0.330 | 3.02 |
+  | rhodes | E7 | 0.329 | 3.03 |
+  | rhodesBark | D#5 | 0.739 | 1.35 |
+  | wurlitzer | C7 | 0.094 | 10.6 |
 - **Keys struck in one block add their onsets.** Eight keys evenly across a preset's range at
   velocity 1 peak 0.22 (wurlitzer) to 2.27 (rhodesBark) at a gain of 1 (grand 0.59, rhodes 0.97);
   the pool's sum is not clamped and its wrapper clamps (`03_Keyboard` takes 0.4: at most 0.91).
@@ -40,14 +55,14 @@ failures. Each is named below where it belongs, marked **known row**.
   level is its first pass's and moves 0.89 dB from the spinet's board to the concert grand's
   whatever the loss.
 - **The field costs memory and time**: 10,668 bytes a board (a `Board` is 14,184 bytes,
-  `Pool<8>` 182,160; each voice wrapper carries a board of its own, so `01_Grand`'s `piano` is
-  43,944 bytes of RAM1), and on the host the board's block takes about 6 µs where nothing moves,
+  `Pool<8>` 182,096; each voice wrapper carries a board of its own, so `01_Grand`'s `piano` is
+  43,936 bytes of RAM1), and on the host the board's block takes about 6 µs where nothing moves,
   against about 9 for a voice's; once a pool and once a voice wrapper.
 - **The plate's rebuild runs in the audio interrupt**: the 32 frequencies, decays, radiations and
   output weights from the mode pairs found once, the field's sixteen losses (two pows and a sqrt a
   line) and the moved modes' turns, about 0.02 of a voice's block on the host; the voice wrapper
-  every block while its eased body moves after a write, the pool wrapper once per body write under
-  its drain's mask.
+  every block while its eased body moves after a write, the pool wrapper once per body write in
+  its drain.
 - **A glide flickers through the board**: a partial sweeping the plate's resonances (Q 33 at
   grand's loss) rises and falls with each, and above them with the field's grain.
 
@@ -114,7 +129,8 @@ failures. Each is named below where it belongs, marked **known row**.
   octave rings short but speaks: C8's fundamental 0.41 s, C7's 1.26, key 127's 52 ms.
 - **The modal truncation's bass ceiling**: 64 partials cap the bottom octave and a half's
   brightness (A0's 64th partial sits at 2.68 kHz on grand, 2.17 on concertGrand); `UP_MAX_MODES` 96
-  is the lever, at a voice's cost.
+  is the lever, at a voice's cost, set in the build's flags ([design.md](design.md#the-law)): the
+  Arduino IDE has no place for it.
 - **The bass sleeps late**: grand at C2 sleeps 151 s after a strike at velocity 1 (the aftersound
   rings at the internal loss, the bridge's share taken out of the capped T60), C4 49 s.
 - **The silence gate is absolute**: grand's C8 struck at velocity 0.1 (0.07 m/s, under any
@@ -152,4 +168,7 @@ failures. Each is named below where it belongs, marked **known row**.
 - **A strike lands one block late** (2.9 ms), as every write; two strikes in one block are the
   second.
 - **The steal's latency is the fade**: a stolen voice's new note sounds 78 ms after its key at the
-  default `stealRate`.
+  default `stealRate` (60 a second), 9 ms at 600.
+- **A voice takes 4,294,967,296 writes.** Each write to a channel is numbered in 32 bits and the
+  newest number wins; once the numbers have gone round, a write can lose to an older one and its
+  channel keeps the old value. Four channels written every block get there in 36 days.

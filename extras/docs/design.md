@@ -67,8 +67,7 @@ follows. An upright, a grand, a Rhodes and a Wurlitzer differ by numbers, not by
 
 Control runs every 128 samples whatever size `render()` is called with, so the same calls give the
 same bytes at any render size. No heap, no libm per sample (the test `config_core_guard` reads the
-sources and names every function allowed it). One seeded xorshift32 a voice (the constructor's
-seed, `reseed()`), drawn by nothing in the engine: any seed renders the same bytes.
+sources and names every function allowed it).
 
 **Units.** A string's partial is a phasor in millimetres of modal displacement (`re`), its
 quadrature `im` (ω im its velocity in mm/s): a fortissimo string swings O(1) mm, and the silence
@@ -242,7 +241,7 @@ dc and at 4 kHz within 1.1e-6, and between them the lines' mean t60 at 1.5 f_top
 faster than 1 / f); 100 N rms of white noise for half a second, on every board and at 22.05, 44.1
 and 96 kHz, leaves every sample finite and the output under −100 dBFS within 0.29 s of its end.
 The field holds 10,668 bytes (the lines' 2602 floats, each line's read point, loss and state, the
-gain): a Board is 14,184 bytes, `Pool<8>` 182,160. Through it grand at velocity 1 peaks 0.33 at C2,
+gain): a Board is 14,184 bytes, `Pool<8>` 182,096. Through it grand at velocity 1 peaks 0.33 at C2,
 0.18 at C4, 0.19 at C6. A mode alone (the shelf's mobility 0, so neither the direct share nor the
 field) rings within 0.0001 cent and 0.2 % of its table; two voices are the sum of each; a closed
 back is 15.8 dB under an open one at 60 Hz.
@@ -258,9 +257,10 @@ plate from the voice's eased body when it moved, the weights at its bridge point
 moved), the pickup added: the plate is rebuilt every block while the eased body moves after a write
 (seconds at `rateBody`), each rebuild the 32 frequencies from the mode pairs found once, the
 field's sixteen losses and the moved modes' turns, about 0.02 of a voice's block on the host. The
-pool wrapper drains its command queue masked (the plate rebuilt once per body write there) and
-renders unmasked. Each clamps what it sends, scales it to int16 and transmits it on output 0, and
-renders the block even when `allocate()` returns NULL, so the voices and the board keep time.
+pool wrapper turns its setters to its other command queue masked, then drains the one they wrote
+(the plate rebuilt once per body write there) and renders, unmasked. Each clamps what it sends,
+scales it to int16 and transmits it on output 0, and renders the block even when `allocate()`
+returns NULL, so the voices and the board keep time.
 
 ## The modules
 
@@ -268,8 +268,8 @@ renders the block even when `allocate()` returns NULL, so the voices and the boa
 |---|---|
 | `src/Upright.h` | the umbrella: the core, and on a Teensy the two wrappers |
 | `src/AudioSynthUpright.{h,cpp}` | one voice and its board, one output: the pending table under an interrupt mask |
-| `src/AudioSynthUprightPool.h` | the pool, a template on M, header-only: its `up::PoolQueue` under an interrupt mask |
-| `src/core/up_config.h` | the build's sizes, clamp, the one smoothing law, `Ramp`, xorshift32, `midiToHz` |
+| `src/AudioSynthUprightPool.h` | the pool, a template on M, header-only: two `up::PoolQueue`s, turned under an interrupt mask |
+| `src/core/up_config.h` | the build's sizes and their link check, clamp, `finiteOr`, the one smoothing law, `Ramp`, xorshift32, `midiToHz` |
 | `src/core/up_tuning.{h,cpp}` | `up::Tuning` and `clamped()` |
 | `src/core/up_channels.{h,cpp}` + `up_modes.inc` | the channel table, its groups and ranges, `Shape`, `PartialTable`, the partial blocks, `nanShape`, `defaultShape` |
 | `src/core/up_law.{h,cpp}` | the law: the string, the tine, the reed, the path between, the damper's rate, the hammer's tip, the constants |
@@ -407,6 +407,15 @@ instrument is written again). Once per instrument write and once per note, never
 
 **The slots** are the partials in order: slot k is partial k + 1 in every build (`UP_MAX_MODES`,
 8 .. 96, default 64). A build of 8 keeps the first eight partials: a piano with no brightness.
+
+**The build's sizes** (`UP_MAX_MODES`, `UP_UNISON_MODES`, `UP_BOARD_MODES`, `UP_CONTACT_RATE`,
+`up_config.h`) are set in the build's flags, which reach the library's sources and the sketch
+alike: under PlatformIO, `build_flags = -D UP_MAX_MODES=48`. The Arduino IDE has no place for
+them, so a build there has the defaults. A `#define` in a sketch reaches the sketch alone, which
+would then lay out every object differently from the library's own sources; such a build stops at
+the link, at an undefined reference to
+`up::UP_MAX_MODES_and_the_sizes_belong_in_the_build_flags<48, 16, 32, 2>::built` (the sketch's
+sizes), which the library defines only at its own.
 
 **The string** (generator −1): ratios n sqrt(1 + B n²) with the rank's B; decays sigma_n = lossRate
 / t60Scale + lossRate (f_n / lossKnee)^lossSlope at the note's partial frequencies: the floor (the
@@ -586,7 +595,7 @@ the presets `grand`, `rhodes` and `wurlitzer`.
 `PoolStorage<M>` the voices, their slots and their lanes (each voice's bridge force for the block,
 its weights on the board and the note they are at), `PoolBase` the logic over them (a host tool can
 size one at run time). Its output is the board on every voice's bridge force with every voice's
-pickup added, each at its level, not clamped; the voices' seeds follow from the pool's (`seedOf`).
+pickup added, each at its level, not clamped.
 
 **The note table.** A voice is free (asleep, no note), held (its key down), released (its key up:
 its damper on unless the pedal holds it, or ringing out over `damperTop`) or stolen (fading for a
@@ -615,9 +624,9 @@ measure through the steal, against 0.092 ringing on unstolen and the bound of 1.
 partial it still rings (6.0 kHz).
 
 **The key's release and the pedal.** `noteOff(midi)` releases the key's voice: its damper lands
-unless the pedal holds it (a note still waiting for a voice lands released). `pedal(p)` writes every
-voice's pedal channel and is the pool's pedal: a note that lands takes it (`03_Keyboard`'s CC 64).
-`allNotesOff()` releases every key. Measured: grand's C4 released at 1 s, its voice's force 60 dB
+unless the pedal holds it (a note still waiting for a voice lands released). `setPedal(p)` writes
+every voice's pedal channel and is the pool's pedal: a note that lands takes it (`03_Keyboard`'s CC
+64). `allNotesOff()` releases every key. Measured: grand's C4 released at 1 s, its voice's force 60 dB
 under its peak 0.210 s later (the damper's T60 0.345 s); under the pedal it rings on; the pedal's
 fall at 2 s lands it 0.190 s later.
 
@@ -654,16 +663,22 @@ command is an op, a 16-bit index (a channel or a partial's slot) and four floats
 and a shape, a partial table or a tuning waits in a small ring beside the queue (two each). A
 partial table or a tuning straight after one of its kind merges into it; a shape never does: each
 shape is one sequence, so a partial in a later shape stands over what the law writes for an earlier
-one's instrument channels. A setter that finds no room waits unmasked for `update()` to drain the
-queue (a block, 2.9 ms), and gives up only after 20 ms, counting it in `dropped()`. `update()`
-drains the queue into the pool in order with interrupts masked (the board's table runs there when
-the body moved: the 32 frequencies from the mode pairs found once and the field's sixteen losses,
-no search; the moved modes' turns follow in the render), then renders unmasked. The queue is the
-core's, so the host tests it: 3 s of notes, a steal, releases, the pedal, a shape, a tuning, sets,
-a rate, a partial and a table through the queue drained each block are the same bytes as the calls
-made directly (`pool_queue_keeps_order`).
+one's instrument channels. The wrapper holds two queues and the setters write one. A setter that
+finds no room waits unmasked for `update()` to take the queue (a block, 2.9 ms), and gives up only
+after 20 ms, counting it in `dropped()`. `update()` turns the setters to the other queue with
+interrupts masked (an index: nothing is copied), then, unmasked, drains the one they wrote into the
+pool in order (the board's table runs there when the body moved: the 32 frequencies from the mode
+pairs found once and the field's sixteen losses, no search; the moved modes' turns follow in the
+render) and renders. No setter writes the queue being drained (they write the other until the next
+`update()`, which never preempts itself), so the drain needs no mask, and the queue the setters
+come back to is empty. The queue is the core's, so the host tests it: 3 s of notes, a steal,
+releases, the pedal, a shape, a tuning, sets, a rate, a partial and a table through the queue
+drained each block are the same bytes as the calls made directly (`pool_queue_keeps_order`), and
+so are calls through two queues turned at each block's top, some made while one drains, which
+land a block later (`pool_queues_turn_at_each_block`).
 
-Sizes at 64 partials: a voice 20,080 bytes (its attack 428), a slot 48, a lane 644, the board
-14,184 (its field 10,668), `Pool<4>` 99,008, `Pool<8>` 182,160. Compiled for a Teensy 4.1,
-`AudioSynthUpright` is 43,944 bytes, `AudioSynthUprightPool<8>` 188,252 and
-`AudioSynthUprightPool<4>` 105,180 (at 48 partials, `-DUP_MAX_MODES=48`, 158,556 and 89,820).
+Sizes at 64 partials: a voice 20,072 bytes (its attack 428), a slot 48, a lane 644, the board
+14,184 (its field 10,668), `Pool<4>` 98,976, `Pool<8>` 182,096, a `PoolQueue` 5,736. Compiled for a
+Teensy 4.1, `AudioSynthUpright` is 43,936 bytes, `AudioSynthUprightPool<8>` 193,928 and
+`AudioSynthUprightPool<4>` 110,888, each pool wrapper with its two queues (at 48 partials,
+`-DUP_MAX_MODES=48`, 163,208 and 94,504).

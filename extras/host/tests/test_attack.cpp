@@ -110,7 +110,7 @@ Pair pairAt(float midi, float vel, float sec = 1.0f) {
         p.own[i] = p.one.x[i] - p.zero.x[i];
         p.ownForce[i] = p.one.bridge[i] - p.zero.bridge[i];
     }
-    Voice v(1);
+    Voice v;
     v.setShape(grand());
     v.noteOn(midi, vel);
     p.blow.resize(n);
@@ -180,7 +180,7 @@ Knock knockOf(const Pair& p) {
 // block (the attack feeds nothing back); the bridge force differs from the strike's first sample on; at 0 its first
 // 1.5 ms printed: the modal string's sum and its stiff upper partials, which run ahead of the fundamental's wave
 UP_TEST(attack_zero_runs_nothing) {
-    Voice a(1), z(1);
+    Voice a, z;
     Tuning t1, t0;
     t0.attack = 0.0f;
     a.setTuning(t1);
@@ -275,7 +275,7 @@ UP_TEST(attack_clank_pitch) {
         printf("    %s: the rank's c_L / (2 L) %.2f hz; the attack's own force over 24 .. 84 ms peaks at %.2f hz (%+.3f %%, %.1f db)\n",
                noteName(midi).c_str(), fl, pk.hz, 100.0 * off, pk.db);
     }
-    Voice v(1);
+    Voice v;
     v.setShape(grand());
     v.noteOn(96.0f, 1.0f);
     bool off = true;
@@ -347,7 +347,7 @@ UP_TEST(attack_pool_chord) {
     double peak[2] = {0.0, 0.0};
     bool finite = true;
     for (int i = 0; i < 2; ++i) {
-        Pool<4> pool(1);
+        Pool<4> pool;
         Tuning t;
         t.attack = i ? 0.0f : 1.0f;
         pool.setTuning(t);
@@ -372,7 +372,7 @@ UP_TEST(attack_cost) {
     auto voiceUs = [&](float attack) {
         double best = 1e30;
         for (int rep = 0; rep < 5; ++rep) {
-            Voice v(1);
+            Voice v;
             Tuning t;
             t.attack = attack;
             v.setTuning(t);

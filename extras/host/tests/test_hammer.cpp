@@ -151,7 +151,7 @@ namespace {
 Strike voiceStrike(const Shape& s, float midi, float vel) {
     Tuning t;
     t.silence = 0.0f;
-    Voice v(1);
+    Voice v;
     v.setTuning(t);
     v.setShape(s);
     v.noteOn(midi, vel);
@@ -359,7 +359,7 @@ struct LoopGap {
 LoopGap loopGap(const Shape& s, float midi, float vel) {
     LoopGap g;
     const int n = (int)(0.03 * kDefaultFs);
-    Voice v(1);
+    Voice v;
     v.setTuning(awake());
     v.setShape(s);
     v.noteOn(midi, vel);
@@ -432,7 +432,7 @@ UP_TEST(hammer_voice_ladder) {
     double ms[10], peak[10];
     for (int i = 0; i < 10; ++i) {
         const float vel = 0.1f * (i + 1);
-        Voice v(1);
+        Voice v;
         v.setTuning(awake());
         v.setShape(s);
         v.noteOn(60.0f, vel);
@@ -471,7 +471,7 @@ UP_TEST(hammer_voice_every_cell) {
         const Shape s = withHammer(grand(), hk);
         for (float m : notes)
             for (int vi = 1; vi <= 10; ++vi) {
-                Voice v(1);
+                Voice v;
                 v.setTuning(awake());
                 v.setShape(s);
                 v.noteOn(m, 0.1f * vi);
@@ -501,7 +501,7 @@ UP_TEST(hammer_voice_every_cell) {
 UP_TEST(hammer_restrike_on_a_moving_string) {
     const Shape s = grand();
     auto run = [&](bool again) {
-        Voice v(1);
+        Voice v;
         v.setShape(s);
         v.noteOn(60.0f, 0.7f);
         float b[kBlock], p[kBlock];

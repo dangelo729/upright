@@ -5,7 +5,7 @@
 // uptool (play, corpus, random, fit, chart --audio, board) and the tests.
 // host only.
 //
-// the render: a voice (seed 1) with the tuning, the instrument (a shape's
+// the render: a voice with the tuning, the instrument (a shape's
 // instrument channels over the default's, --set's instrument channels over
 // those, the partial channels left to the law), a measured table set whole
 // over it when given (setPartials), --set's partial and player channels
@@ -98,7 +98,7 @@ inline void prepare(Voice& v, const PlaySpec& sp) {
 
 inline PlayRender renderPlay(const PlaySpec& sp) {
     PlayRender r;
-    Voice v(1, sp.fs);
+    Voice v(sp.fs);
     prepare(v, sp);
     v.noteOn(sp.midi, sp.vel);
     Board board;
@@ -167,7 +167,7 @@ inline PlayRender renderPlay(const PlaySpec& sp) {
 
 // a voice struck once and rendered on until it sleeps: the time it sleeps (s), or under zero if not within maxSec
 inline float sleepTime(const PlaySpec& sp, float maxSec) {
-    Voice v(1, sp.fs);
+    Voice v(sp.fs);
     prepare(v, sp);
     v.noteOn(sp.midi, sp.vel);
     const long blocks = (long)(maxSec * sp.fs / kBlock);

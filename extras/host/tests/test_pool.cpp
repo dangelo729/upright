@@ -11,7 +11,9 @@
 // the same calls give the same bytes at render sizes 1, 128 and 1000; a
 // stolen voice's waiting note lands whole with the pool's pedal. the queue
 // (PoolQueue, the teensy pool's hand-off): calls through it play the same
-// bytes as calls made directly, in their order; a shape straight after a
+// bytes as calls made directly, in their order; two queues turned at each
+// block's top, as the wrapper turns them, play the same, a call made while
+// one drains landing a block later; a shape straight after a
 // shape stays its own; a full queue or ring refuses a call whole; wild writes,
 // directly and through the queue, leave the board finite and a later chord
 // sounding. and the umbrella header compiles on the host, its teensy
@@ -109,7 +111,7 @@ UP_TEST(pool_steals_the_quietest_without_a_cut) {
     double top = 0.0;
     float lastLevel = 1.0f;
     auto run = [&](bool steal) {
-        Pool<4> pool(3);
+        Pool<4> pool;
         pool.setShape(grand());
         Record r;
         for (int k = 0; k < 4; ++k) {
@@ -172,7 +174,7 @@ UP_TEST(pool_steals_the_quietest_without_a_cut) {
 // strike's block, before the second and after it printed beside a fresh
 // strike's (a strike on a moving string: not the sum of two)
 UP_TEST(pool_restrike_meets_the_moving_string) {
-    Pool<4> pool(5);
+    Pool<4> pool;
     pool.setShape(grand());
     Record r;
     pool.noteOn(60.0f, 0.8f);
@@ -187,7 +189,7 @@ UP_TEST(pool_restrike_meets_the_moving_string) {
     CHECK(pool.sounding() == 1 && slotOf(pool, 60.0f) == 0);
     renderInto(pool, r, blocks(1.0f) * kBlock);
     CHECK(allFinite(r.out.data(), r.out.size()));
-    Pool<4> fresh(5);
+    Pool<4> fresh;
     fresh.setShape(grand());
     Record f;
     fresh.noteOn(60.0f, 0.8f);
@@ -210,16 +212,16 @@ UP_TEST(pool_restrike_meets_the_moving_string) {
 UP_TEST(pool_note_off_lands_the_damper) {
     const double t60 = 6.907755 / grand()[Channel::dampRate], ease = -std::log(0.05) / Tuning().ratePedal;
     auto run = [&](bool pedal, bool fall, float sec) {
-        Pool<4> pool(6);
+        Pool<4> pool;
         pool.setShape(grand());
-        if (pedal) pool.pedal(1.0f);
+        if (pedal) pool.setPedal(1.0f);
         Record r;
         pool.noteOn(60.0f, 1.0f);
         renderInto(pool, r, blocks(1.0f) * kBlock);
         pool.noteOff(60.0f);
         CHECK(pool.slot(0).use == PoolSlot::Use::released);
         renderInto(pool, r, blocks(1.0f) * kBlock);
-        if (fall) pool.pedal(0.0f);
+        if (fall) pool.setPedal(0.0f);
         renderInto(pool, r, blocks(sec - 2.0f) * kBlock);
         return r.bridge;
     };
@@ -249,22 +251,18 @@ UP_TEST(pool_note_off_lands_the_damper) {
 // the pool's output is its voices' pairs through one board, summed by hand:
 // four keys, a release, the pedal down and up, a pool-wide shape that
 // moves the plate, a key's own voice again, no steal; each voice driven alone
-// the same way (its seed the pool's for it, the same writes: at a landing
-// note on the voice the pool chose, the pool's pedal, then the note; a voice
-// whose key was released and has slept is free, and may take a later key),
+// the same way (the same writes: at a landing note on the voice the pool
+// chose, the pool's pedal, then the note; a voice whose key was released and
+// has slept is free, and may take a later key),
 // its bridge force through one board
 // of the test's (the plate as the pool writes it, each voice's weights at
 // its bridge point when its note or the plate moved), its pickup added in
 // voice order: the same bytes; and the window's share of one voice is that
 // voice's force alone, bit for bit
 UP_TEST(pool_is_its_voices_through_one_board) {
-    const uint32_t seed = 9;
-    Pool<4> pool(seed);
+    Pool<4> pool;
     Voice v[4];
-    for (int i = 0; i < 4; ++i) {
-        v[i].reseed(PoolBase::seedOf(seed, i));
-        v[i].setTuning(Tuning());
-    }
+    for (int i = 0; i < 4; ++i) v[i].setTuning(Tuning());
     Board board;
     board.init(kFs);
     float w[4][kBoardModes], point[4] = {-1.0f, -1.0f, -1.0f, -1.0f}, pedal = 0.0f;
@@ -289,7 +287,7 @@ UP_TEST(pool_is_its_voices_through_one_board) {
         v[i].noteOn(key, vel);
     };
     auto pedals = [&](float p) {
-        pool.pedal(p);
+        pool.setPedal(p);
         pedal = p;
         for (Voice& x : v) x.setPedal(p);
     };
@@ -343,21 +341,21 @@ UP_TEST(pool_is_its_voices_through_one_board) {
 // second plays beside it, struck and written between its blocks
 UP_TEST(pool_two_pools_independent) {
     auto run = [](Pool<4>* other) {
-        Pool<4> p(11);
+        Pool<4> p;
         Record o, x;
         for (int s = 0; s < 6; ++s) {
             p.noteOn(55.0f + 3.0f * (float)s, 1.0f);
             if (other) {
                 other->noteOn(40.0f + (float)s, 1.0f);
                 other->setShape(with(concertGrand(), {{Channel::generator, -0.5f}, {Channel::tonebar, 0.5f}}));
-                other->pedal(0.8f);
+                other->setPedal(0.8f);
             }
             renderInto(p, o, 6000);
             if (other) renderInto(*other, x, 6000);
         }
         return o.out;
     };
-    Pool<4> beside(11);
+    Pool<4> beside;
     const std::vector<float> a = run(nullptr), b = run(&beside);
     CHECK(std::memcmp(a.data(), b.data(), a.size() * sizeof(float)) == 0);
     CHECK(beside.sounding() > 0 && rms(a.data(), a.size()) > 0.0);
@@ -369,7 +367,7 @@ UP_TEST(pool_two_pools_independent) {
 // written by hand pool-wide stands on a later note until the instrument is
 // written again
 UP_TEST(pool_writes_reach_later_notes_and_the_board) {
-    Pool<4> pool(12);
+    Pool<4> pool;
     Record r;
     pool.noteOn(60.0f, 1.0f);
     renderInto(pool, r, kBlock);
@@ -410,7 +408,7 @@ UP_TEST(pool_same_bytes_at_any_render_size) {
     const int total = (int)(4.0f * kFs);
     const Call calls[] = {{0, 0}, {3001, 1}, {9000, 2}, {15013, 3}, {22050, 4}, {40000, 5}, {61111, 6}, {90000, 7}, {120000, 8}};
     auto run = [&](int size) {
-        Pool<4> p(13);
+        Pool<4> p;
         std::vector<float> x((size_t)total);
         int at = 0;
         size_t c = 0;
@@ -420,10 +418,10 @@ UP_TEST(pool_same_bytes_at_any_render_size) {
                     case 0: p.setShape(grand()); p.noteOn(48.0f, 1.0f); p.noteOn(52.0f, 0.6f); break;
                     case 1: p.noteOn(55.0f, 0.9f); p.noteOn(60.0f, 0.3f); break;
                     case 2: p.noteOn(64.0f, 1.0f); break;                                  // a fifth key: a steal
-                    case 3: p.noteOff(48.0f); p.pedal(0.5f); break;
+                    case 3: p.noteOff(48.0f); p.setPedal(0.5f); break;
                     case 4: p.setShape(with(spinet(), {{Channel::generator, -0.3f}, {Channel::tonebar, 0.7f}})); p.noteOn(67.0f, 0.8f); break;
                     case 5: { Tuning t; t.stealRate = 90.0f; p.setTuning(t); p.allNotesOff(); } break;
-                    case 6: p.pedal(0.0f); p.setPartial(2, 3.05f, 1.5f, 0.5f, 2.0f); break;
+                    case 6: p.setPedal(0.0f); p.setPartial(2, 3.05f, 1.5f, 0.5f, 2.0f); break;
                     case 7: p.noteOn(72.0f, 1.0f); p.noteOn(72.0f, 0.5f); break;
                     case 8: p.noteOn(76.0f, 1.0f); break;
                 }
@@ -450,7 +448,7 @@ UP_TEST(pool_same_bytes_at_any_render_size) {
 // first block its voice's eased pedal is the pool's 0.7 (whole: every channel
 // on its target), its note the fifth key's
 UP_TEST(pool_steal_lands_whole_with_the_pool_pedal) {
-    Pool<4> pool(14);
+    Pool<4> pool;
     pool.setShape(grand());
     Record r;
     for (float key : {48.0f, 52.0f, 55.0f, 60.0f}) pool.noteOn(key, 1.0f);
@@ -461,7 +459,7 @@ UP_TEST(pool_steal_lands_whole_with_the_pool_pedal) {
         if (pool.slot(i).use == PoolSlot::Use::stolen) stolen = i;
     CHECK(stolen >= 0);
     renderInto(pool, r, 4 * kBlock);
-    pool.pedal(0.7f);
+    pool.setPedal(0.7f);
     pool.noteOff(64.0f);
     CHECK(pool.slot(stolen).nextOff);
     int landed = -1;
@@ -498,7 +496,7 @@ void playBoth(PoolBase& direct, PoolBase& queued, int blocks, Calls calls, std::
 // block, the second wins; a key struck and let go in one block lands
 // released)
 UP_TEST(pool_queue_keeps_order) {
-    Pool<4> a(21), b(21);
+    Pool<4> a, b;
     std::vector<float> x, y;
     PartialTable table;
     for (int k = 0; k < kMaxModes; ++k) table.ratio[k] = table.t60[k] = table.gain[k] = table.out[k] = std::nanf("");
@@ -511,9 +509,9 @@ UP_TEST(pool_queue_keeps_order) {
             case 0: w.setShape(grand()); w.setTuning(t); w.noteOn(48.0f, 1.0f); w.noteOn(52.0f, 0.6f); break;
             case 2: w.set(Channel::hardness, 100.0f); w.set(Channel::hardness, 900.0f); w.noteOn(55.0f, 0.9f); break;
             case 40: w.setRate(Channel::boardArea, 4.0f); w.set(Channel::boardArea, 1.4f); w.noteOn(60.0f, 0.8f); w.noteOff(60.0f); break;
-            case 80: w.pedal(0.6f); w.setPartial(2, 3.05f, 1.5f, 0.5f, 2.0f); w.setPartials(table); w.noteOn(64.0f, 1.0f); break;
+            case 80: w.setPedal(0.6f); w.setPartial(2, 3.05f, 1.5f, 0.5f, 2.0f); w.setPartials(table); w.noteOn(64.0f, 1.0f); break;
             case 120: w.noteOn(67.0f, 1.0f); w.noteOff(48.0f); break;
-            case 160: w.allNotesOff(); w.pedal(0.0f); break;
+            case 160: w.allNotesOff(); w.setPedal(0.0f); break;
         }
     }, x, y);
     CHECK(std::memcmp(x.data(), y.data(), x.size() * sizeof(float)) == 0);
@@ -521,6 +519,60 @@ UP_TEST(pool_queue_keeps_order) {
     CHECK(b.voice(0).shape()[Channel::hardness] == 900.0f);
     printf("    3 s of notes, a steal, releases, the pedal, a shape, a tuning, sets, a rate, a partial and a table, through the queue drained "
            "each block: the same bytes as the calls made directly\n");
+}
+
+// the pool wrapper's handoff, its two queues: the setters write one; at each
+// block's top update() turns them to the other and drains the one they wrote,
+// unmasked, so a call made while it drains (from an interrupt above the audio
+// library's) goes to the other queue and lands a block later. against the
+// same calls made directly, each before the block it lands in: the same bytes,
+// and the queue the setters turn back to is empty
+UP_TEST(pool_queues_turn_at_each_block) {
+    Pool<4> direct, queued;
+    PoolQueue q[2];
+    int writing = 0;
+    bool empty = true;
+    PartialTable table;
+    for (int k = 0; k < kMaxModes; ++k) table.ratio[k] = table.t60[k] = table.gain[k] = table.out[k] = std::nanf("");
+    table.ratio[1] = 2.2f;
+    Tuning t;
+    t.stealRate = 90.0f;
+    // the main loop's calls, before block k's top
+    auto before = [&](auto& w, int k) {
+        switch (k) {
+            case 0: w.setShape(grand()); w.setTuning(t); w.noteOn(48.0f, 1.0f); w.noteOn(52.0f, 0.6f); break;
+            case 30: w.set(Channel::hardness, 900.0f); w.noteOn(55.0f, 0.9f); w.noteOn(60.0f, 0.8f); break;
+            case 90: w.setPedal(0.6f); w.noteOn(64.0f, 1.0f); w.noteOff(48.0f); break;
+            case 200: w.allNotesOff(); w.setPedal(0.0f); break;
+        }
+    };
+    // the calls made while block k drains: block k + 1's
+    auto during = [&](auto& w, int k) {
+        switch (k) {
+            case 0: w.noteOn(67.0f, 0.7f); break;
+            case 30: w.setPartial(2, 3.05f, 1.5f, 0.5f, 2.0f); w.setPartials(table); break;
+            case 90: w.setShape(with(spinet(), {{Channel::generator, -0.3f}, {Channel::tonebar, 0.7f}})); w.noteOn(72.0f, 1.0f); break;
+            case 140: w.noteOff(64.0f); w.setRate(Channel::boardArea, 4.0f); w.set(Channel::boardArea, 1.4f); break;
+        }
+    };
+    const int n = blocks(3.0f);
+    std::vector<float> x((size_t)n * kBlock), y(x.size());
+    for (int k = 0; k < n; ++k) {
+        before(direct, k);
+        before(q[writing], k);
+        const int drained = writing;                                             // update(): masked, the turn
+        writing = 1 - writing;
+        empty = empty && q[writing].count() == 0;
+        during(q[writing], k);                                                   // unmasked: the drain, a call beside it
+        q[drained].drain(queued);
+        queued.render(y.data() + (size_t)k * kBlock, kBlock);
+        direct.render(x.data() + (size_t)k * kBlock, kBlock);
+        during(direct, k);
+    }
+    CHECK(std::memcmp(x.data(), y.data(), x.size() * sizeof(float)) == 0);
+    CHECK(empty && rms(y.data(), y.size()) > 0.0 && allFinite(y.data(), y.size()));
+    printf("    3 s of calls through two queues turned at each block's top, some made while one drains: the same bytes as the calls made "
+           "directly\n");
 }
 
 // a shape straight after a shape stays its own sequence: grand's instrument
@@ -544,7 +596,7 @@ UP_TEST(pool_queue_shapes_stand_apart) {
     CHECK(q.setShape(grand()) && q.setShape(hand) && q.count() == 2);
     CHECK(q.setPartials(t1) && q.setPartials(t2) && q.count() == 3);
     CHECK(q.setTuning(slow) && q.setTuning(fast) && q.count() == 4);
-    Pool<4> a(22), b(22);
+    Pool<4> a, b;
     std::vector<float> x, y;
     playBoth(a, b, blocks(1.0f), [&](auto& w, int block) {
         if (block != 0) return;
@@ -559,7 +611,7 @@ UP_TEST(pool_queue_shapes_stand_apart) {
     // the shape the merge would have made, on a third pool
     Shape merged = grand();
     merged[ratioChannel(k)] = 5.31f;
-    Pool<4> c(22);
+    Pool<4> c;
     c.setShape(merged);
     c.noteOn(60.0f, 1.0f);
     std::vector<float> z((size_t)blocks(1.0f) * kBlock);
@@ -584,7 +636,7 @@ UP_TEST(pool_queue_full) {
     CHECK(n == PoolQueue::kQueue && q.count() == PoolQueue::kQueue);
     CHECK(!q.noteOn(60.0f, 1.0f) && !q.setShape(grand()) && !q.setPartials(PartialTable()) && !q.setTuning(Tuning()));
     CHECK(q.count() == PoolQueue::kQueue);
-    Pool<4> p(23);
+    Pool<4> p;
     q.drain(p);
     float out[kBlock];
     p.render(out, kBlock);
@@ -592,15 +644,15 @@ UP_TEST(pool_queue_full) {
 
     PartialTable t;
     for (int i = 0; i < kMaxModes; ++i) t.ratio[i] = t.t60[i] = t.gain[i] = t.out[i] = std::nanf("");
-    for (int i = 0; i < PoolQueue::kQueue - 1; ++i) q.pedal(0.0f);
+    for (int i = 0; i < PoolQueue::kQueue - 1; ++i) q.setPedal(0.0f);
     CHECK(q.setPartials(t) && q.count() == PoolQueue::kQueue);
     t.ratio[3] = 4.4f;
     CHECK(q.setPartials(t) && q.count() == PoolQueue::kQueue);
     q.drain(p);
 
     bool rings = q.setShape(grand()) && q.setShape(grand()) && !q.setShape(grand());
-    rings = rings && q.setPartials(t) && q.pedal(0.0f) && q.setPartials(t) && q.pedal(0.0f) && !q.setPartials(t);
-    rings = rings && q.setTuning(Tuning()) && q.pedal(0.0f) && q.setTuning(Tuning()) && q.pedal(0.0f) && !q.setTuning(Tuning());
+    rings = rings && q.setPartials(t) && q.setPedal(0.0f) && q.setPartials(t) && q.setPedal(0.0f) && !q.setPartials(t);
+    rings = rings && q.setTuning(Tuning()) && q.setPedal(0.0f) && q.setTuning(Tuning()) && q.setPedal(0.0f) && !q.setTuning(Tuning());
     CHECK(rings && q.count() == 10);
     q.drain(p);
     CHECK(q.count() == 0 && q.setShape(grand()) && q.setPartials(t) && q.setTuning(Tuning()) && q.count() == 3);
@@ -628,7 +680,7 @@ UP_TEST(pool_wild_writes_stay_finite) {
     for (int i = 0; i < kChannelCount; ++i)
         if (!isPartialChannel((Channel)i) || partialOf((Channel)i) == 1) chans.push_back((Channel)i);
     const int nc = (int)chans.size(), per = 2 * nc + 14 + 7, wildBlocks = 4 * 10 * per, chord = wildBlocks + blocks(5.0f);
-    Pool<4> a(24), b(24);
+    Pool<4> a, b;
     std::vector<float> x, y;
     bool quiet = false;
     playBoth(a, b, chord + blocks(1.0f), [&](auto& w, int k) {
@@ -637,7 +689,7 @@ UP_TEST(pool_wild_writes_stay_finite) {
             for (Channel c : chans) w.setRate(c, groupRate(groupOf(c), Tuning()));
             w.setShape(grand());
             w.set(Channel::glide, 0.0f);
-            w.pedal(0.0f);
+            w.setPedal(0.0f);
             w.allNotesOff();
         }
         if (k == chord) {
@@ -670,7 +722,7 @@ UP_TEST(pool_wild_writes_stay_finite) {
                 case 0: w.setShape(s); break;
                 case 1: w.setPartial(1, v, v, v, v); break;
                 case 2: w.setPartials(p); break;
-                case 3: w.pedal(v); break;
+                case 3: w.setPedal(v); break;
                 case 4: w.noteOn(v, v); break;
                 case 5: w.noteOn(60.0f, v); break;
                 case 6: w.noteOff(v); break;

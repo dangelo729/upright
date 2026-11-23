@@ -63,9 +63,7 @@
 // the same calls give the same bytes at any render size. no heap, no libm per
 // sample: the law per instrument write and per note, the rank per note, the
 // felt's table per hammer write, the coefficients per block where they
-// moved, the attack's cosines per block, the strike's speed per strike. one
-// seeded xorshift32 per voice (the constructor's seed, reseed()), drawn by
-// nothing in the engine: any seed renders the same bytes.
+// moved, the attack's cosines per block, the strike's speed per strike.
 //
 // a strike lands at the next block's top, one block's latency, as every
 // write. two noteOns in one block: the second replaces the first's strike
@@ -112,7 +110,7 @@ struct Pending {
 
 class Voice {
 public:
-    explicit Voice(uint32_t seed = 1, float fs = kDefaultFs);
+    explicit Voice(float fs = kDefaultFs);
     void init(float fs);                     // a new rate: asleep, every phasor zero, the channels kept
 
     // ---- the player ---------------------------------------------------------------------
@@ -162,7 +160,6 @@ public:
     void latch();                            // take p's newer writes; lands at the top of the next block
 
     // ---- for a pool -------------------------------------------------------------------------
-    void  reseed(uint32_t seed);             // the voice's generator starts again from seed (nothing in the engine draws it)
     void  stop();                            // asleep now: every phasor zero, the hammer off, no strike queued
     bool  asleep() const { return asleep_; }
     float energy() const { return energy_; } // every bank's summed energy (mm²) as of the last block
@@ -180,7 +177,6 @@ private:
     void publish();
 
     float    fs_ = kDefaultFs;
-    uint32_t seed_ = 1;
     Tuning   tuning_, pendingTuning_;
     bool     tuningPending_ = true;
     Channels ch_;
@@ -189,7 +185,6 @@ private:
     Strings  strings_;
     Attack   attack_;
     Pickup   pickup_;
-    Rng      rng_;
 
     float dt_ = (float)kBlock / kDefaultFs;
     float top_ = kCeiling * kDefaultFs;      // the ceiling, hz
@@ -209,7 +204,6 @@ private:
     // what the rank and the hammer were last computed from
     float rankKey_[8] = {};
     float hammerKey_[7] = {};
-    float re_[kMaxModes] = {};               // the main string's phasors' re as the block ended (for the picture)
 
     State state_;
 

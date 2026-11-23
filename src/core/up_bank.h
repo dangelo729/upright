@@ -214,7 +214,9 @@ public:
             const float w = p.outV += p.outD;
             const float t = p.tipV += p.tipD;
             if (kBridge || kTip) {
-                const float o = w * nre, ot = t * nre;       // each product its own statement: no fused multiply-add
+                const float o = w * nre, ot = t * nre;       // each product its own statement: clang (the host's) fuses
+                                                             //   none here, only inside a statement; gcc (the teensy's)
+                                                             //   fuses across statements, these too
                 if (kBridge && kVelocity) s += w * p.omega * nim;
                 else if (kBridge) s += o;
                 if (kTip) {

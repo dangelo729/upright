@@ -18,10 +18,7 @@ constexpr float kThrowMax = 1000.0f;           // m/s: the most a strike throws 
 
 }  // namespace
 
-Voice::Voice(uint32_t seed, float fs) : seed_(seed) {
-    rng_.seed(seed);
-    init(fs);
-}
+Voice::Voice(float fs) { init(fs); }
 
 void Voice::init(float fs) {
     fs_ = fs > 1.0f ? fs : kDefaultFs;
@@ -45,6 +42,7 @@ void Voice::init(float fs) {
 // ---- the player -------------------------------------------------------------------------
 
 void Voice::noteOn(float midi, float vel01) {
+    if (!std::isfinite(midi)) return;                    // no note: no write and no strike
     set(Channel::midi, midi);
     const float v = std::isfinite(vel01) ? clamp(vel01, 0.0f, 1.0f) : 0.0f;
     if (pending_) {
@@ -164,13 +162,9 @@ int Voice::partials(PartialTable& out) const {
     return kMaxModes;
 }
 
-float Voice::stringAt(float share) const { return ::up::stringAt(re_, kMaxModes, state_.shape, share); }
+float Voice::stringAt(float share) const { return ::up::stringAt(state_.re, kMaxModes, state_.shape, share); }
 
-int Voice::stringShape(float* y, int n) const {
-    if (!y || n <= 0) return 0;
-    for (int i = 0; i < n; ++i) y[i] = stringAt(n > 1 ? (float)i / (float)(n - 1) : 0.0f);
-    return n;
-}
+int Voice::stringShape(float* y, int n) const { return ::up::stringShape(state_, y, n); }
 
 // ---- the handoff ---------------------------------------------------------------------------
 
@@ -209,11 +203,6 @@ void Voice::latch() {
 }
 
 // ---- for a pool ------------------------------------------------------------------------------
-
-void Voice::reseed(uint32_t seed) {
-    seed_ = seed;
-    rng_.seed(seed);
-}
 
 void Voice::stop() {
     strikeQueued_ = false;
@@ -307,7 +296,7 @@ void Voice::sleep() {
     energy_ = 0.0f;
     sqBridge_ = sqPickup_ = sq_ = 0.0f;
     modesOn_ = 0;
-    for (float& r : re_) r = 0.0f;
+    for (float& r : state_.re) r = 0.0f;
     publish();
 }
 
@@ -461,7 +450,7 @@ void Voice::publish() {
         const float a = main.amplitude(k);
         st.amp[k] = a;
         float im;
-        main.phasor(k, re_[k], im);
+        main.phasor(k, st.re[k], im);
         if (a > most) {
             most = a;
             st.loudest = k;

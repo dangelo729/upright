@@ -9,7 +9,6 @@
 namespace up {
 namespace {
 
-inline float finiteOr(float x, float fallback) { return std::isfinite(x) ? x : fallback; }
 constexpr float kTableScale = (float)(kFeltPoints - 1);
 
 }  // namespace

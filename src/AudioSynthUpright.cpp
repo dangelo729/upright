@@ -1,9 +1,10 @@
 // upright — AudioSynthUpright.cpp
-// the header holds the whole file inside #if defined(ARDUINO); on the host
-// this translation unit is empty.
+// the header holds the whole file inside #if defined(ARDUINO) &&
+// __has_include(<AudioStream.h>); where it is false (the host, another
+// arduino core) this translation unit is empty.
 #include "AudioSynthUpright.h"
 
-#if defined(ARDUINO)
+#if defined(ARDUINO) && __has_include(<AudioStream.h>)
 
 using up::Masked;
 
@@ -19,15 +20,31 @@ constexpr uint32_t kFlushToZero = 1u << 24;          // FPSCR and FPDSCR: FZ
 // lands every call, a block of 128 later at most
 static_assert(AUDIO_BLOCK_SAMPLES > 0, "AUDIO_BLOCK_SAMPLES must be positive");
 
+// ---- what both wrappers share -------------------------------------------------------------------
+
 // init-only, in flash. the thread's FPSCR covers setup() and loop(); FPDSCR
 // is what an interrupt's floating-point context starts from, update()'s
-FLASHMEM void AudioSynthUpright::flushDenormals() {
+FLASHMEM up::Wrapper::Wrapper() : AudioStream(0, NULL) {
     SCB_FPDSCR |= kFlushToZero;
     __builtin_arm_set_fpscr(__builtin_arm_get_fpscr() | kFlushToZero);
 }
 
-FLASHMEM AudioSynthUpright::AudioSynthUpright(uint32_t seed) : AudioStream(0, NULL), voice_(seed, AUDIO_SAMPLE_RATE_EXACT) {
-    flushDenormals();
+void up::Wrapper::send(const float* x) {
+    audio_block_t* block = allocate();
+    if (!block) return;
+    for (int i = 0; i < AUDIO_BLOCK_SAMPLES; ++i) {
+        float y = x[i];
+        if (y > 1.0f) y = 1.0f;
+        if (y < -1.0f) y = -1.0f;
+        block->data[i] = (int16_t)(y * 32767.0f);
+    }
+    transmit(block, 0);
+    release(block);
+}
+
+// ---- the voice ------------------------------------------------------------------------------------
+
+FLASHMEM AudioSynthUpright::AudioSynthUpright() : voice_(AUDIO_SAMPLE_RATE_EXACT) {
     voice_.attach(&pending_);
     board_.init(AUDIO_SAMPLE_RATE_EXACT);
     board_.inputWeights(up::kScaleMidi, weights_);
@@ -87,10 +104,8 @@ int AudioSynthUpright::partials(up::PartialTable& out) const {
     return voice_.partials(out);
 }
 
-int AudioSynthUpright::stringShape(float* y, int n) const {
-    Masked m;
-    return voice_.stringShape(y, n);
-}
+// the state copied under the mask (state()), its n points of sines after it
+int AudioSynthUpright::stringShape(float* y, int n) const { return up::stringShape(state(), y, n); }
 
 up::RankState AudioSynthUpright::rank() const {
     Masked m;
@@ -119,19 +134,4 @@ void AudioSynthUpright::update(void) {
     send(out_);
 }
 
-// the output's block: clamped, scaled to int16, sent on output 0. a failed
-// allocate drops this block only
-void AudioSynthUpright::send(const float* x) {
-    audio_block_t* block = allocate();
-    if (!block) return;
-    for (int i = 0; i < AUDIO_BLOCK_SAMPLES; ++i) {
-        float y = x[i];
-        if (y > 1.0f) y = 1.0f;
-        if (y < -1.0f) y = -1.0f;
-        block->data[i] = (int16_t)(y * 32767.0f);
-    }
-    transmit(block, 0);
-    release(block);
-}
-
-#endif  // defined(ARDUINO)
+#endif  // defined(ARDUINO) && __has_include(<AudioStream.h>)
