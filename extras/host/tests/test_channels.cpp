@@ -5,10 +5,14 @@
 // blocks contiguous and partialOf right at their edges; every name finds its
 // channel again; every channel's span holds the default piano; the tine's
 // two channels, their spans, names, group and defaults; nanShape; the
-// tuning's defaults and clamped(); a partial table through a shape and
-// back; the law's writer and a partial set by hand.
+// tuning's defaults and clamped(); an infinity is no write and a target
+// outside its span is held at its end; the tuning's infinities and its
+// output's gain; a partial table through a shape and back; the law's writer
+// and a partial set by hand.
+#include <cfloat>
 #include <cmath>
 #include <cstring>
+#include <limits>
 
 #include "core/up_channels.h"
 #include "core/up_law.h"
@@ -288,6 +292,81 @@ UP_TEST(channels_tuning_clamped) {
     t.ceiling = -1.0f;
     t.ampHz = 0.0f;
     CHECK(clamped(t).ceiling == 0.01f && clamped(t).ampHz > 0.0f);
+}
+
+// an infinity is no write, as a nan is: through set, rate, setShape and
+// write, no target, rate or sequence moves. a finite target outside its
+// channel's span is held at the nearer end, through set and setShape; one
+// inside lands as written; the law's own writer is not held
+UP_TEST(channels_wild_targets_held) {
+    const float inf = std::numeric_limits<float>::infinity();
+    Channels ch;
+    const Shape before = ch.shape();
+    Shape all;
+    for (float& v : all.v) v = inf;
+    for (int i = 0; i < kChannelCount; ++i) {
+        ch.set((Channel)i, inf);
+        ch.set((Channel)i, -inf);
+        ch.rate((Channel)i, inf);
+        ch.write((Channel)i, -inf, ch.lastSeq() + 1);
+    }
+    ch.setShape(all);
+    const Shape after = ch.shape();
+    bool none = std::memcmp(&before, &after, sizeof(Shape)) == 0;
+    for (int i = 0; i < kChannelCount; ++i) none = none && ch.seq((Channel)i) == 0 && !ch.rateWritten((Channel)i);
+    CHECK(none);
+    bool held = true, inside = true;
+    for (int i = 0; i < kChannelCount; ++i) {
+        const Channel c = (Channel)i;
+        float lo, hi;
+        channelRange(c, lo, hi);
+        ch.set(c, FLT_MAX);
+        held = held && ch.target(c) == hi;
+        ch.set(c, -3e5f);
+        held = held && ch.target(c) == lo;
+        const float in[3] = {lo, hi, lo + 0.3f * (hi - lo)};
+        for (float x : in) {
+            ch.set(c, x);
+            inside = inside && ch.target(c) == x;
+        }
+    }
+    for (int side = 0; side < 2; ++side) {
+        for (float& v : all.v) v = side ? -1e30f : 1e30f;
+        ch.setShape(all);
+        for (int i = 0; i < kChannelCount; ++i) {
+            float lo, hi;
+            channelRange((Channel)i, lo, hi);
+            held = held && ch.target((Channel)i) == (side ? lo : hi);
+        }
+    }
+    CHECK(held && inside);
+    ch.write(ratioChannel(kMaxModes - 1), 40000.0f, ch.lastSeq() + 1);   // the beam's top partial, over the span
+    CHECK(ch.target(ratioChannel(kMaxModes - 1)) == 40000.0f);
+}
+
+// the tuning: an infinity falls back to the field's default, as a nan does,
+// in every field; the output's gain held inside ±1e6
+UP_TEST(channels_tuning_wild) {
+    float Tuning::*const fields[] = {&Tuning::rateStrings, &Tuning::rateHammer, &Tuning::rateBody, &Tuning::rateModes, &Tuning::ratePitch,
+                                     &Tuning::ratePedal,   &Tuning::hammerScale, &Tuning::velCurve, &Tuning::outputGain, &Tuning::silence,
+                                     &Tuning::stealRate,   &Tuning::ceiling,     &Tuning::ampHz,    &Tuning::attack};
+    const Tuning d;
+    const float inf[2] = {std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
+    bool fallback = true;
+    for (float Tuning::*f : fields)
+        for (float x : inf) {
+            Tuning t;
+            t.*f = x;
+            fallback = fallback && clamped(t).*f == d.*f;
+        }
+    CHECK(fallback);
+    Tuning t;
+    t.outputGain = FLT_MAX;
+    CHECK(clamped(t).outputGain == 1e6f);
+    t.outputGain = -1e30f;
+    CHECK(clamped(t).outputGain == -1e6f);
+    t.outputGain = -999999.0f;
+    CHECK(clamped(t).outputGain == -999999.0f);
 }
 
 // a partial table through a shape and back: the same numbers, a nan where the

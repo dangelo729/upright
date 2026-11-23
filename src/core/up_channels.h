@@ -3,8 +3,10 @@
 // value, a rate and a sequence. a write carries a sequence number; between
 // two tables (a writer's pending one and the audio side's) the newer write
 // wins, per channel. a Shape is every target at once, and lands whole; a nan
-// is no write. once per block, tick() moves every value toward its target by
-// the one law; a rate at or below zero jumps.
+// or an infinity is no write, and set() and setShape() hold a finite target
+// inside its channel's span (channelRange). once per block, tick() moves
+// every value toward its target by the one law; a rate at or below zero
+// jumps.
 //
 // the channels: the instrument's twenty-four in five groups (the strings, the
 // hammer, the body, the generator, the damper; physical units but the
@@ -97,7 +99,8 @@ const char* channelName(Channel c);                  // "length" .. "ratio7", "t
 bool channelByName(const char* name, Channel& out);
 
 // each channel's span, in its own units: what a control can sensibly ask
-// for, and what the tests drive it between. every value inside is legal.
+// for, and what the tests drive it between. every value inside is legal; a
+// target written outside it is held at its nearer end.
 void channelRange(Channel c, float& lo, float& hi);
 
 // every channel's target, indexed by Channel
@@ -129,7 +132,8 @@ class Channels {
 public:
     explicit Channels(const Tuning& t = Tuning());
 
-    // writes. each takes the next sequence number; a nan is no write.
+    // writes. each takes the next sequence number; a nan or an infinity is no
+    // write; set and setShape hold a target inside its span.
     void set(Channel c, float target);
     void rate(Channel c, float perSec);
     void setShape(const Shape& s);                    // every target under one sequence number

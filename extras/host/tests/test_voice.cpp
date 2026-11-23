@@ -12,9 +12,12 @@
 // under a held note is finite and under the click bound; rhodes at e3
 // sleeps; a sleeping voice renders zeros; grand's octave through the board
 // reads the reference's level; two noteOns in a block are the second; the
-// pool's hooks.
+// pool's hooks; wild writes into every entry point stay finite, and a valid
+// note after them sounds and sleeps.
+#include <cfloat>
 #include <cmath>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -722,4 +725,114 @@ UP_TEST(voice_pool_hooks) {
     a.render(ya.data(), nullptr, 4000);
     b.render(yb.data(), nullptr, 4000);
     CHECK(std::memcmp(ya.data(), yb.data(), ya.size() * sizeof(float)) == 0);
+}
+
+// wild writes on grand then rhodes, heard through a board of their own: each
+// value of infinity, the float's largest, 1e30, 3e5 and 1e-40, each signed,
+// through set and setRate on every instrument and player channel and one
+// partial's four, setShape, setPartial, setPartials, noteOn and setTuning on
+// each field, each written on the preset under a strike, every rate a jump,
+// and standing four blocks. the output, the energy and the state's levels
+// stay finite; then the preset and the default tuning and rates again: the
+// voice sleeps, and a valid note from rest sounds and sleeps once let go
+UP_TEST(voice_wild_writes_stay_finite) {
+    const float inf = std::numeric_limits<float>::infinity();
+    const float wild[] = {inf, -inf, FLT_MAX, -FLT_MAX, 1e30f, -1e30f, 3e5f, -3e5f, 1e-40f, -1e-40f};
+    float Tuning::*const fields[] = {&Tuning::rateStrings, &Tuning::rateHammer, &Tuning::rateBody, &Tuning::rateModes, &Tuning::ratePitch,
+                                     &Tuning::ratePedal,   &Tuning::hammerScale, &Tuning::velCurve, &Tuning::outputGain, &Tuning::silence,
+                                     &Tuning::stealRate,   &Tuning::ceiling,     &Tuning::ampHz,    &Tuning::attack};
+    Tuning jumps;
+    for (int f = 0; f < 6; ++f) jumps.*fields[f] = 0.0f;                         // the six group rates
+    std::vector<Channel> chans;
+    for (int i = 0; i < kChannelCount; ++i)
+        if (!isPartialChannel((Channel)i) || partialOf((Channel)i) == 1) chans.push_back((Channel)i);
+    const int nc = (int)chans.size(), per = 2 * nc + 14 + 5;
+    for (const Shape* preset : {&grand(), &rhodes()}) {
+        const char* name = preset == &grand() ? "grand" : "rhodes";
+        Voice v(15);
+        Board board;
+        board.init(kFs);
+        std::vector<float> y;
+        bool state = true;
+        double pair = 0.0;                                                        // the voice's own peak, bridge or pickup
+        auto run = [&](int blocks) {
+            float br[kBlock], pk[kBlock], out[kBlock], w[kBoardModes];
+            for (int b = 0; b < blocks; ++b) {
+                v.render(br, pk, kBlock);
+                const State st = v.state();
+                board.setPlate(st.shape[Channel::boardArea], st.shape[Channel::boardLoss], st.shape[Channel::open]);
+                board.inputWeights(v.bridgePoint(), w);
+                const float* f[1] = {br};
+                const float* ww[1] = {w};
+                board.render(f, ww, 1, out, kBlock);
+                for (int i = 0; i < kBlock; ++i) {
+                    y.push_back(out[i] + pk[i]);
+                    pair = std::fmax(pair, std::fmax(std::fabs(br[i]), std::fabs(pk[i])));
+                }
+                state = state && std::isfinite(v.energy()) && std::isfinite(st.rms) && std::isfinite(st.amp[0]) && std::isfinite(st.hammerPeakForce);
+            }
+        };
+        auto sleeps = [&](float sec) {
+            for (int b = 0; b < blockAt(sec); ++b) {
+                run(1);
+                if (v.asleep()) return (b + 1) * kBlock / kFs;
+            }
+            return -1.0f;
+        };
+        for (int k = 0; k < 10 * per; ++k) {
+            const float x = wild[k / per];
+            const int j = k % per;
+            v.setShape(*preset);
+            v.setTuning(jumps);
+            v.noteOn(36.0f + (float)((7 * k) % 48), 1.0f);
+            if (j < nc) v.set(chans[(size_t)j], x);
+            else if (j < 2 * nc) {
+                float lo, hi;
+                channelRange(chans[(size_t)(j - nc)], lo, hi);
+                v.setRate(chans[(size_t)(j - nc)], x);
+                v.set(chans[(size_t)(j - nc)], hi);                               // a target to move toward at that rate
+            } else if (j < 2 * nc + 14) {
+                Tuning t = jumps;
+                t.*fields[j - 2 * nc] = x;
+                v.setTuning(t);
+                v.noteOn(60.0f, 0.01f);                                          // a soft strike: vel^velCurve at its widest
+            } else {
+                Shape s;
+                PartialTable p;
+                for (float& a : s.v) a = x;
+                for (int i = 0; i < kMaxModes; ++i) p.ratio[i] = p.t60[i] = p.gain[i] = p.out[i] = x;
+                switch (j - 2 * nc - 14) {
+                    case 0: v.setShape(s); break;
+                    case 1: v.setPartial(1, x, x, x, x); break;
+                    case 2: v.setPartials(p); break;
+                    case 3: v.noteOn(x, x); break;
+                    case 4: v.noteOn(60.0f, x); break;
+                }
+            }
+            run(4);
+        }
+        const bool wildFinite = allFinite(y.data(), y.size());
+        const double wildPeak = peakAbs(y.data(), y.size());
+        v.setTuning(Tuning());
+        for (Channel c : chans) v.setRate(c, groupRate(groupOf(c), Tuning()));
+        v.setShape(*preset);
+        v.setGlide(0.0f);
+        v.setPedal(0.0f);
+        v.noteOff();
+        const float quiet = sleeps(10.0f);
+        v.noteOn(62.0f, 0.8f);
+        y.clear();
+        pair = 0.0;
+        run(blockAt(1.0));
+        const bool finite = allFinite(y.data(), y.size());
+        v.noteOff();
+        const float slept = sleeps(10.0f);
+        CHECK_MSG(wildFinite && state, "%s: the output %s while wild, the state %s", name, wildFinite ? "finite" : "NOT finite",
+                  state ? "finite" : "NOT finite");
+        CHECK_MSG(quiet > 0.0f && finite && pair > 0.01 && slept > 0.0f, "%s after: slept %.2f s, then d4 finite %d, its pair peaks %.4f, slept %.2f s",
+                  name, quiet, (int)finite, pair, slept);
+        printf("    %s: %d wild writes, the raw peak %.3g; after, asleep in %.2f s; d4 from rest peaks %.3f (its pair) and sleeps %.2f s after "
+               "its release\n",
+               name, 10 * per, wildPeak, quiet, pair, slept);
+    }
 }

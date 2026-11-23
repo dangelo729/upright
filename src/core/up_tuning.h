@@ -4,10 +4,12 @@
 // piano, the tuning is how the machine under it behaves. a voice nobody
 // tunes is exactly the field initializers.
 //
-// clamped() holds only what would end the voice: a nan falls back to the
-// field's default, the ceiling stays inside 0.01 .. 0.5, the hammer's throw
-// and the amp's pole over 0, the attack inside 0 .. 2. a channel rate at or
-// under zero stands (a jump); nothing else is limited.
+// clamped() holds only what would end the voice: a nan or an infinity falls
+// back to the field's default, the ceiling stays inside 0.01 .. 0.5, the
+// hammer's throw and the amp's pole over 0, the attack inside 0 .. 2, the
+// output's gain inside ±1e6. a channel rate at or under zero stands (a
+// jump); nothing else is limited (the voice holds a strike's throw under
+// 1000 m/s).
 #pragma once
 
 namespace up {
@@ -39,7 +41,7 @@ struct Tuning {
                                   //   the note)
 };
 
-// the fields that have a limit held inside it, a nan as its default
+// the fields that have a limit held inside it, a nan or an infinity as its default
 Tuning clamped(const Tuning& t);
 
 }  // namespace up

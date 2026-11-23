@@ -94,7 +94,7 @@ public:
     // ---- the instrument: every channel, by name ---------------------------------------------
     void      set(up::Channel c, float target);
     void      setRate(up::Channel c, float perSec);
-    void      setShape(const up::Shape& s);  // every target at once; a nan entry is no write
+    void      setShape(const up::Shape& s);  // every target at once; a nan or an infinite entry is no write
     up::Shape shape() const;                 // the targets as held
 
     // ---- conveniences that write channels -----------------------------------------------------
@@ -106,7 +106,7 @@ public:
     void setGenerator(float g, float gap, float offset);
     void setDamper(float rate, float top);
     void setPartial(int k, float ratio, float t60, float gain, float out);   // one partial by hand
-    void setPartials(const up::PartialTable& t);   // a measured string, whole (a nan skips)
+    void setPartials(const up::PartialTable& t);   // a measured string, whole (a nan or an infinity skips)
 
     // ---- who is playing ---------------------------------------------------------------------------
     void       setTuning(const up::Tuning& t);

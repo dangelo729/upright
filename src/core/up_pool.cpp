@@ -9,7 +9,6 @@ namespace {
 
 constexpr float kFadeFloor = 0.01f;        // a stolen voice's fade under this goes to zero across one block
 
-inline bool isNan(float x) { return x != x; }
 inline bool sounds(const PoolSlot& s) { return s.use == PoolSlot::Use::held || s.use == PoolSlot::Use::released; }
 
 }  // namespace
@@ -41,8 +40,8 @@ PoolBase::PoolBase(Voice* voices, PoolSlot* slots, PoolLane* lanes, const float*
 // ---- the player ----------------------------------------------------------------------------
 
 void PoolBase::noteOn(float midi, float vel01) {
-    if (isNan(midi)) return;
-    const float vel = isNan(vel01) ? 0.0f : clamp(vel01, 0.0f, 1.0f);
+    if (!std::isfinite(midi)) return;
+    const float vel = std::isfinite(vel01) ? clamp(vel01, 0.0f, 1.0f) : 0.0f;
     // the key's own voice, still sounding: struck again, a fresh hammer on the moving string
     for (int i = 0; i < m_; ++i) {
         PoolSlot& s = s_[i];
@@ -85,7 +84,7 @@ void PoolBase::noteOff(float midi) {
 }
 
 void PoolBase::pedal(float p01) {
-    if (isNan(p01)) return;
+    if (!std::isfinite(p01)) return;
     pedal_ = p01;
     for (int i = 0; i < m_; ++i) v_[i].setPedal(p01);
 }
@@ -105,7 +104,7 @@ void PoolBase::allNotesOff() {
 
 // the pedal channel written pool-wide is the pool's pedal; a body channel is the board's plate
 void PoolBase::set(Channel c, float target) {
-    if ((int)c >= kChannelCount || isNan(target)) return;
+    if ((int)c >= kChannelCount || !std::isfinite(target)) return;
     if (c == Channel::pedal) pedal_ = target;
     if (c == Channel::boardArea) plate(target, loss_, open_);
     if (c == Channel::boardLoss) plate(area_, target, open_);
@@ -114,12 +113,12 @@ void PoolBase::set(Channel c, float target) {
 }
 
 void PoolBase::setRate(Channel c, float perSec) {
-    if ((int)c >= kChannelCount || isNan(perSec)) return;
+    if ((int)c >= kChannelCount || !std::isfinite(perSec)) return;
     for (int i = 0; i < m_; ++i) v_[i].setRate(c, perSec);
 }
 
 void PoolBase::setShape(const Shape& s) {
-    if (!isNan(s[Channel::pedal])) pedal_ = s[Channel::pedal];
+    if (std::isfinite(s[Channel::pedal])) pedal_ = s[Channel::pedal];
     plate(s[Channel::boardArea], s[Channel::boardLoss], s[Channel::open]);
     for (int i = 0; i < m_; ++i) v_[i].setShape(s);
 }
@@ -145,12 +144,12 @@ int PoolBase::sounding() const {
     return n;
 }
 
-// the plate from the written body (a nan keeps the plate's own); a plate whose sides moved puts its modes
-// elsewhere, so every voice's weights are computed again at its next render
+// the plate from the written body (a nan or an infinity keeps the plate's own); a plate whose sides moved puts
+// its modes elsewhere, so every voice's weights are computed again at its next render
 void PoolBase::plate(float area, float loss, float open) {
-    if (!isNan(area)) area_ = area;
-    if (!isNan(loss)) loss_ = loss;
-    if (!isNan(open)) open_ = open;
+    if (std::isfinite(area)) area_ = area;
+    if (std::isfinite(loss)) loss_ = loss;
+    if (std::isfinite(open)) open_ = open;
     const float a = board_.table().a, b = board_.table().b;
     board_.setPlate(area_, loss_, open_);
     if (board_.table().a != a || board_.table().b != b)
@@ -326,15 +325,16 @@ bool PoolQueue::setShape(const Shape& s) {
     return put({Op::shape, 0, 0.0f, 0.0f, 0.0f, 0.0f});
 }
 
-// a table straight after a table: its entries over the queued one's (a nan skips), as the pool would hold them
+// a table straight after a table: its entries over the queued one's (a nan or an infinity skips), as the pool
+// would hold them
 bool PoolQueue::setPartials(const PartialTable& t) {
     if (lastIs(Op::partials)) {
         PartialTable& to = tables_.last();
         for (int k = 0; k < kMaxModes; ++k) {
-            if (!isNan(t.ratio[k])) to.ratio[k] = t.ratio[k];
-            if (!isNan(t.t60[k])) to.t60[k] = t.t60[k];
-            if (!isNan(t.gain[k])) to.gain[k] = t.gain[k];
-            if (!isNan(t.out[k])) to.out[k] = t.out[k];
+            if (std::isfinite(t.ratio[k])) to.ratio[k] = t.ratio[k];
+            if (std::isfinite(t.t60[k])) to.t60[k] = t.t60[k];
+            if (std::isfinite(t.gain[k])) to.gain[k] = t.gain[k];
+            if (std::isfinite(t.out[k])) to.out[k] = t.out[k];
         }
         return true;
     }

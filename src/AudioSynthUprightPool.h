@@ -71,9 +71,9 @@ public:
     // ---- every voice, and later notes -------------------------------------------------------
     bool set(up::Channel c, float target);
     bool setRate(up::Channel c, float perSec);
-    bool setShape(const up::Shape& s);               // a nan entry is no write
+    bool setShape(const up::Shape& s);               // a nan or an infinite entry is no write
     bool setPartial(int k, float ratio, float t60, float gain, float out);   // one partial by hand
-    bool setPartials(const up::PartialTable& t);     // a measured string, whole (a nan skips)
+    bool setPartials(const up::PartialTable& t);     // a measured string, whole (a nan or an infinity skips)
     bool setTuning(const up::Tuning& t);
 
     // ---- readback, as of the end of the last block --------------------------------------------

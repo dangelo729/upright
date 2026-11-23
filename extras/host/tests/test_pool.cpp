@@ -12,11 +12,15 @@
 // stolen voice's waiting note lands whole with the pool's pedal. the queue
 // (PoolQueue, the teensy pool's hand-off): calls through it play the same
 // bytes as calls made directly, in their order; a shape straight after a
-// shape stays its own; a full queue or ring refuses a call whole. and the
-// umbrella header compiles on the host, its teensy wrappers empty.
+// shape stays its own; a full queue or ring refuses a call whole; wild writes,
+// directly and through the queue, leave the board finite and a later chord
+// sounding. and the umbrella header compiles on the host, its teensy
+// wrappers empty.
+#include <cfloat>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <vector>
 
 #include "Upright.h"
@@ -601,6 +605,86 @@ UP_TEST(pool_queue_full) {
     q.drain(p);
     CHECK(q.count() == 0 && q.setShape(grand()) && q.setPartials(t) && q.setTuning(Tuning()) && q.count() == 3);
     printf("    the queue holds %d commands and two of each payload; a call it has no room for is refused whole\n", PoolQueue::kQueue);
+}
+
+// wild writes on a pool of grand, made directly and through the queue: each
+// value of infinity, the float's largest, 1e30, 3e5 and 1e-40, each signed,
+// through set and setRate on every instrument and player channel and one
+// partial's four, setShape, setPartial, setPartials, pedal, noteOn, noteOff
+// and setTuning on each field, each written on grand under a strike (four
+// voices: steals), every rate a jump, and standing four blocks. the output,
+// the shared board's, stays finite and the queue plays what the calls made
+// directly play; then grand and the default tuning and rates again, every key
+// let go: the pool falls silent, and a valid chord sounds
+UP_TEST(pool_wild_writes_stay_finite) {
+    const float inf = std::numeric_limits<float>::infinity();
+    const float wild[] = {inf, -inf, FLT_MAX, -FLT_MAX, 1e30f, -1e30f, 3e5f, -3e5f, 1e-40f, -1e-40f};
+    float Tuning::*const fields[] = {&Tuning::rateStrings, &Tuning::rateHammer, &Tuning::rateBody, &Tuning::rateModes, &Tuning::ratePitch,
+                                     &Tuning::ratePedal,   &Tuning::hammerScale, &Tuning::velCurve, &Tuning::outputGain, &Tuning::silence,
+                                     &Tuning::stealRate,   &Tuning::ceiling,     &Tuning::ampHz,    &Tuning::attack};
+    Tuning jumps;
+    for (int f = 0; f < 6; ++f) jumps.*fields[f] = 0.0f;                         // the six group rates
+    std::vector<Channel> chans;
+    for (int i = 0; i < kChannelCount; ++i)
+        if (!isPartialChannel((Channel)i) || partialOf((Channel)i) == 1) chans.push_back((Channel)i);
+    const int nc = (int)chans.size(), per = 2 * nc + 14 + 7, wildBlocks = 4 * 10 * per, chord = wildBlocks + blocks(5.0f);
+    Pool<4> a(24), b(24);
+    std::vector<float> x, y;
+    bool quiet = false;
+    playBoth(a, b, chord + blocks(1.0f), [&](auto& w, int k) {
+        if (k == wildBlocks) {
+            w.setTuning(Tuning());
+            for (Channel c : chans) w.setRate(c, groupRate(groupOf(c), Tuning()));
+            w.setShape(grand());
+            w.set(Channel::glide, 0.0f);
+            w.pedal(0.0f);
+            w.allNotesOff();
+        }
+        if (k == chord) {
+            quiet = a.sounding() == 0 && b.sounding() == 0;
+            for (float key : {60.0f, 64.0f, 67.0f}) w.noteOn(key, 0.8f);
+        }
+        if (k >= wildBlocks || k % 4 != 0) return;
+        const float v = wild[k / 4 / per];
+        const int j = k / 4 % per;
+        w.setShape(grand());
+        w.setTuning(jumps);
+        w.noteOn(36.0f + (float)((7 * k / 4) % 48), 1.0f);
+        if (j < nc) w.set(chans[(size_t)j], v);
+        else if (j < 2 * nc) {
+            float lo, hi;
+            channelRange(chans[(size_t)(j - nc)], lo, hi);
+            w.setRate(chans[(size_t)(j - nc)], v);
+            w.set(chans[(size_t)(j - nc)], hi);                                  // a target to move toward at that rate
+        } else if (j < 2 * nc + 14) {
+            Tuning t = jumps;
+            t.*fields[j - 2 * nc] = v;
+            w.setTuning(t);
+            w.noteOn(60.0f, 0.01f);                                              // a soft strike: vel^velCurve at its widest
+        } else {
+            Shape s;
+            PartialTable p;
+            for (float& e : s.v) e = v;
+            for (int i = 0; i < kMaxModes; ++i) p.ratio[i] = p.t60[i] = p.gain[i] = p.out[i] = v;
+            switch (j - 2 * nc - 14) {
+                case 0: w.setShape(s); break;
+                case 1: w.setPartial(1, v, v, v, v); break;
+                case 2: w.setPartials(p); break;
+                case 3: w.pedal(v); break;
+                case 4: w.noteOn(v, v); break;
+                case 5: w.noteOn(60.0f, v); break;
+                case 6: w.noteOff(v); break;
+            }
+        }
+    }, x, y);
+    const size_t at = (size_t)chord * kBlock;
+    const double peak = peakAbs(y.data() + at, y.size() - at);
+    CHECK(allFinite(x.data(), x.size()) && allFinite(y.data(), y.size()));
+    CHECK(std::memcmp(x.data(), y.data(), x.size() * sizeof(float)) == 0);
+    CHECK_MSG(quiet && peak > 0.01 && b.sounding() == 3, "after: silent %d, the chord peaks %.4f on %d voices", (int)quiet, peak, b.sounding());
+    printf("    %d wild writes on a pool of four, directly and through the queue, the raw peak %.3g; after, grand's c4 major from silence peaks "
+           "%.3f\n",
+           10 * per, peakAbs(y.data(), (size_t)wildBlocks * kBlock), peak);
 }
 
 // the sizes, for the record

@@ -34,7 +34,7 @@
 // channel by the sequence, exactly as on one voice (a partial written by hand
 // pool-wide stands on a later note until the instrument is written again).
 // the board's plate is the written body: setShape sets it from the shape's
-// boardArea, boardLoss and open where they are not nan, set from the one
+// boardArea, boardLoss and open where they are finite, set from the one
 // channel written; the plate lands at once, not eased (Board::setPlate, its
 // table rebuilt only when it moved).
 //
@@ -112,9 +112,9 @@ public:
     // ---- every voice, and later notes -------------------------------------------------------
     void set(Channel c, float target);
     void setRate(Channel c, float perSec);
-    void setShape(const Shape& s);                 // a nan entry is no write
+    void setShape(const Shape& s);                 // a nan or an infinite entry is no write
     void setPartial(int k, float ratio, float t60, float gain, float out);   // one partial by hand
-    void setPartials(const PartialTable& t);       // a measured string, whole (a nan skips)
+    void setPartials(const PartialTable& t);       // a measured string, whole (a nan or an infinity skips)
     void setTuning(const Tuning& t);
 
     // ---- readback ----------------------------------------------------------------------------
@@ -139,7 +139,7 @@ private:
     void steal(int i, float key, float vel);
     int  quietest() const;
     int  oldest(PoolSlot::Use use) const;
-    void plate(float area, float loss, float open);     // the board's plate from the written body (a nan keeps its own)
+    void plate(float area, float loss, float open);     // the board's plate from the written body (a nan or an infinity keeps its own)
 
     Voice*        v_;
     PoolSlot*     s_;

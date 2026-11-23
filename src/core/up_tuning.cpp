@@ -7,8 +7,7 @@
 namespace up {
 namespace {
 
-inline bool isNan(float x) { return x != x; }
-inline float real(float x, float fallback) { return isNan(x) ? fallback : x; }
+inline float real(float x, float fallback) { return std::isfinite(x) ? x : fallback; }
 
 }  // namespace
 
@@ -23,17 +22,18 @@ Tuning clamped(const Tuning& in) {
     t.ratePitch   = real(in.ratePitch, d.ratePitch);
     t.ratePedal   = real(in.ratePedal, d.ratePedal);
     // a hammer that never moves strikes nothing; held over 0
-    t.hammerScale = isNan(in.hammerScale) ? d.hammerScale : (in.hammerScale > 1e-3f ? in.hammerScale : 1e-3f);
+    t.hammerScale = std::isfinite(in.hammerScale) ? (in.hammerScale > 1e-3f ? in.hammerScale : 1e-3f) : d.hammerScale;
     t.velCurve    = real(in.velCurve, d.velCurve);
-    t.outputGain  = real(in.outputGain, d.outputGain);
+    // a level near 1e30 overflows the board's sums; held inside ±1e6
+    t.outputGain  = clamp(real(in.outputGain, d.outputGain), -1e6f, 1e6f);
     t.silence     = real(in.silence, d.silence);
     t.stealRate   = real(in.stealRate, d.stealRate);
     // under 0.01 no partial rings; over 0.5 a partial aliases
-    t.ceiling     = isNan(in.ceiling) ? d.ceiling : clamp(in.ceiling, 0.01f, 0.5f);
+    t.ceiling     = std::isfinite(in.ceiling) ? clamp(in.ceiling, 0.01f, 0.5f) : d.ceiling;
     // a pole at or under 0 hz passes nothing; held over 1 hz
-    t.ampHz       = isNan(in.ampHz) ? d.ampHz : (in.ampHz > 1.0f ? in.ampHz : 1.0f);
+    t.ampHz       = std::isfinite(in.ampHz) ? (in.ampHz > 1.0f ? in.ampHz : 1.0f) : d.ampHz;
     // the attack's scale: none at 0, the calibration at 1, twice it at 2
-    t.attack      = isNan(in.attack) ? d.attack : clamp(in.attack, 0.0f, 2.0f);
+    t.attack      = std::isfinite(in.attack) ? clamp(in.attack, 0.0f, 2.0f) : d.attack;
     return t;
 }
 

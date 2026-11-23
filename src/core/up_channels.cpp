@@ -35,7 +35,12 @@ const char* const kNames[kChannelCount] = {
     "midi", "glide", "pedal",
 };
 
-inline bool isNan(float x) { return x != x; }
+// a finite target held inside its channel's span
+inline float held(Channel c, float x) {
+    float lo, hi;
+    channelRange(c, lo, hi);
+    return clamp(x, lo, hi);
+}
 
 }  // namespace
 
@@ -164,14 +169,14 @@ Channels::Channels(const Tuning& t) {
 }
 
 void Channels::set(Channel c, float target) {
-    if (isNan(target)) return;
+    if (!std::isfinite(target)) return;
     const int i = (int)c;
-    target_[i] = target;
+    target_[i] = held(c, target);
     seq_[i] = ++counter_;
 }
 
 void Channels::rate(Channel c, float perSec) {
-    if (isNan(perSec)) return;
+    if (!std::isfinite(perSec)) return;
     const int i = (int)c;
     rate_[i] = perSec;
     rateSeq_[i] = ++counter_;
@@ -180,15 +185,15 @@ void Channels::rate(Channel c, float perSec) {
 void Channels::setShape(const Shape& s) {
     const uint32_t q = ++counter_;
     for (int i = 0; i < kChannelCount; ++i) {
-        if (isNan(s.v[i])) continue;
-        target_[i] = s.v[i];
+        if (!std::isfinite(s.v[i])) continue;
+        target_[i] = held((Channel)i, s.v[i]);
         seq_[i] = q;
     }
 }
 
 void Channels::write(Channel c, float target, uint32_t seq) {
     const int i = (int)c;
-    if (isNan(target) || seq_[i] > seq) return;
+    if (!std::isfinite(target) || seq_[i] > seq) return;
     target_[i] = target;
     seq_[i] = seq;
     if (seq > counter_) counter_ = seq;

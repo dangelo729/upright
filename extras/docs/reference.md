@@ -20,7 +20,7 @@ void setPitch(float midi);  void setGlide(float perSec);
 void setPedal(float p01);                 // the sustain pedal, eased at ratePedal
 // the instrument: every channel, by name
 void  set(Channel c, float target);  void setRate(Channel c, float perSec);
-void  setShape(const Shape& s);           // every target at once; a nan entry is no write
+void  setShape(const Shape& s);           // every target at once; a nan or an infinite entry is no write
 Shape shape() const;                      // the targets as held
 // conveniences that write channels
 void setStrings(float length, float bass, float tension, float gauge);
@@ -31,7 +31,7 @@ void setBody(float area, float loss, float open);
 void setGenerator(float g, float gap, float offset);
 void setDamper(float rate, float top);
 void setPartial(int k, float ratio, float t60, float gain, float out);   // one partial by hand, under one sequence
-void setPartials(const PartialTable& t);  // a measured string, whole (a nan skips), under one sequence
+void setPartials(const PartialTable& t);  // a measured string, whole (a nan or an infinity skips), under one sequence
 // who is playing
 void setTuning(const Tuning& t);  Tuning tuning() const;
 // readback
@@ -51,8 +51,10 @@ void render(float* bridge, float* pickup, int n);
 
 A partial written by hand stands until the instrument is written again: the law writes every
 partial under the sequence of the newest instrument write, so an instrument write after a hand's
-(or a table's) rewrites it. Two `noteOn`s in one block are the second. A strike while the hammer
-still touches places a fresh one; a key struck while its string sounds meets the moving string.
+(or a table's) rewrites it. A partial is switched off by hand with a gain and an out of 0: its
+ratio and its t60 are held inside their ranges, over 0. Two `noteOn`s in one block are the second.
+A strike while the hammer still touches places a fresh one; a key struck while its string sounds
+meets the moving string.
 
 ## The channels and the presets
 
@@ -63,7 +65,8 @@ still touches places a fresh one; a key struck while its string sounds meets the
   move.
 - `defaultShape()`: grand's, with its partials at middle C, every voice's start.
 - `channelRange(c, lo, hi)`, `channelName(c)`, `channelByName(name, c)`, `groupOf(c)`,
-  `isInstrumentChannel(c)`.
+  `isInstrumentChannel(c)`. A target that is nan or infinite is no write; `set` and `setShape` hold
+  a finite one outside its channel's range at the range's nearer end.
 - `grand()` .. `wurlitzer()`: each preset's shape, built once on first use from its table.
 - `presetCount()`, `presetAt(i)`, `presetByName(name)`: the table of `PresetInfo { name, shape, lo,
   hi }`, `shape` the preset's accessor, called as `p.shape()`; `presetByName` returns null for a
@@ -97,7 +100,7 @@ void pedal(float p01);                    // the sustain pedal on every voice, a
 void allNotesOff();
 // every voice now, and later notes
 void set(Channel c, float target);  void setRate(Channel c, float perSec);
-void setShape(const Shape& s);            // a nan entry is no write; the body sets the board
+void setShape(const Shape& s);            // a nan or an infinite entry is no write; the body sets the board
 void setPartial(int k, float ratio, float t60, float gain, float out);  void setPartials(const PartialTable& t);
 void setTuning(const Tuning& t);
 // readback

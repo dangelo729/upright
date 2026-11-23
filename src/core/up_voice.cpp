@@ -13,8 +13,8 @@
 namespace up {
 namespace {
 
-inline bool isNan(float x) { return x != x; }
 constexpr float kNepers60 = 6.907755f;         // ln(1000): a t60 to a decay rate, 6.907755 / t60
+constexpr float kThrowMax = 1000.0f;           // m/s: the most a strike throws the hammer, far past a fortissimo's 7
 
 }  // namespace
 
@@ -46,7 +46,7 @@ void Voice::init(float fs) {
 
 void Voice::noteOn(float midi, float vel01) {
     set(Channel::midi, midi);
-    const float v = isNan(vel01) ? 0.0f : clamp(vel01, 0.0f, 1.0f);
+    const float v = std::isfinite(vel01) ? clamp(vel01, 0.0f, 1.0f) : 0.0f;
     if (pending_) {
         pending_->strike = true;
         pending_->vel = v;
@@ -324,7 +324,7 @@ void Voice::block() {
 
     // the law at the target note, then wake or tick. asleep with no strike queued, nothing
     const float target = ch_.target(Channel::midi);
-    const float lawNote = isNan(target) ? kScaleMidi : clamp(target, 0.0f, 127.0f);
+    const float lawNote = std::isfinite(target) ? clamp(target, 0.0f, 127.0f) : kScaleMidi;
     const bool noteMoved = lawNote != lawNote_;
     woke_ = false;
     if (asleep_ && !strikeQueued_) return;
@@ -352,7 +352,7 @@ void Voice::block() {
     const RankState& r = st.rank;
 
     // the hammer at the note: the felt through the rank, the tine's tip by the generator
-    const float g = clamp(isNan(es[Channel::generator]) ? -1.0f : es[Channel::generator], -1.0f, 1.0f);
+    const float g = clamp(std::isfinite(es[Channel::generator]) ? es[Channel::generator] : -1.0f, -1.0f, 1.0f);
     const float hk[7] = {es[Channel::hardness], es[Channel::exponent], es[Channel::felt], g, r.hammerMass, r.hardnessScale, r.pAdd};
     if (woke_ || std::memcmp(hk, hammerKey_, sizeof hk) != 0) {
         strings_.setHammer(hammerHardnessAt(es[Channel::hardness], g) * r.hardnessScale, hammerExponentAt(es[Channel::exponent], r.pAdd),
@@ -363,7 +363,7 @@ void Voice::block() {
     // per slot: hz, on, the decays, the drive, the readback, the out. a slot under kUnisonModes loses sigma_b
     // through the bridge (the coupling, up_string.h), so its own decay is sigma_n - sigma_b, held at a tenth of
     // sigma_n at least: a hand-written table or a small lossRate rings no longer than its own t60 says
-    const float pedal = clamp(isNan(es[Channel::pedal]) ? 0.0f : es[Channel::pedal], 0.0f, 1.0f);
+    const float pedal = clamp(std::isfinite(es[Channel::pedal]) ? es[Channel::pedal] : 0.0f, 0.0f, 1.0f);
     const bool damping = released_ && r.damped;
     const float muL = r.mu * r.L;
     const float driveScale = 2.0f * strings_.dtSub() / muL * 1000.0f;
@@ -391,18 +391,19 @@ void Voice::block() {
     const float strings = stringsOf(es);
     float w2 = clamp(strings - 1.0f, 0.0f, 1.0f);
     const float w3 = clamp(strings - 2.0f, 0.0f, 1.0f);
-    if (g >= 0.0f) w2 *= clamp(isNan(es[Channel::tonebar]) ? 1.0f : es[Channel::tonebar], 0.0f, 1.0f);
+    if (g >= 0.0f) w2 *= clamp(std::isfinite(es[Channel::tonebar]) ? es[Channel::tonebar] : 1.0f, 0.0f, 1.0f);
     strings_.setUnison(es[Channel::detune], w2, w3, g);
     strings_.setCoupling(sigmaB, delta);
     const float g2 = strings_.pointMass2();
     strings_.setPointMass(g2 > 0.0f ? 0.5f * muL / g2 : 1.0f);
     strings_.beginBlock();
 
-    // a strike due: the hammer at the string, thrown at hammerScale vel^velCurve
+    // a strike due: the hammer at the string, thrown at hammerScale vel^velCurve, held under kThrowMax
     float v0 = -1.0f;
     if (strikeQueued_) {
         strikeQueued_ = false;
         v0 = vel_ > 0.0f ? tuning_.hammerScale * std::pow(vel_, tuning_.velCurve) : 0.0f;
+        if (v0 > kThrowMax) v0 = kThrowMax;
         strings_.strike(v0);
     }
 

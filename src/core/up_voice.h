@@ -37,7 +37,7 @@
 //         bridgeReactive; the hammer's point mass, (mu L / 2) / sum gain²;
 //         every bank's beginBlock
 //   a strike due: the hammer placed at the string, thrown at hammerScale
-//         vel^velCurve
+//         vel^velCurve, held under 1000 m/s
 //   the pair's weights ramped across the block: the bridge's clamp(-g, 0, 1)
 //         x the rank's bridge scale / 1000 (mm to N), the pickup's clamp(1 +
 //         g, 0, 1), both x outputGain; a weight at 0 at both ends compiles its
@@ -125,7 +125,7 @@ public:
     // ---- the instrument: every channel, by name ---------------------------------------
     void  set(Channel c, float target);
     void  setRate(Channel c, float perSec);
-    void  setShape(const Shape& s);          // every target at once; a nan entry is no write
+    void  setShape(const Shape& s);          // every target at once; a nan or an infinite entry is no write
     Shape shape() const;                     // the targets as held
 
     // ---- conveniences that write channels ---------------------------------------------
@@ -137,7 +137,7 @@ public:
     void setGenerator(float g, float gap, float offset);
     void setDamper(float rate, float top);
     void setPartial(int k, float ratio, float t60, float gain, float out);   // one partial by hand, under one sequence
-    void setPartials(const PartialTable& t); // a measured string, whole (a nan skips), under one sequence
+    void setPartials(const PartialTable& t); // a measured string, whole (a nan or an infinity skips), under one sequence
 
     // ---- who is playing -----------------------------------------------------------------
     void   setTuning(const Tuning& t);       // lands at the top of the next block
