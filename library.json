@@ -1,6 +1,6 @@
 {
   "name": "Upright",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A physically modelled piano for the Teensy Audio Library. A felt hammer strikes a stiff string, heard through a soundboard or a pickup. Nine presets, from a concert grand and an upright to a Rhodes and a Wurlitzer, are the same model with different numbers: 24 parameters in physical units, each of which a sounding note eases to. AudioSynthUpright is one voice; AudioSynthUprightPool<M> is M voices on one shared soundboard, for a keyboard. The core is plain C++, allocates nothing and is tested on a computer.",
   "keywords": "audio, synthesis, physical modelling, modal synthesis, piano, grand piano, upright piano, electric piano, rhodes, wurlitzer, inharmonicity, hammer, soundboard, polyphony, teensy",
   "homepage": "https://github.com/dangelo729/upright",
